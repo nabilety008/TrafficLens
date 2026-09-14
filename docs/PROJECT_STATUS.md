@@ -189,7 +189,7 @@ TL-006 live graph) are complete.
 
 ## Git Commit
 
-- TL-006 (live traffic graph): see commit hash below (docs commit written after code).
+- TL-006 (live traffic graph): `3ad4b86` — `feat: add live traffic graph with bounded history and adaptive scale (TL-006)`; docs `6f24811`.
 - TL-005 (dashboard): `bb6deef` — `feat: add live dashboard view with adaptive rate formatting (TL-005)`
 - `2bf03c9` — `fix: classify OpenVPN TAP/DCO (type 53) and virtual nics correctly via driver descriptions (TL-004)`
 - `6bfa9d6` — `feat: add download/upload rate calculation from counter deltas with monotonic timing (TL-003)`
