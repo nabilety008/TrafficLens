@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Models;
 using TrafficLens.Network.Adapters;
+using TrafficLens.Network.Calculation;
 
 namespace TrafficLens.Network.Collectors;
 
@@ -16,9 +18,12 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
     private IReadOnlyDictionary<string, NetworkCounterSample> _currentCounters =
         new Dictionary<string, NetworkCounterSample>(StringComparer.OrdinalIgnoreCase);
 
+    private IReadOnlyList<NetworkSpeedSample> _currentRates = Array.Empty<NetworkSpeedSample>();
+
     private IReadOnlyList<NetworkAdapterInfo> _currentAdapters = Array.Empty<NetworkAdapterInfo>();
     private RawAdapterSnapshot? _defaultAdapterSnapshot;
     private IReadOnlySet<string> _lastAdapterSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private readonly SpeedRateTracker _rateTracker = new();
     private CancellationTokenSource? _cts;
     private Task? _loopTask;
 
@@ -34,9 +39,7 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
 
     public event EventHandler<NetworkCounterSample>? CounterSampleReady;
 
-    #pragma warning disable CS0067 // Rate samples are produced in TL-003 (counter deltas).
     public event EventHandler<NetworkSpeedSample>? SpeedSampleReady;
-#pragma warning restore CS0067
 
     public event EventHandler? NetworkChanged;
 
@@ -109,8 +112,10 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
 
     public IReadOnlyList<NetworkSpeedSample> GetCurrentSamples()
     {
-        // Download/upload rates are calculated in TL-003 from counter deltas.
-        return Array.Empty<NetworkSpeedSample>();
+        lock (_sync)
+        {
+            return _currentRates.ToArray();
+        }
     }
 
     public NetworkAdapterInfo[] GetCurrentAdapters()
@@ -153,6 +158,7 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
             if (newCounters is not null)
             {
                 bool setChanged;
+                var nowTicks = Stopwatch.GetTimestamp();
                 lock (_sync)
                 {
                     setChanged = !_lastAdapterSet.SetEquals(newCounters.Keys);
@@ -160,6 +166,12 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
                     _currentAdapters = newAdapters ?? _currentAdapters;
                     _defaultAdapterSnapshot = newDefault;
                     _lastAdapterSet = new HashSet<string>(newCounters.Keys, StringComparer.OrdinalIgnoreCase);
+                }
+
+                var newRates = _rateTracker.Track(newCounters, nowTicks, Stopwatch.Frequency);
+                lock (_sync)
+                {
+                    _currentRates = newRates;
                 }
 
                 if (setChanged)
@@ -171,6 +183,11 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
                 foreach (var sample in newCounters.Values)
                 {
                     CounterSampleReady?.Invoke(this, sample);
+                }
+
+                foreach (var sample in newRates)
+                {
+                    SpeedSampleReady?.Invoke(this, sample);
                 }
             }
 

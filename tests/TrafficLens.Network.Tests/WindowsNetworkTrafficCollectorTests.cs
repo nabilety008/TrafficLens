@@ -154,17 +154,62 @@ public sealed class WindowsNetworkTrafficCollectorTests
     }
 
     [Fact]
-    public async Task GetCurrentSamples_ReturnsEmptyUntilRatesImplemented()
+    public async Task SpeedSampleReady_FiresWithRealTrafficRates()
     {
-        var source = new FakeSource { Adapters = [Snap("eth0", 1, 2)] };
+        var source = new FakeSource { Adapters = [Snap("eth0", 0, 0)] };
+        using var collector = new WindowsNetworkTrafficCollector(
+            source, NullLogger<WindowsNetworkTrafficCollector>.Instance, TimeSpan.FromMilliseconds(30));
+
+        NetworkSpeedSample? received = null;
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        collector.SpeedSampleReady += (_, sample) =>
+        {
+            if (sample.DownloadBytesPerSecond > 0 || sample.UploadBytesPerSecond > 0)
+            {
+                received ??= sample;
+                tcs.TrySetResult(true);
+            }
+        };
+
+        await collector.StartAsync(CancellationToken.None);
+        try
+        {
+            // First poll only establishes the baseline; then simulate real transfer.
+            await Task.Delay(50);
+            source.Adapters = [Snap("eth0", 50_000, 20_000)];
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.NotNull(received);
+            Assert.Equal("eth0", received!.AdapterId);
+            Assert.True(received.DownloadBytesPerSecond > 0);
+            Assert.True(received.UploadBytesPerSecond > 0);
+        }
+        finally
+        {
+            await collector.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GetCurrentSamples_ReturnsRateSamplesAfterTraffic()
+    {
+        var source = new FakeSource { Adapters = [Snap("eth0", 0, 0)] };
         using var collector = new WindowsNetworkTrafficCollector(
             source, NullLogger<WindowsNetworkTrafficCollector>.Instance, TimeSpan.FromMilliseconds(30));
 
         await collector.StartAsync(CancellationToken.None);
         try
         {
+            await Task.Delay(50);
+            source.Adapters = [Snap("eth0", 50_000, 20_000)];
             await Task.Delay(100);
-            Assert.Empty(collector.GetCurrentSamples());
+
+            var rates = collector.GetCurrentSamples();
+            var eth = Assert.Single(rates, r => r.AdapterId == "eth0");
+            Assert.True(eth.DownloadBytesPerSecond >= 0);
+            Assert.True(eth.UploadBytesPerSecond >= 0);
         }
         finally
         {

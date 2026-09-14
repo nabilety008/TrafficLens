@@ -119,3 +119,26 @@ Reasoning:
 - Excluding by default keeps the "system total" truthful for typical hosts.
 - A VPN-only host has no honest non-overlapping total; returning empty is preferred
   to a fabricated one.
+
+## ADR-010: Monotonic-clock delta rates; tunnels kept per-adapter, excluded from aggregate
+
+**Status:** Accepted (TL-003)
+
+Rates (`NetworkSpeedSample`) are computed as cumulative-counter deltas divided by
+actual elapsed **monotonic** time (`Stopwatch`/QPC), not wall-clock and not the
+assumed poll interval. `SpeedRateTracker` keeps one baseline per adapter with
+re-baseline rules (first sample, counter decrease, zero elapsed, adapter
+disappearance/replacement) so no fake spike is emitted.
+
+Separately: **per-adapter samples always include tunnel/VPN traffic**; only the
+system "Internet Total" aggregate may exclude tunnel interfaces by default
+(extending ADR-009's non-overlapping policy to rate samples).
+
+Reasoning:
+- Ip Helper counters are cumulative; the truthful rate is `delta / realElapsed`.
+  Assuming 1 s poll makes rates wrong under load/timer drift.
+- Wall-clock is subject to jumps (NTP, sleep); QPC is monotonic.
+- The golden rule ("never fabricate") forbids spike emissions on invalid
+  transitions; re-baselining is the honest response.
+- Adapter-level views describe each physical/VPN link truthfully; only the
+  system-wide number needs the no-double-count caveat.

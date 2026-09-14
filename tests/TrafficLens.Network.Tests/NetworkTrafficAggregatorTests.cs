@@ -115,4 +115,108 @@ public sealed class NetworkTrafficAggregatorTests
 
         Assert.Empty(NetworkTrafficAggregator.GetNonOverlappingAdapters(samples, adapters));
     }
+
+    [Fact]
+    public void AggregateRates_SumsPerAdapterRates()
+    {
+        var t = new DateTime(2026, 9, 14, 10, 0, 0, DateTimeKind.Utc);
+        var samples = new List<NetworkSpeedSample>
+        {
+            new("eth0", "Ethernet", 1_000, 500, t),
+            new("wlan0", "Wi-Fi", 2_000, 700, t.AddSeconds(5))
+        };
+
+        var adapters = new List<NetworkAdapterInfo>
+        {
+            new("eth0", "Ethernet", "desc", "", NetworkAdapterKind.Ethernet, true, false),
+            new("wlan0", "Wi-Fi", "desc", "", NetworkAdapterKind.Wireless, true, false)
+        };
+
+        var total = NetworkTrafficAggregator.AggregateRates(samples, adapters);
+
+        Assert.NotNull(total);
+        Assert.Equal(3000, total!.DownloadBytesPerSecond);
+        Assert.Equal(1200, total.UploadBytesPerSecond);
+        Assert.Equal(4200, total.TotalBytesPerSecond);
+        Assert.Equal(t.AddSeconds(5), total.Timestamp);
+        Assert.Equal("system", total.AdapterId);
+    }
+
+    [Fact]
+    public void AggregateRates_ExcludesTunnelByDefault()
+    {
+        var t = DateTime.UtcNow;
+        var samples = new List<NetworkSpeedSample>
+        {
+            new("eth0", "Ethernet", 1_000, 500, t),
+            new("wg0", "WireGuard", 3_000, 1_500, t)
+        };
+
+        var adapters = new List<NetworkAdapterInfo>
+        {
+            new("eth0", "Ethernet", "desc", "", NetworkAdapterKind.Ethernet, true, false),
+            new("wg0", "WireGuard", "desc", "", NetworkAdapterKind.Tunnel, true, false)
+        };
+
+        var total = NetworkTrafficAggregator.AggregateRates(samples, adapters);
+
+        Assert.Equal(1_000, total!.DownloadBytesPerSecond);
+        Assert.Equal(500, total.UploadBytesPerSecond);
+    }
+
+    [Fact]
+    public void AggregateRates_IncludeTunnelsTrue_IncludesTunnelTraffic()
+    {
+        var t = DateTime.UtcNow;
+        var samples = new List<NetworkSpeedSample>
+        {
+            new("eth0", "Ethernet", 1_000, 500, t),
+            new("wg0", "WireGuard", 3_000, 1_500, t)
+        };
+
+        var adapters = new List<NetworkAdapterInfo>
+        {
+            new("eth0", "Ethernet", "desc", "", NetworkAdapterKind.Ethernet, true, false),
+            new("wg0", "WireGuard", "desc", "", NetworkAdapterKind.Tunnel, true, false)
+        };
+
+        var total = NetworkTrafficAggregator.AggregateRates(samples, adapters, includeTunnels: true);
+
+        Assert.Equal(4_000, total!.DownloadBytesPerSecond);
+        Assert.Equal(2_000, total.UploadBytesPerSecond);
+    }
+
+    [Fact]
+    public void AggregateRates_ExcludesDownAdapters()
+    {
+        var t = DateTime.UtcNow;
+        var samples = new List<NetworkSpeedSample>
+        {
+            new("eth0", "Ethernet", 1_000, 500, t)
+        };
+
+        var adapters = new List<NetworkAdapterInfo>
+        {
+            new("eth0", "Ethernet", "desc", "", NetworkAdapterKind.Ethernet, IsUp: false, false)
+        };
+
+        Assert.Null(NetworkTrafficAggregator.AggregateRates(samples, adapters));
+    }
+
+    [Fact]
+    public void AggregateRates_VpnOnlyHost_ReturnsNullInsteadOfFabricatedTotal()
+    {
+        var t = DateTime.UtcNow;
+        var samples = new List<NetworkSpeedSample>
+        {
+            new("wg0", "WireGuard", 3_000, 1_500, t)
+        };
+
+        var adapters = new List<NetworkAdapterInfo>
+        {
+            new("wg0", "WireGuard", "desc", "", NetworkAdapterKind.Tunnel, true, false)
+        };
+
+        Assert.Null(NetworkTrafficAggregator.AggregateRates(samples, adapters));
+    }
 }

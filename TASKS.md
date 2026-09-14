@@ -44,9 +44,18 @@
 - **Commit:** `e3bef48`
 
 ### TL-003 Download/Upload Calculation
-- [ ] Compute speeds from collector deltas
-- [ ] Readable units (KB/s, MB/s, Mbps)
-- **Status: not started**
+- [x] Compute rate samples from cumulative counter deltas / real monotonic elapsed
+- [x] Per-adapter independent baselines (`SpeedRateTracker`) with re-baseline rules
+- [x] First sample / counter reset / wrap / reconnect / replacement: no fake spikes
+- [x] Raise `SpeedSampleReady`; `GetCurrentSamples()` returns current rate samples
+- [x] System aggregate rate (tunnel-excluding policy) via `AggregateRates`
+- [x] Per-adapter views keep tunnel/VPN traffic (nothing discarded)
+- [x] Unit conversions for UI: B/s, KB/s, MB/s, Kbps, Mbps, Gbps (`DataRateConverter`)
+- [x] No UI-thread dependencies, no busy loops, bounded baselines
+- [x] Tests: 65 passing (calculator, tracker, conversions, aggregate, collector)
+- [x] Real verification: rates plausibly aligned with `Get-NetAdapterStatistics`
+- **Status: done**
+- **Commit:** `see docs/PROJECT_STATUS.md`
 
 ### TL-004 Network Adapter Detection
 - [ ] Enumerate Ethernet, Wi-Fi, VPN, virtual adapters
@@ -109,7 +118,7 @@
 | Milestone | Title | Tasks | Status |
 |---|---|---|---|
 | M0 | Project bootstrap, docs, localization foundation | TL-001 | Done |
-| M1 | Global network monitoring | TL-002, TL-003 | In progress |
+| M1 | Global network monitoring | TL-002, TL-003 | Done |
 | M2 | Dashboard and live graph | TL-005, TL-006 | Not started |
 | M3 | Network interfaces | TL-004 | Not started |
 | M4 | Per-process traffic | TL-007 | Not started |

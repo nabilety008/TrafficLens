@@ -1,6 +1,6 @@
 # TrafficLens — Network Collection
 
-Status: **Implemented for TL-002 scope** (updated 2026-09-14).
+Status: **Implemented for TL-002 + TL-003 scope** (updated 2026-09-14).
 
 ## Goal
 
@@ -37,19 +37,54 @@ Why this over the alternatives for TL-002:
   an app that already owns its polling loop; ETW is rejected now because it needs
   elevation and belongs to the per-process milestone.
 
-Scope boundary: TL-002 intentionally collects **cumulative counters only**.
-Download/upload **rates** (`NetworkSpeedSample`, `SpeedSampleReady`) are derived in
-TL-003 from counter deltas and are out of scope here (ADR-007).
+Scope boundary: TL-002 collects **cumulative counters only**. Download/upload
+**rates** (`NetworkSpeedSample`, `SpeedSampleReady`) are computed in TL-003 from
+counter deltas over monotonic elapsed time (ADR-010).
+
+## Rate calculation (TL-003)
+
+- `NetworkSpeedCalculator` converts two cumulative counter samples + actual
+  elapsed seconds into `NetworkSpeedSample` (download/upload bytes/second, and
+  `TotalBytesPerSecond`).
+- Elapsed time comes from a **monotonic clock** (`Stopwatch`/QPC), never
+  wall-clock, so rate accuracy holds under load and timer drift. The poll
+  interval is never assumed to be exactly 1 s — rates divide by the real
+  measured interval (`SpeedRateTracker`).
+- `SpeedRateTracker` keeps **one independent baseline per adapter** and:
+  - the **first sample** of an adapter only establishes the baseline (no fake spike);
+  - a **counter decrease** (reset/wrap) re-baselines without emitting;
+  - **zero/negative elapsed** re-baselines without emitting;
+  - an **adapter that disappears** is pruned; on **reconnect/replacement** with
+    the same or a new id the first sample re-baselines (no spike).
+- Baseline data is bounded (one entry per adapter) — no unbounded collections,
+  no busy loops, no UI-thread work; all computation happens on the collector's
+  background poll loop.
+- Raw rates stay in bytes/second. Numeric unit conversion lives in Core
+  (`DataRateConverter`: B/s, KB/s, MB/s, Kbps, Mbps, Gbps) for the UI; string
+  formatting is deferred to a later UI task so collectors never format strings.
 
 ## What is collected
 
 - Each monitored adapter (Ethernet, Wireless, Tunnel, Virtual) that is **up**:
   `AdapterId`, `AdapterName`, `ReceivedBytes`, `SentBytes`, `Timestamp`
   (`NetworkCounterSample`), emitted on `CounterSampleReady` each poll.
+- Per-adapter **rate** samples (`NetworkSpeedSample`) emitted on
+  `SpeedSampleReady` each poll after the baseline exists, available via
+  `GetCurrentSamples()`.
 - Adapter list (`NetworkAdapterInfo` with **kind** and **default** flags) via
   `INetworkAdapterProvider.GetAdapters()`.
 - Default adapter = first **up** adapter with a gateway, preferring non-tunnel;
   never "the first adapter in the OS list".
+
+## Per-adapter vs system total (tunnel/VPN traffic)
+
+- **Per-adapter views ALWAYS include tunnel/VPN traffic.** An OpenVPN, WireGuard,
+  TAP/DCO, Hyper-V or VMware adapter's counters and rates are retained and
+  published exactly as measured; nothing is discarded.
+- **System "Internet Total"** (`NetworkTrafficAggregator.AggregateRates`) may
+  **exclude tunnel interfaces by default** so the same bytes are not counted
+  twice (physical link + tunnel both count the same payload). Callers on a
+  VPN-only host must opt in with `includeTunnels: true` for the aggregate.
 
 ## Accuracy and limitations
 
@@ -90,6 +125,8 @@ user-level reads. The app never requests admin and never captures packet payload
 
 ## Verification evidence (2026-09-14)
 
+### Cumulative counters (TL-002)
+
 Live collector run while generating traffic, Wi-Fi adapter (the default):
 
 | Source | ReceivedBytes | SentBytes | Timestamp |
@@ -101,13 +138,30 @@ The two samples are taken seconds apart (traffic flowed in between), so the nati
 value being slightly higher is expected; totals/ordering/adapters match. Offline
 vNIC/TAP adapters report 0 in both sources.
 
+### Real-time rates (TL-003)
+
+Concurrent run (collector + native sampler) while downloading:
+
+| Source | Window | Download B/s | Upload B/s |
+|---|---|---|---|
+| TrafficLens window-mean (Wi-Fi) | 10.02 s | 803,647 | 18,423 |
+| Native `Get-NetAdapterStatistics` delta (Wi-Fi) | 14.57 s | 1,120,590 | 26,086 |
+
+Plausibly aligned: same order of magnitude and direction of traffic on the same
+(default) adapter. The native window is longer and overlapped the collector's
+window, capturing more of the generated download, so it reads higher — expected
+for non-overlapping sample timing. Exact equality is not expected. The last-poll
+instantaneous rate (961 B/s down) reflects the quiet tail after downloads ended;
+the window-mean over the measured monotonic interval is the apples-to-apples
+comparison shown above. TAP/vNIC adapters contribute 0 (down).
+
 Run it yourself:
 
 ```
 dotnet run --project tests/TrafficLens.Network.Verification
 ```
 
-Environment: `TL_VERIFY_SECONDS=7` (default 6), poll 500 ms.
+Environment: `TL_VERIFY_SECONDS=10` (default 10), poll 500 ms.
 
 ## Golden rule
 

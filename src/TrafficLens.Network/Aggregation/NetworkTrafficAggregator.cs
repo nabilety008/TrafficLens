@@ -56,4 +56,40 @@ public static class NetworkTrafficAggregator
                         up[s.AdapterId].Kind is not NetworkAdapterKind.Tunnel)
             .ToList();
     }
+
+    /// <summary>
+    /// Combines per-adapter rate samples into the "Internet Total" aggregate
+    /// using the same non-overlapping policy as <see cref="GetNonOverlappingAdapters"/>:
+    /// physical adapters are summed, tunnels are excluded by default (they
+    /// re-transmit bytes the physical link already counts). Per-adapter views
+    /// keep tunnel traffic; only the system aggregate may exclude it.
+    /// Returns null when no adapter qualifies (e.g. VPN-only host) rather than
+    /// fabricating a total.
+    /// </summary>
+    public static NetworkSpeedSample? AggregateRates(
+        IReadOnlyList<NetworkSpeedSample> samples,
+        IReadOnlyList<NetworkAdapterInfo> adapters,
+        bool includeTunnels = false)
+    {
+        var up = adapters
+            .Where(a => a.IsUp)
+            .ToDictionary(a => a.Id, StringComparer.OrdinalIgnoreCase);
+
+        var selected = samples
+            .Where(s => up.ContainsKey(s.AdapterId))
+            .Where(s => includeTunnels || up[s.AdapterId].Kind is not NetworkAdapterKind.Tunnel)
+            .ToList();
+
+        if (selected.Count == 0)
+        {
+            return null;
+        }
+
+        return new NetworkSpeedSample(
+            "system",
+            "Internet Total",
+            selected.Sum(s => Math.Max(s.DownloadBytesPerSecond, 0)),
+            selected.Sum(s => Math.Max(s.UploadBytesPerSecond, 0)),
+            selected.Max(s => s.Timestamp));
+    }
 }

@@ -4,13 +4,14 @@ Updated: 2026-09-14
 
 ## Current Milestone
 
-M1 — Global network monitoring (TL-002 done, TL-003 pending).
+M1 — Global network monitoring (TL-002 + TL-003 done).
 
 ## Task IDs
 
 - TL-001 Project Bootstrap — **DONE**
 - TL-002 Global Network Collector — **DONE**
-- TL-003 Download/Upload Calculation — not started
+- TL-003 Download/Upload Calculation — **DONE**
+- TL-004 and later — not started
 
 ## Completed
 
@@ -30,19 +31,30 @@ M1 — Global network monitoring (TL-002 done, TL-003 pending).
   - xUnit test project `TrafficLens.Network.Tests`; verification console
     `TrafficLens.Network.Verification`.
 
+- TL-003: Download/upload rate calculation:
+  - `NetworkSpeedCalculator` — cumulative-counter deltas / real monotonic elapsed
+    (QPC), never an assumed 1 s interval.
+  - `SpeedRateTracker` — per-adapter baselines with re-baseline rules (first
+    sample, reset/wrap/decrease, zero elapsed, disappearance/replacement); no
+    fake spikes.
+  - `SpeedSampleReady` raised with real rates; `GetCurrentSamples()` returns them.
+  - `NetworkTrafficAggregator.AggregateRates` — system "Internet Total",
+    tunnel-excluding by default; per-adapter views keep tunnel/VPN traffic.
+  - `DataRateConverter` (Core) — B/s, KB/s, MB/s, Kbps, Mbps, Gbps for the UI.
+  - Extension of ADR-009 policy to rates; ADR-010 (monotonic clock).
+  - Tests added (calculator, tracker, conversions, aggregate, collector rates).
+
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 36/36 passed (`TrafficLens.Network.Tests`) —
-  kind mapping, filter, default adapter selection, aggregation, collector
-  (start/counters/events/reset/stop).
-- **Real Windows verification:** running the collector under live traffic produced
-  cumulative counters that track native `Get-NetAdapterStatistics`:
-  - Collector (2026-09-14T15:39:00Z): Wi-Fi received `487,070,373`, sent `80,790,175`.
-  - Native (same minute): Wi-Fi received `487,832,221`, sent `81,740,084`.
-  - Counters grow consistently between the two captures (traffic was generated in
-    between); offline vNIC/TAP adapters report 0 in both.
-- Default adapter = Wi-Fi (up + gateway, non-tunnel), matching Windows routing.
+- **Automated tests:** 65/65 passed (`TrafficLens.Network.Tests`).
+- **Real Windows rate verification** (TL-003), concurrent native + collector run:
+  - Collector window-mean Wi-Fi: **803,647 B/s** down / **18,423 B/s** up (10.02 s).
+  - Native `Get-NetAdapterStatistics` delta: **1,120,590 B/s** down / **26,086 B/s**
+    up (14.57 s, longer overlapping window).
+  - Same magnitude/ordering/adapter; exact equality not expected (ADR-010).
+- Prior verification (TL-002): cumulative counters matched native statistics;
+  default adapter = Wi-Fi (up + gateway, non-tunnel).
 
 ## Build
 
@@ -51,25 +63,25 @@ M1 — Global network monitoring (TL-002 done, TL-003 pending).
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 36 tests, all passing.
+- `tests/TrafficLens.Network.Tests` — xUnit, 65 tests, all passing.
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification`.
 
 ## Known Issues / Not Started
 
-- Rates (download/upload per second) intentionally not computed — TL-003.
-- `SpeedSampleReady` is declared but not raised until TL-003 (suppressed CS0067).
+- Per-adapter tunnel rates are published; only the system aggregate excludes them
+  by default (`includeTunnels: true` to include on VPN-only hosts).
+- TAP/DCO adapters classify `Unknown` when their interface type is not standard
+  (down in this environment — no effect on totals).
+- String formatting of rates deferred to UI (TL-005).
 - Per-process bytes (ETW/perf) and connections are later milestones.
-- TAP/DCO VPN adapters enumerate with kind `Unknown` when their interface type is
-  not Ethernet/Wireless; they are down in this environment so this does not affect
-  totals.
 
 ## Git Commit
 
-- `e3bef48` — `feat: add global network collector with cumulative per-adapter counters (TL-002)`
-- Prior: `d8f2933` (TL-001 bootstrap), `7f841be` (M0 smoke-test evidence).
+- `TL-003 commit — recorded below after commit`
+- `e3bef48` — TL-002 collector; `7f841be` — M0 smoke test; `d8f2933` — TL-001 bootstrap.
 
 ## Next Recommended Task
 
-- TL-003 — Download/Upload Calculation (compute `NetworkSpeedSample` rates from
-  `NetworkCounterSample` deltas; raise `SpeedSampleReady`).
+- M2 — Dashboard (TL-005) building on the now-available per-adapter and aggregate
+  rates; or TL-004 adapter detection refinements. TL-003 is complete.

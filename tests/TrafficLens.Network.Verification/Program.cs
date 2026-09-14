@@ -1,11 +1,19 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
+using TrafficLens.Core.Models;
 using TrafficLens.Network.Adapters;
+using TrafficLens.Network.Aggregation;
 using TrafficLens.Network.Collectors;
 
-// Runs the real Windows collector for a few seconds while generating traffic,
-// then prints cumulative counters (JSON) so they can be cross-checked against
-// Windows native adapter statistics (Get-NetAdapterStatistics).
+// Real Windows verification for TL-003:
+//  1. Runs the live collector while generating traffic.
+//  2. Prints per-adapter REAL-TIME rates (instantaneous poll rates from
+//     SpeedSampleReady/GetCurrentSamples) AND the window-average rate computed
+//     from cumulative counter deltas over the measured monotonic elapsed time.
+//  3. Prints the tunnel-excluding "Internet Total" aggregate rate.
+// Cross-check the window-average against native Get-NetAdapterStatistics sampled
+// over the same interval from PowerShell (see docs/NETWORK_COLLECTION.md).
 
 if (OperatingSystem.IsWindows() is false)
 {
@@ -14,7 +22,7 @@ if (OperatingSystem.IsWindows() is false)
 }
 
 var pollIntervalMs = 500;
-var collectSeconds = int.TryParse(Environment.GetEnvironmentVariable("TL_VERIFY_SECONDS"), out var s) ? s : 6;
+var windowSeconds = int.TryParse(Environment.GetEnvironmentVariable("TL_VERIFY_SECONDS"), out var s) ? s : 10;
 
 using var collector = new WindowsNetworkTrafficCollector(
     new NetworkInterfaceSource(),
@@ -23,36 +31,52 @@ using var collector = new WindowsNetworkTrafficCollector(
 
 await collector.StartAsync(CancellationToken.None);
 
+// Warm up so the collector has a first baseline before we sample counters.
+await Task.Delay(Math.Max(pollIntervalMs * 2, 250));
+
+var initialCounters = collector.GetCurrentCounterSamples().ToDictionary(c => c.AdapterId, StringComparer.OrdinalIgnoreCase);
+var windowStopwatch = Stopwatch.StartNew();
+
 var trafficTask = Task.Run(async () =>
 {
-    // Generate a little real internet/e.g. local traffic so counters move.
     try
     {
-        using (var client = new HttpClient())
+        using var client = new HttpClient();
+        for (var i = 0; i < 3; i++)
         {
             await client.GetAsync("https://1.1.1.1/", HttpCompletionOption.ResponseHeadersRead);
+            await Task.Delay(300);
         }
     }
     catch
     {
-        // Traffic generation is best-effort; counters may move from other apps.
+        // Traffic generation is best-effort; other apps still move the counters.
     }
 });
 
-await Task.WhenAll(TrafficSteadyWait(TimeSpan.FromSeconds(collectSeconds)), trafficTask);
+await Task.WhenAll(TrafficSteadyWait(TimeSpan.FromSeconds(windowSeconds)), trafficTask);
 
-var counterSamples = collector.GetCurrentCounterSamples();
+var elapsedSeconds = windowStopwatch.Elapsed.TotalSeconds;
+var finalCounters = collector.GetCurrentCounterSamples().ToDictionary(c => c.AdapterId, StringComparer.OrdinalIgnoreCase);
+var currentRates = collector.GetCurrentSamples().ToDictionary(r => r.AdapterId, StringComparer.OrdinalIgnoreCase);
 var adapters = collector.GetCurrentAdapters();
 var defaultSnapshot = collector.GetDefaultAdapterSnapshot();
+var aggregate = NetworkTrafficAggregator.AggregateRates(currentRates.Values.ToList(), adapters);
 
 var output = new
 {
     capturedAtUtc = DateTime.UtcNow,
     pollIntervalMs,
+    windowSeconds = elapsedSeconds,
     defaultAdapterId = defaultSnapshot?.Id,
+    internetTotal = aggregate is null
+        ? null
+        : new { downloadBytesPerSecond = aggregate.DownloadBytesPerSecond, uploadBytesPerSecond = aggregate.UploadBytesPerSecond },
     adapters = adapters.Select(a =>
     {
-        var counter = counterSamples.FirstOrDefault(c => c.AdapterId == a.Id);
+        finalCounters.TryGetValue(a.Id, out var final);
+        initialCounters.TryGetValue(a.Id, out var initial);
+        currentRates.TryGetValue(a.Id, out var rate);
         return new
         {
             id = a.Id,
@@ -61,9 +85,14 @@ var output = new
             kind = a.Kind.ToString(),
             isUp = a.IsUp,
             isDefault = a.IsDefault,
-            receivedBytes = counter?.ReceivedBytes ?? 0,
-            sentBytes = counter?.SentBytes ?? 0,
-            linkSpeedBitsPerSecond = a.LinkSpeedBitsPerSecond
+            realtimeDownloadBytesPerSecond = rate?.DownloadBytesPerSecond ?? 0,
+            realtimeUploadBytesPerSecond = rate?.UploadBytesPerSecond ?? 0,
+            windowMeanDownloadBytesPerSecond = final is null || initial is null || elapsedSeconds <= 0
+                ? 0
+                : (long)((final.ReceivedBytes - initial.ReceivedBytes) / elapsedSeconds),
+            windowMeanUploadBytesPerSecond = final is null || initial is null || elapsedSeconds <= 0
+                ? 0
+                : (long)((final.SentBytes - initial.SentBytes) / elapsedSeconds)
         };
     }).ToList()
 };

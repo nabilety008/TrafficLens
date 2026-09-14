@@ -2,6 +2,38 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.4] — 2026-09-14 (M1, TL-003)
+
+### Added
+- Rate calculation (`NetworkSpeedCalculator`): cumulative-counter deltas divided by
+  actual monotonic elapsed time (QPC via `Stopwatch`), no 1 s assumption.
+- `SpeedRateTracker`: per-adapter independent baselines with re-baseline rules
+  (first sample, counter reset/wrap/decrease, zero/invalid elapsed, adapter
+  disappearance/replacement) — never emits a fake spike.
+- `SpeedSampleReady` is now raised with real per-adapter rates; `GetCurrentSamples()`
+  returns current rate samples (`NetworkSpeedSample`).
+- `NetworkTrafficAggregator.AggregateRates` — system "Internet Total" using the
+  tunnel-excluding non-overlapping policy; per-adapter views keep tunnel/VPN traffic.
+- `DataRateConverter` (Core): B/s, KB/s, MB/s, Kbps, Mbps, Gbps numeric conversions
+  for the UI; raw values remain bytes/second (ADR-010).
+- Tests: `NetworkSpeedCalculatorTests`, `SpeedRateTrackerTests`, `DataRateConverterTests`,
+  aggregate-rate and collector rate tests.
+
+### Changed
+- `WindowsNetworkTrafficCollector.RunLoopAsync` computes and raises rate samples each
+  poll (bounded one-baseline-per-adapter state; background thread only).
+
+### Verified
+- Build (Debug + Release): 0 warnings, 0 errors.
+- Tests: 65/65 passed.
+- Real Windows: window-mean Wi-Fi rate 803,647 B/s down / 18,423 B/s up vs native
+  `Get-NetAdapterStatistics` 1,120,590 / 26,086 over a longer overlapping window —
+  plausibly aligned (see `docs/NETWORK_COLLECTION.md`).
+
+### Notes
+- String formatting of rates is deferred to UI (TL-005).
+- Dashboard/graph/per-process/connections not touched (scope restriction).
+
 ## [0.0.3] — 2026-09-14 (M1, TL-002)
 
 ### Added
