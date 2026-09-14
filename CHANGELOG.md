@@ -2,6 +2,39 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.3] — 2026-09-14 (M1, TL-002)
+
+### Added
+- `TrafficLens.Network`: global network collector
+  - `WindowsNetworkTrafficCollector` (implements `INetworkTrafficCollector`):
+    poll loop, per-adapter cumulative counters, `CounterSampleReady`, `NetworkChanged`,
+    `NetworkChange` address/availability hooks, counter reset/wrap re-baseline.
+  - `WindowsNetworkAdapterProvider` (implements `INetworkAdapterProvider`).
+  - `NetworkInterfaceSource`, `RawAdapterSnapshot`, `NetworkAdapterKindMapper`,
+    `AdapterFilter`, `DefaultAdapterSelector` (very thorough adapter detection).
+  - `NetworkTrafficAggregator` (totals + tunnel-exclusion policy, ADR-009).
+  - `NetworkServiceCollectionExtensions.AddNetworkServices()` DI registration.
+- Core: `NetworkCounterSample` model; `CounterSampleReady` +
+  `GetCurrentCounterSamples()` on `INetworkTrafficCollector` (ADR-007).
+- Tests: `TrafficLens.Network.Tests` — 36 xUnit tests, all passing.
+- Verification console: `TrafficLens.Network.Verification` (real collector + JSON dump).
+- Docs: `docs/NETWORK_COLLECTION.md` decision + verification evidence; ADR-007/008/009
+  in `docs/DECISIONS.md`.
+
+### Changed
+- `TrafficLens.Network.csproj`: added `Microsoft.Extensions.DependencyInjection.Abstractions`.
+- Build now includes tests + verification projects.
+
+### Verified
+- Build (Debug + Release): 0 warnings, 0 errors.
+- Tests: 36/36 passed.
+- Real Windows cross-check vs `Get-NetAdapterStatistics` — counters match
+  (Wi-Fi 487.0 MB / 80.8 MB at capture), see `docs/NETWORK_COLLECTION.md`.
+
+### Notes
+- Rates (`NetworkSpeedSample`, `SpeedSampleReady`) intentionally left unimplemented;
+  produced by TL-003.
+
 ## [0.0.2] — 2026-09-14 (M0 verification)
 
 ### Added

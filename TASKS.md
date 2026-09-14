@@ -26,12 +26,22 @@
 - [x] Update `PROJECT_STATUS.md` and `TASKS.md`
 
 ### TL-002 Global Network Collector
-- [ ] Research and select collection mechanism (see `docs/NETWORK_COLLECTION.md`)
-- [ ] Implement `INetworkTrafficCollector`
-- [ ] Implement `INetworkAdapterProvider`
-- [ ] Handle adapter connect/disconnect
-- [ ] Document accuracy and limitations
-- **Status: not started**
+- [x] Research and select collection mechanism (see `docs/NETWORK_COLLECTION.md`)
+- [x] Implement `INetworkTrafficCollector` (`WindowsNetworkTrafficCollector`)
+  - [x] Poll cumulative per-adapter counters (received/sent bytes)
+  - [x] `CounterSampleReady` event fires per adapter per poll
+  - [x] `NetworkChanged` on adapter set change (init + `NetworkChange.NetworkAddressChanged`)
+  - [x] Counter reset/wrap detection with re-baseline logging
+- [x] Implement `INetworkAdapterProvider` (`WindowsNetworkAdapterProvider`)
+- [x] Adapter enumeration, kind mapping, filtering (Ethernet/Wireless/Tunnel/Virtual/Unknown)
+- [x] Default adapter detection (up + gateway preferred, never "first adapter")
+- [x] Aggregation policy avoiding double-counting (`NetworkTrafficAggregator`)
+- [x] Handle adapter connect/disconnect
+- [x] Unit tests: 36 tests passing (mapper, filter, default selector, aggregator, collector)
+- [x] Real verification: console collector cross-checked vs `Get-NetAdapterStatistics`
+- [x] Document accuracy and limitations
+- **Status: done**
+- **Commit:** recorded in `docs/PROJECT_STATUS.md`
 
 ### TL-003 Download/Upload Calculation
 - [ ] Compute speeds from collector deltas
@@ -99,7 +109,7 @@
 | Milestone | Title | Tasks | Status |
 |---|---|---|---|
 | M0 | Project bootstrap, docs, localization foundation | TL-001 | Done |
-| M1 | Global network monitoring | TL-002, TL-003 | Not started |
+| M1 | Global network monitoring | TL-002, TL-003 | In progress |
 | M2 | Dashboard and live graph | TL-005, TL-006 | Not started |
 | M3 | Network interfaces | TL-004 | Not started |
 | M4 | Per-process traffic | TL-007 | Not started |

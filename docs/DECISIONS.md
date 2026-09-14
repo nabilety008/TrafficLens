@@ -68,3 +68,54 @@ Targets `net8.0` (projects) and `net8.0-windows` (App). SDK 8.0.425 installed lo
 Reasoning:
 - .NET 8 is LTS; net8.0-windows enables WPF.
 - Widely supported on Windows 10/11 x64.
+
+## ADR-007: Split cumulative counters from rates in the collector contract
+
+**Status:** Accepted (TL-002)
+
+`INetworkTrafficCollector` now exposes:
+- `event EventHandler<NetworkCounterSample>? CounterSampleReady`
+- `IReadOnlyList<NetworkCounterSample> GetCurrentCounterSamples()`
+
+and `NetworkSpeedSample` / `SpeedSampleReady` / `GetCurrentSamples()` (TL-001 contracts)
+are kept but remain unimplemented until TL-003.
+
+Reasoning:
+- Cumulative octet counters are the truthful, native data source and belong to TL-002.
+- Rates are derived deltas over a polling window; mixing them into TL-002 forced
+  premature rate logic and fabrication risks.
+- Keeping both members leaves one stable contract for consumers (TL-003 just starts
+  raising `SpeedSampleReady`).
+
+## ADR-008: Use System.Net.NetworkInformation (IP Helper) for TL-002 collection
+
+**Status:** Accepted (TL-002)
+
+The collector uses the .NET managed wrapper over the IP Helper API
+(`NetworkInterface.GetAllNetworkInterfaces`, `GetIPv4Statistics`,
+`NetworkChange.NetworkAddressChanged`/`AvailabilityChanged`), polling at 1 s.
+
+Reasoning:
+- User-level reads; no admin/ETW/driver (see `docs/NETWORK_COLLECTION.md`).
+- Native cumulative octet counters match `Get-NetAdapterStatistics` exactly
+  (verified on real hardware, see `docs/NETWORK_COLLECTION.md`).
+- Built into .NET — no new dependencies beyond `Microsoft.Extensions.Logging.Abstractions`
+  and `Microsoft.Extensions.DependencyInjection.Abstractions`.
+- Perf counters rejected (stale-prone, no benefit); ETW deferred to the per-process
+  milestone (requires elevation).
+
+## ADR-009: Aggregation excludes tunnels by default to avoid double-counting
+
+**Status:** Accepted (TL-002)
+
+`NetworkTrafficAggregator.GetNonOverlappingAdapters` defaults to excluding tunnel
+adapters (WireGuard/OpenVPN-style) from the system total; physical adapters and
+virtual nics are summed; down adapters are excluded; `includeTunnels: true` is the
+explicit opt-in for VPN-only hosts.
+
+Reasoning:
+- Tunnels re-transmit the same payload already counted on the physical link; summing
+  inflates numbers (double-counting).
+- Excluding by default keeps the "system total" truthful for typical hosts.
+- A VPN-only host has no honest non-overlapping total; returning empty is preferred
+  to a fabricated one.
