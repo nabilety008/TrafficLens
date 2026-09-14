@@ -1,0 +1,38 @@
+# Build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.rsuser
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# VS Code
+.vscode/
+
+# Local app data (for running app logs/db)
+%LOCALAPPDATA%\TrafficLens\

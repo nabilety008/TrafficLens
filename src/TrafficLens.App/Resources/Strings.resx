@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>TrafficLens</value>
+  </data>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>TrafficLens - Network Monitor</value>
+  </data>
+  <data name="StatusStarting" xml:space="preserve">
+    <value>Starting...</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="DownloadLabel" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="UploadLabel" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="TotalTrafficLabel" xml:space="preserve">
+    <value>Total Traffic</value>
+  </data>
+  <data name="ActiveAdapterLabel" xml:space="preserve">
+    <value>Active Adapter</value>
+  </data>
+  <data name="NetworkStatusLabel" xml:space="preserve">
+    <value>Network Status</value>
+  </data>
+  <data name="PlaceholderDashboardText" xml:space="preserve">
+    <value>Traffic monitoring will appear here.</value>
+  </data>
+</root>

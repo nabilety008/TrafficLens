@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FD819DB4-5934-4510-AD83-BA42CF3B020E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.App", "src\TrafficLens.App\TrafficLens.App.csproj", "{93D9D99E-5B1A-4433-87DF-ACF38FCF8934}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.Core", "src\TrafficLens.Core\TrafficLens.Core.csproj", "{5C3D1FFC-C3A9-4817-A3C6-73348581B29C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.Network", "src\TrafficLens.Network\TrafficLens.Network.csproj", "{86A488AD-5766-4413-AD6F-44DD5FAB07AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.Infrastructure", "src\TrafficLens.Infrastructure\TrafficLens.Infrastructure.csproj", "{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C3D1FFC-C3A9-4817-A3C6-73348581B29C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C3D1FFC-C3A9-4817-A3C6-73348581B29C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C3D1FFC-C3A9-4817-A3C6-73348581B29C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C3D1FFC-C3A9-4817-A3C6-73348581B29C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86A488AD-5766-4413-AD6F-44DD5FAB07AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86A488AD-5766-4413-AD6F-44DD5FAB07AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86A488AD-5766-4413-AD6F-44DD5FAB07AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86A488AD-5766-4413-AD6F-44DD5FAB07AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934} = {FD819DB4-5934-4510-AD83-BA42CF3B020E}
+		{5C3D1FFC-C3A9-4817-A3C6-73348581B29C} = {FD819DB4-5934-4510-AD83-BA42CF3B020E}
+		{86A488AD-5766-4413-AD6F-44DD5FAB07AF} = {FD819DB4-5934-4510-AD83-BA42CF3B020E}
+		{AD7E305C-3AA1-4C15-B3D8-F4B722E6A289} = {FD819DB4-5934-4510-AD83-BA42CF3B020E}
+	EndGlobalSection
+EndGlobal
