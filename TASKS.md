@@ -41,7 +41,7 @@
 - [x] Real verification: console collector cross-checked vs `Get-NetAdapterStatistics`
 - [x] Document accuracy and limitations
 - **Status: done**
-- **Commit:** recorded in `docs/PROJECT_STATUS.md`
+- **Commit:** `e3bef48`
 
 ### TL-003 Download/Upload Calculation
 - [ ] Compute speeds from collector deltas

@@ -66,7 +66,8 @@ M1 — Global network monitoring (TL-002 done, TL-003 pending).
 
 ## Git Commit
 
-TL-002 commit: `see git log` (recorded in TASKS.md).
+- `e3bef48` — `feat: add global network collector with cumulative per-adapter counters (TL-002)`
+- Prior: `d8f2933` (TL-001 bootstrap), `7f841be` (M0 smoke-test evidence).
 
 ## Next Recommended Task
 
