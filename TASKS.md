@@ -21,7 +21,8 @@
 - [x] Localization foundation: `ILocalizationService`, `Strings.resx` (en), `Strings.fa-IR.resx`
 - [x] RTL-ready architecture (`FlowDirection` switching, LTR-safe values)
 - [x] Build solution: success, 0 warnings
-- [x] Verify startup where environment permits
+- [x] Verify startup: GUI smoke test passed (start, dark theme, en/fa localization,
+      RTL culture, logs, clean shutdown)
 - [x] Update `PROJECT_STATUS.md` and `TASKS.md`
 
 ### TL-002 Global Network Collector

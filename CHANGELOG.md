@@ -2,6 +2,20 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.2] — 2026-09-14 (M0 verification)
+
+### Added
+- Startup logging in `App.xaml.cs` (startup, culture, MainWindow shown) to confirm
+  boot sequence in structured logs.
+
+### Fixed
+- Nothing required at runtime; all TL-001 startup/localization checks passed.
+
+### Verified
+- GUI smoke test passed on Windows: app starts cleanly, dark theme loads,
+  English and Persian (fa-IR) resources resolve, RTL culture applies without crash,
+  structured logs written, clean shutdown.
+
 ## [0.0.1] — 2026-09-14 (M0)
 
 ### Added

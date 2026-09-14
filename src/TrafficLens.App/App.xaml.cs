@@ -26,13 +26,18 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
+        var logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+        logger.LogInformation("TrafficLens starting up");
+
         var localization = _serviceProvider.GetRequiredService<ILocalizationService>() as LocalizationService;
         var settings = _serviceProvider.GetRequiredService<ISettingsService>();
 
         localization?.SetCulture(settings.Language);
+        logger.LogInformation("Culture set to {Culture}", localization?.CurrentCulture.Name);
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
+        logger.LogInformation("MainWindow shown");
     }
 
     protected override void OnExit(ExitEventArgs e)

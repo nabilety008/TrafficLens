@@ -23,7 +23,14 @@ M0 — Project bootstrap, documentation, and localization foundation.
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors**.
-- App assembly produced at `src/TrafficLens.App/bin/Debug/net8.0-windows/TrafficLens.App.dll`.
+- **GUI smoke test passed:**
+  - App starts without exception; structured log confirms `MainWindow shown`.
+  - Dark theme loads (`Themes/DarkTheme.xaml` merged in `App.xaml`).
+  - English localization works (window title `TrafficLens - Network Monitor`).
+  - Persian resources resolve (`settings.json` set to `fa-IR` → log confirms `Culture set to fa-IR`).
+  - RTL culture (fa-IR) applied without crash or startup failure.
+  - Structured JSON file logs written to `%LOCALAPPDATA%\TrafficLens\logs\`.
+  - App shuts down cleanly (no orphan processes).
 
 ## Build
 
@@ -37,9 +44,10 @@ M0 — Project bootstrap, documentation, and localization foundation.
 ## Known Issues / Not Started
 
 - `TrafficLens.Network` is an empty placeholder; collection is TL-002.
-- App startup was built and compiled but not interactively smoke-tested in a GUI session
-  in this environment; next run should launch the window and log to
-  `%LOCALAPPDATA%\TrafficLens\logs`.
+
+## Git Commit
+
+`d8f2933` — `feat: bootstrap TrafficLens solution, DI/MVVM foundation, dark UI, localization resources, project docs (TL-001)`
 
 ## Next Recommended Task
 
