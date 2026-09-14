@@ -69,7 +69,7 @@
 - [x] Tests: 80 passing (type + description-aware kind mapping, phantom-Unknown
       filter relaxation, TAP default-selection guard)
 - **Status: done**
-- **Commit:** `see docs/PROJECT_STATUS.md`
+- **Commit:** `2bf03c9` (code + tests), `docs/PROJECT_STATUS.md` hash pointer
 
 ### TL-005 Dashboard
 - [ ] Current download/upload, totals, active adapter, network status

@@ -98,10 +98,11 @@ M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashbo
 
 ## Git Commit
 
+- `2bf03c9` — `fix: classify OpenVPN TAP/DCO (type 53) and virtual nics correctly via driver descriptions (TL-004)`
 - `6bfa9d6` — `feat: add download/upload rate calculation from counter deltas with monotonic timing (TL-003)`
 - `e3bef48` — TL-002 collector; `7f841be` — M0 smoke test; `d8f2933` — TL-001 bootstrap.
 
 ## Next Recommended Task
 
 - M2 — Dashboard (TL-005) building on the now-available per-adapter and aggregate
-  rates; or TL-004 adapter detection refinements. TL-003 is complete.
+  rates, and M3's adapter detection. M3 (TL-004) is complete.
