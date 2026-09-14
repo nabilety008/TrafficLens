@@ -55,7 +55,7 @@
 - [x] Tests: 65 passing (calculator, tracker, conversions, aggregate, collector)
 - [x] Real verification: rates plausibly aligned with `Get-NetAdapterStatistics`
 - **Status: done**
-- **Commit:** `see docs/PROJECT_STATUS.md`
+- **Commit:** `6bfa9d6`
 
 ### TL-004 Network Adapter Detection
 - [ ] Enumerate Ethernet, Wi-Fi, VPN, virtual adapters

@@ -78,7 +78,7 @@ M1 — Global network monitoring (TL-002 + TL-003 done).
 
 ## Git Commit
 
-- `TL-003 commit — recorded below after commit`
+- `6bfa9d6` — `feat: add download/upload rate calculation from counter deltas with monotonic timing (TL-003)`
 - `e3bef48` — TL-002 collector; `7f841be` — M0 smoke test; `d8f2933` — TL-001 bootstrap.
 
 ## Next Recommended Task
