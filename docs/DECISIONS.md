@@ -170,6 +170,40 @@ Reasoning:
   buffers); connection state (no network / disconnect / reconnect) is surfaced
   via `HasConnection` and localized status text, never exceptions.
 
+## ADR-013: Per-process traffic via elevated real-time ETW kernel network events
+
+**Status:** Accepted (TL-007)
+
+Per-process download/upload bytes are collected from a **real-time ETW kernel
+session** (`Microsoft-Windows-Kernel-Network`, `NetworkTCPIP` keyword) through
+TraceEvent, in a background consume task, feeding a bounded accounting engine
+that publishes ~1 s snapshots of per-instance samples
+(`ProcessInstanceId = (pid, process start time)`).
+
+Reasoning:
+- ETW kernel-network is the only live, byte-accurate per-process stream on Windows;
+  performance counters have no dependable per-process net counters, and socket/table
+  lookups cannot attribute short-lived flows. ETW's cost is elevation, which is
+  surfaced honestly (see privilege behavior below), never hidden.
+- Attribution uses the **payload PID field** — TraceEvent's kernel parser fixes the
+  header PID from the payload before dispatch, so DPC-completed receive events (header
+  PID = System/Idle) are attributed to the true socket owner.
+- **PID reuse** is handled by identity `(pid, start time)`: a reused PID with a
+  different start time ends attribution to the old bucket and starts a fresh
+  instance. Multiple instances of one executable stay distinct samples.
+- Rates are monotonic-window deltas (ADR-010's principle applied per process); byte
+  totals are the authoritative, testable invariant
+  (`Total = Tcp + Udp = IPv4 + IPv6`).
+- Nothing is fabricated or merged: unresolvable PIDs keep their own `<unknown>`
+  bucket, and no event is ever re-assigned to a different process.
+- Privilege behavior: non-elevated hosts get `Status = PermissionDenied` +
+  `LastError`; the app never auto-elevates.
+- Tunnel/VPN: per-process totals are owner-attributed application bytes and are
+  intentionally not reconciled with the interface-level totals; the ADR-009/010
+  aggregate policy is unchanged (no reassignment of tunnel transport bytes).
+- Bounded resources (idle-prune 120 s, cap 4096 buckets, metadata revalidation 15 s)
+  satisfy the no-unbounded-growth requirement.
+
 ## ADR-012: Native WPF graph rendering with a documented adaptive-scale hysteresis
 
 **Status:** Accepted (TL-006)

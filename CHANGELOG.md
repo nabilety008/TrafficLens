@@ -2,6 +2,46 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.8] — 2026-09-14 (TL-007 Per-Process Traffic — collector milestone)
+
+### Added
+- `TrafficLens.Core` per-process contracts:
+  - `ProcessTrafficCollectorStatus` — Stopped / Starting / Running / PermissionDenied / Failed.
+  - `IProcessTrafficCollector` extended with `Status` and `LastError`.
+  - `ProcessTrafficSample` — pid, process-start-time identity, name, executable path,
+    icon-availability, cumulative byte totals, monotonic-window rates, timestamp.
+- `TrafficLens.Network/Process/` — real ETW-backed collector:
+  - `WindowsEtwProcessTrafficCollector` — real-time kernel session
+    (`TraceEventSession` + `NetworkTCPIP`); eight Tcp/Udp IPv4/IPv6 handlers map the
+    **payload PID** + size into `NetworkTransferEvent`; ~1 s snapshot loop raises
+    `SamplesReady`; non-elevated run reports `PermissionDenied` + `LastError`
+    without crashing or forcing UAC; clean `StopAsync` (session + consume + loop).
+  - `ProcessTrafficAccountingEngine` — per-instance buckets
+    (`ProcessInstanceId = pid + start time`), monotonic sliding-window rates,
+    metadata resolve/rekey, PID-reuse isolation, `<unknown pid N>` bucket for
+    unresolvable processes (never merged), idle-prune 120 s, 4096 cap, next-check
+    throttling (metadata revalidation 15 s / unresolved retry 10 s);
+    allocation-free hot path.
+  - `WindowsProcessMetadataProvider` — guarded `Process` reads; PID-reuse detection
+    via start-time mismatch (2 s tolerance); never throws.
+  - Supporting models: `NetworkTransferEvent`, `ProcessInstanceId`,
+    `ProcessMetadata`/`ProcessMetadataResult`, `ProcessProtocolTotals`
+    (Tcp/Udp × Received/Sent, IPv4/IPv6 × Received/Sent).
+- DI: `IProcessTrafficCollector` registered as a singleton in
+  `NetworkServiceCollectionExtensions`.
+- Verification console `--process` mode (per-process live check).
+- ADR-013 (ETW mechanism, privilege behavior, PID-reuse, VPN semantics) and
+  `NETWORK_COLLECTION.md` TL-007 section.
+- Tests: 18 new (`ProcessTrafficAccountingEngineTests` + `WindowsProcessMetadataProviderTests`).
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **147/147 passing** (133 Network + 14 App).
+- Real elevated verification (curl.exe + powershell.exe): two distinguishable
+  apps; two curl instances as distinct (pid, start) buckets; protocol-totals
+  invariant holds; bounded (11 samples, ~2.6 MB growth); clean stop.
+- Non-elevated verification: `PermissionDenied` + `LastError`, no crash.
+
 ## [0.0.7] — 2026-09-14 (TL-006 Live Traffic Graph)
 
 ### Added

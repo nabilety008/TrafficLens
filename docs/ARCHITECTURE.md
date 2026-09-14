@@ -103,9 +103,35 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Collectors run in background (later milestones). UI updates must be marshalled to
   the dispatcher. Never block the UI thread (graph requirement).
 
+## Per-process traffic layer (TL-007)
+
+- `TrafficLens.Core` defines the process contracts: `IProcessTrafficCollector`
+  (Start/Stop/Samples/Status/LastError), `ProcessTrafficSample` (immutable snapshot
+  with pid, start-time identity, process name, path, icon availability, byte
+  totals, monotonic-window rates), and `ProcessTrafficCollectorStatus` (Stopped /
+  Starting / Running / PermissionDenied / Failed).
+- `TrafficLens.Network/Process/` owns the implementation:
+  - `WindowsEtwProcessTrafficCollector` — opens a real-time ETW kernel session
+    (`TraceEventSession`), subscribes the eight TCP/UDP IPv4/IPv6 handlers, maps
+    decoded PID+size events into `NetworkTransferEvent` on the ETW thread, and
+    publishes bounded snapshots on a ~1 s loop; reports `PermissionDenied` when not
+    elevated and never crashes.
+  - `ProcessTrafficAccountingEngine` — dictionary keyed by `ProcessInstanceId`,
+    monotonically-windowed rates, metadata-resolve/rekey, idle prune, cap/eviction;
+    hot path (Record) is allocation-free.
+  - `WindowsProcessMetadataProvider` — guarded `System.Diagnostics.Process` reads;
+    detects PID reuse by mismatched start time; never throws.
+  - Supporting models: `NetworkTransferEvent`, `ProcessInstanceId`,
+    `ProcessMetadata` / `ProcessMetadataResult`, `ProcessProtocolTotals`.
+- DI: registered as a singleton `IProcessTrafficCollector` in
+  `NetworkServiceCollectionExtensions`. The provider/session is owned entirely by
+  the Network layer; the App layer (once the Applications page exists) will consume
+  only the Core abstraction.
+
 ## Future Plans
 
 - History: aggregated SQLite samples; retention policies.
 - Tray + floating widget.
-- Per-process traffic and active connections.
+- Active connections (TL-008) and the Applications page UI over the process
+  collector.
 - See `docs/ROADMAP.md`.

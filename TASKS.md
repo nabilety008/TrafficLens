@@ -116,9 +116,35 @@
 - **Commit:** (see `docs/PROJECT_STATUS.md`)
 
 ### TL-007 Per-Process Traffic
-- [ ] `IProcessTrafficCollector`, process mapping
-- [ ] App list with sort, icons, totals
-- **Status: not started**
+- [x] ETW research grounded in `KernelTraceEventParser` source: payload PID fixup,
+      size field, event IDs; Tcp/Udp + IPv4/IPv6 handlers; retransmit (id 14) excluded
+- [x] `WindowsEtwProcessTrafficCollector` — real-time kernel network session
+      (TCP/UDP, IPv4/IPv6), PID+size mapped into `NetworkTransferEvent`, ~1 s
+      snapshot loop, `SamplesReady`/`GetCurrentSamples`; no payload capture
+- [x] `ProcessTrafficAccountingEngine` — per-instance buckets by `(pid, start)`,
+      monotonic sliding-window rates, metadata resolve/rekey, PID-reuse isolation,
+      unknown processes kept in their own `<unknown pid N>` bucket (never merged),
+      120 s idle prune + 4096 cap, no per-event allocation/logging/UI work
+- [x] `WindowsProcessMetadataProvider` — guarded `Process` reads, PID-reuse
+      detection via start-time mismatch, never throws
+- [x] Collector health states: Stopped/Starting/Running/PermissionDenied/Failed;
+      non-elevated → `PermissionDenied` + `LastError`, no crash, no forced UAC
+- [x] Core contracts: `IProcessTrafficCollector` (+Status/LastError),
+      `ProcessTrafficSample` (pid/start/name/path/totals/rates),
+      `ProcessTrafficCollectorStatus`
+- [x] DI registration (`IProcessTrafficCollector` singleton, Network layer owns the
+      provider/session); VPN semantics documented, ADR-009/010 policy unchanged
+- [x] Tests: 18 new (13 accounting-engine synthetic-event suite incl. PID reuse,
+      rates, process exit, eviction, protocol/IP classification; 4 metadata
+      provider; 1 graph count) — engine tested without any real ETW session
+- [x] Real Windows verification: non-elevated → `PermissionDenied` evidence;
+      elevated live run with curl.exe + powershell.exe → two distinguishable apps,
+      two curl instances as distinct buckets, bounded (11 samples, ~2.6 MB growth),
+      clean stop; protocol totals invariant `Total = Tcp + Udp = IPv4 + IPv6`
+- [ ] Applications list UI (icons, sort) — deferred to a follow-up UI task
+      (minimum-UI scope per TL-007 spec)
+- **Status: core collector done (TL-007); UI portion pending**
+- **Commit:** `8f080fb` (code + tests; see `docs/PROJECT_STATUS.md`)
 
 ### TL-008 Active Connections
 - [ ] `IConnectionProvider`, TCP-first connections view
@@ -165,7 +191,7 @@
 | M1 | Global network monitoring | TL-002, TL-003 | Done |
 | M2 | Dashboard and live graph | TL-005, TL-006 | In progress |
 | M3 | Network interfaces | TL-004 | Done |
-| M4 | Per-process traffic | TL-007 | Not started |
+| M4 | Per-process traffic | TL-007 | In progress (collector done, UI pending) |
 | M5 | Active connections | TL-008 | Not started |
 | M6 | SQLite history | TL-009 | Not started |
 | M7 | Tray and widget | TL-010, TL-011 | Not started |

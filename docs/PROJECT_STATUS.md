@@ -4,8 +4,9 @@ Updated: 2026-09-14
 
 ## Current Milestone
 
-M1 (global monitoring), M3 (network interfaces), and M2 (TL-005 dashboard +
-TL-006 live graph) are complete.
+M4 (per-process traffic) is in progress: the `IProcessTrafficCollector` backend is
+implemented and verified; the Applications-list UI is the remaining part of the
+task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
 
 ## Task IDs
 
@@ -15,7 +16,9 @@ TL-006 live graph) are complete.
 - TL-004 Network Adapter Detection — **DONE** (audit + gap fix)
 - TL-005 Dashboard — **DONE**
 - TL-006 Live Traffic Graph — **DONE**
-- TL-007 and later — not started
+- TL-007 Per-Process Traffic — **IN PROGRESS** (collector + engine + verification
+  done; Applications-list UI pending)
+- TL-008 and later — not started
 
 ## Completed
 
@@ -114,10 +117,57 @@ TL-006 live graph) are complete.
     appends/dedupe/range-slice/no-network/zero/large tests in
     `TrafficLens.App.Tests`; localized graph keys in resource tests.
 
+- TL-007 (per-process traffic, collector milestone — M4 backend):
+  - `ProcessTrafficCollectorStatus` (Stopped/Starting/Running/PermissionDenied/Failed),
+    extended `IProcessTrafficCollector` (Status/LastError), richer
+    `ProcessTrafficSample` (pid + start-time identity, name, path, icon-available,
+    byte totals, monotonic-window rates, Timestamp) — all in Core.
+  - `WindowsEtwProcessTrafficCollector` (Network/Process) — real-time ETW kernel
+    session (`TraceEventSession`, `NetworkTCPIP`); eight Tcp/Udp IPv4/IPv6 event
+    handlers mapping payload PID + size into `NetworkTransferEvent` (never the raw
+    header PID — DPC-computed receive completions would mis-attribute to
+    System/Idle); ~1 s snapshot loop raising `SamplesReady`; non-elevated hosts
+    report `PermissionDenied` + `LastError` without crashing and without forcing
+    UAC.
+  - `ProcessTrafficAccountingEngine` — per-instance buckets keyed by
+    `ProcessInstanceId = (pid, process start time)`; monotonic sliding-window rates
+    (never assumed 1 s); metadata resolve/rekey once the true start time is known;
+    **PID-reuse isolation** (mismatched start time stops attribution to the old
+    bucket and starts a fresh instance); unknown/unresolvable processes kept in
+    their own `<unknown pid N>` bucket, never merged into another process; idle
+    prune 120 s, hard cap 4096 buckets (oldest-LastSeen eviction); hot path is
+    allocation-free (`CollectionsMarshal.GetValueRefOrAddDefault`); no per-event
+    UI work, no logging, no SQLite.
+  - `WindowsProcessMetadataProvider` — guarded `System.Diagnostics.Process` reads
+    (name/path/icon/start time), PID-reuse detection by start-time mismatch
+    (>2 s tolerance), never throws.
+  - `ProcessProtocolTotals` — per instance Tcp/Udp × Received/Sent and IPv4/IPv6 ×
+    Received/Sent with the tested invariant `Total = Tcp + Udp = IPv4 + IPv6`.
+  - DI: `IProcessTrafficCollector` singleton registered in
+    `NetworkServiceCollectionExtensions`; provider/session owned by the Network
+    layer; document VPN/tunnel semantics (owner-attributed app bytes, not
+    interface bytes; ADR-009/010 aggregate policy unchanged).
+  - Real-time kernel provider requires elevation; detail + rationale in
+    `docs/NETWORK_COLLECTION.md` (TL-007 section) and ADR-013.
+
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 129/129 passed (`TrafficLens.Network.Tests` 115, `TrafficLens.App.Tests` 14).
+- **Automated tests:** 147/147 passed (`TrafficLens.Network.Tests` 133, `TrafficLens.App.Tests` 14).
+- **TL-007 per-process real verification** (elevated verification console, live
+  traffic against `https://speed.cloudflare.com/__down`, `--process` mode):
+  - Collector turned `Running` (elevated) and attributed real traffic to the two
+    apps it launched — `curl.exe` (6,236,307 B down / 674 B up) and
+    `powershell.exe` (4,013,430 B down / 388 B up), all TCP/IPv4, with the
+    protocol totals invariant holding (`Total = Tcp + Udp = IPv4 + IPv6`).
+  - Two sequential `curl` instances (distinct PIDs and start times) appeared as
+    **two separate buckets** with independent totals (6,236,307 vs 1,555,415 B) —
+    per-instance attribution of the same executable, not per-name.
+  - Bounded: 11 samples observed (hard cap 4096), ~2.6 MB managed memory growth
+    over the whole run; clean `StopAsync` with no orphaned ETW session.
+  - Non-elevated path verified separately: `Status = PermissionDenied` with
+    `LastError` "Enabling the ETW kernel network provider requires an elevated
+    (Administrator) process." — no crash, no forced UAC.
 - **TL-006 real Windows GUI verification** (Release build, live network activity against
   `https://speed.cloudflare.com/__down`, UIA snapshots + Win32 resize):
   - App launched cleanly (log: startup → culture en-US → MainWindow shown → collector
@@ -171,25 +221,28 @@ TL-006 live graph) are complete.
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 115 tests, all passing (incl. 20 graph
-  buffer/scale tests).
+- `tests/TrafficLens.Network.Tests` — xUnit, 133 tests, all passing (incl. 18
+  per-process accounting-engine and metadata-provider tests).
 - `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 14 tests, all passing
   (incl. 6 dashboard-graph tests).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
-  `dotnet run --project tests/TrafficLens.Network.Verification`.
+  `dotnet run --project tests/TrafficLens.Network.Verification` (adapter) or
+  `-- --process` (per-process, elevated or non-elevated).
 
 ## Known Issues / Not Started
 
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
   by default (`includeTunnels: true` to include on VPN-only hosts).
 - Graph history is in-memory only (5.5 min); persistent SQLite history is TL-009.
-- Per-process and connections are later milestones.
+- Per-process Applications-list UI (icons, sort, process details page) is deferred
+  to a follow-up UI task; the TL-007 collector/backend is complete.
+- Active connections are TL-008.
 - Range buttons do not show an explicit "selected" highlight; the selected range is
   visually implied by the plotted window. (Future polish.)
 
 ## Git Commit
 
-- TL-006 (live traffic graph): `3ad4b86` — `feat: add live traffic graph with bounded history and adaptive scale (TL-006)`; docs `6f24811`.
+- TL-007 (per-process traffic collector): `8f080fb` — `feat: add per-process traffic collector via real-time ETW kernel network events (TL-007)`; docs `(see below)`.
 - TL-005 (dashboard): `bb6deef` — `feat: add live dashboard view with adaptive rate formatting (TL-005)`
 - `2bf03c9` — `fix: classify OpenVPN TAP/DCO (type 53) and virtual nics correctly via driver descriptions (TL-004)`
 - `6bfa9d6` — `feat: add download/upload rate calculation from counter deltas with monotonic timing (TL-003)`
@@ -197,6 +250,7 @@ TL-006 live graph) are complete.
 
 ## Next Recommended Task
 
-- TL-007 — Per-process traffic: `IProcessTrafficCollector` with process mapping to
-  connections/ports (requires ETW or elevated counters; see M4). M2 is now complete,
-  so the graph backlog (TL-006) is done; TL-007 is the next scheduled milestone.
+- Finish TL-007's remaining UI: Applications-list view (icons, sort, totals) over
+  the completed `IProcessTrafficCollector`/`GetProtocolTotals` backend. After that,
+  TL-008 (active connections) is the next scheduled milestone; the collector work
+  that may be reused for connection→process mapping is already done.

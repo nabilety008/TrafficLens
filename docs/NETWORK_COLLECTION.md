@@ -1,6 +1,6 @@
 # TrafficLens — Network Collection
 
-Status: **Implemented for TL-002, TL-003, and TL-004 (audit) scope** (updated 2026-09-14).
+Status: **Implemented for TL-002 — TL-007 scope** (updated 2026-09-14).
 
 ## Goal
 
@@ -191,3 +191,133 @@ description-aware classification.
 ## Golden rule
 
 Never fake measurements. If a measurement is unavailable, show unavailable.
+
+## Per-process traffic (TL-007)
+
+### Mechanism: real-time ETW kernel network events (elevated)
+
+Per-process bytes are collected from a **real-time Windows ETW kernel session**
+(`Microsoft-Windows-Kernel-Network`, enabled via TraceEvent's
+`KernelTraceEventParser.Keywords.NetworkTCPIP`). No packet capture ever happens —
+events carry only metadata (PID + transfer size); payload bytes are never read or
+stored (golden rule).
+
+**Why ETW and not alternatives:**
+- Windows Performance Counters have no dependable per-process network counters.
+- PID-based lookup of socket state can't attribute traffic of exited sockets and
+  misses short-lived flows (curl, browsers).
+- IP Helper connection tables are point-in-time snapshots, not byte streams.
+- Only ETW (kernel network provider) provides a live, byte-accurate per-process
+  stream. Its cost is that it **requires elevation** (see Privileges below).
+
+### Event attribution (critical detail)
+
+For kernel network events, `TraceEvent`'s `KernelTraceEventParser` **fixes the
+event header ProcessId from the payload's own PID field** ("Identifier of the
+process associated with the request") **before** dispatch. The *raw* header PID
+is the thread context the event happened to be logged in (frequently `System`/`Idle`
+for DPC-completed receive completions), which would mis-attribute virtually all
+downloads to `System`. We subscribe to the parser's fixed-up events and take
+`ProcessID` + `size` from them:
+
+- `TcpIpSend` (IPv4), `TcpIpRecv` (IPv4), `TcpIpSendIPV6`, `TcpIpRecvIPV6`
+- `UdpIpSend` (IPv4), `UdpIpRecv` (IPv4), `UdpIpSendIPV6`, `UdpIpRecvIPV6`
+
+We deliberately do **not** subscribe `TcpIpRetransmit` (counted as its own event,
+not a payload transfer), so no double-counting occurs. Each mapped event becomes a
+`NetworkTransferEvent(pid, direction, size, protocol, ip-version, timestamp)` fed
+to the accounting engine.
+
+### Accounting engine (bounded, PID-reuse safe)
+
+`ProcessTrafficAccountingEngine` (per-process bucket per
+`ProcessInstanceId = (pid, process start time)`):
+
+- **PID + process-start-time identity.** ETW only gives PIDs; we detect the true
+  process start time once (metadata resolution) and re-key the bucket to
+  `(pid, startTime)`. A **reused PID** is detected when the live process's start
+  time differs from the bucket identity (2 s tolerance) — attribution to the old
+  instance stops (its totals are frozen, never deleted), and new events flow to a
+  fresh bucket for the new instance.
+- **Unknown/unresolvable processes are never merged into another process.** Their
+  events accumulate under their own `(pid, 0)` bucket displayed as
+  `<unknown pid N>`; metadata resolution retries every 10 s while the process is
+  missing. Events whose owning process disappeared mid-accounting keep their
+  bucket; nothing is ever assigned to a different process or to "System" by
+  default.
+- **Byte totals are the authoritative data.** Rates are derived *per snapshot*
+  from the **sliding monotonic window** (3 s) of cumulative byte deltas divided by
+  the real measured stopwatch elapsed — never an assumed 1-second interval, never
+  wall-clock. The first snapshot only establishes a baseline (no discovery spike).
+- **Bounded state.** Idle buckets are pruned after 120 s; hard cap of 4096
+  buckets with an oldest-LastSeen eviction; metadata is re-validated at most every
+  15 s. No per-event allocation, no per-event logging, no UI work on the ETW
+  thread — the hot path is one dictionary slot acquire + one counter amend.
+- Multiple instances of the same executable (several `chrome.exe`) stay **distinct
+  samples** because identity includes the start time.
+
+### Pipeline
+
+```
+ETW kernel events ──► TraceEventSource (background consume task)
+        │  NetworkTransferEvent (payload PID + size, no payload bytes)
+        ▼
+ProcessTrafficAccountingEngine.Record   (lock-free-ish single lock, no IO)
+        ▼                        ▲
+   ~1 s Snapshot loop ──────────┘  BuildSample/process/PID-reuse handling
+        ▼
+   SamplesReady / GetCurrentSamples   (ProcessTrafficSample list)
+```
+
+### Privileges
+
+Enabling the kernel network provider requires **Administrator**
+(`SeSystemProfile` / system logger mode) or membership in Performance Log Users
+for the local case. The collector **never hides and never crashes**: on a
+non-elevated host it reports `Status = PermissionDenied` with a clear `LastError`
+(`ProcessTrafficCollectorStatus`). The app must not force-elevate on its own; the
+verification console demonstrates both paths.
+
+### VPN / tunnel semantics
+
+- Per-process totals are **owner-attributed application bytes**, not
+  interface-attributed bytes. On a VPN they reflect the app's socket traffic
+  (framed/unframed as the OS counts it), which is intentionally different from,
+  and not reconciled against, the per-interface adapter counters of TL-002/003.
+- We do **not reassign** VPN transport bytes or change the existing system
+  aggregate policy (ADR-009/010): physical-link vs tunnel double counting only
+  matters for the interface-level total, which is untouched.
+
+### Protocol / version coverage
+
+TCP and UDP over IPv4 **and** IPv6 are counted separately
+(`ProcessProtocolTotals`: Tcp/Udp × Received/Sent and IPv4/IPv6 × Received/Sent;
+the invariant `Total = Tcp + Udp = IPv4 + IPv6` is unit-tested). ICMP and other
+non-TCP/UDP kernel-network events are out of scope for TL-007.
+
+### Live verification evidence (2026-09-14, elevated)
+
+`dotnet run --project tests/TrafficLens.Network.Verification -- --process`
+(elevated; ~40 s, downloads from `https://speed.cloudflare.com/__down`):
+
+- **Two distinguishable apps** concurrently: `curl.exe` and `powershell.exe`
+  each appeared as their own attributed bucket (curl 6,236,307 B down / 674 B up,
+  PowerShell 4,013,430 B down / 388 B up — all TCP/IPv4, matching
+  `Total = Tcp = IPv4`).
+- **Same executable, two instances isolated:** two sequential `curl` runs
+  (instance A pid 10232, instance B pid 11728) produced **two distinct buckets**
+  keyed by different (pid, start-time) identities with independent totals
+  (6,236,307 vs 1,555,415 B) — attribute granularity is per **instance**, not per
+  exe name.
+- **No unbounded growth:** snapshot held 11 samples (hard cap 4096), ~2.6 MB
+  managed memory growth over the whole run.
+- **Clean stop:** Collector `StopAsync` ended the session, consumed loop and
+  snapshot loop; no orphaned ETW session left behind.
+- **Non-elevated path:** the same command without elevation reports
+  `PermissionDenied` + `LastError` (verified) and does not crash.
+
+Run it yourself (elevated console):
+
+```
+dotnet run --project tests/TrafficLens.Network.Verification -- --process
+```
