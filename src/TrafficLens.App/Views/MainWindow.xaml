@@ -6,9 +6,9 @@
         xmlns:vm="clr-namespace:TrafficLens.App.ViewModels"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}"
-        Width="820" Height="480"
+        Width="900" Height="560"
         WindowStartupLocation="CenterScreen"
-        MinWidth="640" MinHeight="400">
+        MinWidth="640" MinHeight="420">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -18,87 +18,170 @@
 
         <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" Padding="12,8">
             <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0"
-                       Text="{Binding WindowTitle}"
-                       FontSize="16" FontWeight="SemiBold"
-                       VerticalAlignment="Center" />
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="English"
-                        Command="{Binding SwitchToEnglishCommand}"
-                        Background="{StaticResource SurfaceAltBrush}"
-                        Foreground="{StaticResource TextBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        Margin="3,0" Padding="10,4" />
-                <Button Content="فارسی"
-                        Command="{Binding SwitchToPersianCommand}"
-                        Background="{StaticResource SurfaceAltBrush}"
-                        Foreground="{StaticResource TextBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        Margin="3,0" Padding="10,4" />
-            </StackPanel>
-        </Grid>
-        </Border>
-
-        <Grid Grid.Row="1" Margin="20,16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <TextBlock Grid.Row="0"
-                       Text="{Binding PlaceholderText}"
-                       FontSize="14"
-                       Margin="0,0,0,24"
-                       Foreground="{StaticResource TextMutedBrush}" />
-
-            <Grid Grid.Row="1" Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                    <TextBlock Text="{Binding DownloadLabel}" FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
-                    <TextBlock Text="--" FontSize="22" FontWeight="SemiBold"
-                               Foreground="{StaticResource AccentBrush}" />
-                </StackPanel>
+                <TextBlock Grid.Column="0"
+                           Text="{Binding WindowTitle}"
+                           FontSize="16" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
 
-                <StackPanel Grid.Column="1" Margin="6,0">
-                    <TextBlock Text="{Binding UploadLabel}" FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
-                    <TextBlock Text="--" FontSize="22" FontWeight="SemiBold"
-                               Foreground="{StaticResource AccentAltBrush}" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Margin="12,0,0,0">
-                    <TextBlock Text="{Binding TotalTrafficLabel}" FontSize="12"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
-                    <TextBlock Text="--" FontSize="22" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextBrush}" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="English"
+                            Command="{Binding SwitchToEnglishCommand}"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            Foreground="{StaticResource TextBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            Margin="3,0" Padding="10,4" />
+                    <Button Content="فارسی"
+                            Command="{Binding SwitchToPersianCommand}"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            Foreground="{StaticResource TextBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            Margin="3,0" Padding="10,4" />
                 </StackPanel>
             </Grid>
+        </Border>
 
-            <Separator Grid.Row="2" Margin="0,0,0,16"
-                       Background="{StaticResource BorderBrush}" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,14,20,8">
 
-            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,0">
-                <TextBlock Text="{Binding ActiveAdapterLabel}" FontSize="12"
-                           Foreground="{StaticResource TextMutedBrush}" Margin="0,0,6,0" />
-                <TextBlock Text="--" FontSize="12"
-                           Foreground="{StaticResource TextBrush}" />
+                <TextBlock Text="{Binding Dashboard.DashboardLabel}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,0,0,10" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Margin="0,0,6,0"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="16,14">
+                        <StackPanel FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding Dashboard.DownloadLabel}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                            <TextBlock Text="{Binding Dashboard.DownloadText}" FontSize="26" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}" Margin="0,0,0,2"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Dashboard.DownloadMbpsText}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Margin="6,0"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="16,14">
+                        <StackPanel FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding Dashboard.UploadLabel}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                            <TextBlock Text="{Binding Dashboard.UploadText}" FontSize="26" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentAltBrush}" Margin="0,0,0,2"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Dashboard.UploadMbpsText}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Margin="6,0,0,0"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="16,14">
+                        <StackPanel FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding Dashboard.TotalLabel}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                            <TextBlock Text="{Binding Dashboard.TotalText}" FontSize="26" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextBrush}" Margin="0,0,0,2"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Dashboard.TotalMbpsText}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <TextBlock Text="{Binding Dashboard.ActiveAdapterLabel}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,18,0,8" />
+
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1" Padding="14,12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Dashboard.ActiveAdapterName}"
+                                   FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Dashboard.ActiveAdapterKindText}"
+                                   FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="10,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Dashboard.ActiveAdapterStatusText}"
+                                   FontSize="12" Foreground="{StaticResource AccentAltBrush}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding Dashboard.NetworkAdaptersLabel}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,18,0,8" />
+
+                <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Dashboard.Adapters}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource SurfaceBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="1" Padding="12,10" Margin="0,0,0,8"
+                                        AutomationProperties.Name="{Binding Name}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                <TextBlock Text="{Binding KindText}" FontSize="11"
+                                                           Foreground="{StaticResource TextMutedBrush}" />
+                                                <TextBlock Text="•" FontSize="11"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           Margin="6,0" />
+                                                <TextBlock Text="{Binding StatusText}" FontSize="11"
+                                                           Foreground="{StaticResource TextMutedBrush}" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" FlowDirection="LeftToRight"
+                                                    VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="↓" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AccentBrush}" />
+                                                <TextBlock Text="{Binding DownloadRateText}" FontSize="12"
+                                                           Margin="4,0,0,0" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <TextBlock Text="↑" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AccentAltBrush}" />
+                                                <TextBlock Text="{Binding UploadRateText}" FontSize="12"
+                                                           Margin="4,0,0,0" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </StackPanel>
-        </Grid>
+        </ScrollViewer>
 
         <StatusBar Grid.Row="2" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextMutedBrush}">
             <TextBlock Text="{Binding StatusMessage}" FontSize="11" />

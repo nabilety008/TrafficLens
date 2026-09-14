@@ -42,4 +42,40 @@
   <data name="PlaceholderDashboardText" xml:space="preserve">
     <value>Traffic monitoring will appear here.</value>
   </data>
+  <data name="DashboardLabel" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="TotalRateLabel" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="NetworkAdaptersLabel" xml:space="preserve">
+    <value>Network Adapters</value>
+  </data>
+  <data name="ConnectedLabel" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="DisconnectedLabel" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="StatusLabel" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="NoActiveConnection" xml:space="preserve">
+    <value>No active connection</value>
+  </data>
+  <data name="KindEthernet" xml:space="preserve">
+    <value>Ethernet</value>
+  </data>
+  <data name="KindWireless" xml:space="preserve">
+    <value>Wireless</value>
+  </data>
+  <data name="KindTunnel" xml:space="preserve">
+    <value>Tunnel</value>
+  </data>
+  <data name="KindVirtual" xml:space="preserve">
+    <value>Virtual</value>
+  </data>
+  <data name="KindUnknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
 </root>

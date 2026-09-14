@@ -9,6 +9,7 @@ using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 using TrafficLens.Infrastructure.Logging;
 using TrafficLens.Infrastructure.Services;
+using TrafficLens.Network;
 
 namespace TrafficLens.App;
 
@@ -38,11 +39,32 @@ public partial class App : Application
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
         logger.LogInformation("MainWindow shown");
+
+        var collector = _serviceProvider.GetRequiredService<INetworkTrafficCollector>();
+        try
+        {
+            _ = collector.StartAsync(CancellationToken.None);
+            logger.LogInformation("Network traffic collector started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start network traffic collector");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _serviceProvider?.Dispose();
+        try
+        {
+            _serviceProvider
+                ?.GetService<ILogger<App>>()
+                ?.LogInformation("TrafficLens exiting");
+        }
+        finally
+        {
+            _serviceProvider?.Dispose();
+        }
+
         base.OnExit(e);
     }
 
@@ -57,6 +79,8 @@ public partial class App : Application
 
         services.AddFileLogging(AppPaths.LogsDirectory);
 
+        services.AddNetworkServices();
+        services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }
