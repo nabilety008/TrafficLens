@@ -66,6 +66,23 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
   ViewModel and no network APIs are touched in the view layer, keeping ADR-011's
   thin-dashboard contract testable without the UI.
 
+## Live graph (TL-006)
+
+- `TrafficLens.Core/Graph` holds the no-WPF graph layer (pure, unit-testable):
+  - `TrafficSampleBuffer` — bounded, thread-safe ring buffer (5.5 min retention,
+    1320 samples) fed by the ViewModel with the existing `AggregateRates` aggregate.
+    Dedupes same-poll duplicate timestamps so one poll appends one sample.
+    `Slice(window, now)` is non-mutating, so switching 30 s / 1 m / 5 m never clears
+    history. Real timestamps are preserved (dropouts stay visible as gaps).
+  - `AdaptiveGraphScale` — shared Y max: immediate growth on spikes, hysteretic shrink,
+    2 KB/s floor (ADR-012).
+- `TrafficGraphControl` (App, `Controls/`) is a lightweight `FrameworkElement` that
+  draws both series into a `DrawingContext` (`OnRender`, `StreamGeometry`), reads the
+  theme brushes, formats axis labels via `DataRateFormatter`, and forces LTR so the
+  timeline stays oldest-left → newest-right under fa-IR.
+- Range selection is a `SelectGraphRangeCommand` on the dashboard (CommandParameter
+  30/60/300); selection state re-slices the buffer and re-renders in place.
+
 ## Logging
 
 - `AddFileLogging(logDirectory)` registers a `FileLoggerProvider`.
@@ -88,7 +105,7 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 
 ## Future Plans
 
-- Live traffic graph: ring buffers of samples; 30s/1m/5m ranges.
 - History: aggregated SQLite samples; retention policies.
 - Tray + floating widget.
+- Per-process traffic and active connections.
 - See `docs/ROADMAP.md`.

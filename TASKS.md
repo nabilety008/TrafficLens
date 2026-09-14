@@ -91,9 +91,29 @@
 - **Commit:** `bb6deef` (see `docs/PROJECT_STATUS.md`)
 
 ### TL-006 Live Traffic Graph
-- [ ] Real-time download/upload graph (30s / 1m / 5m ranges)
-- [ ] Never block UI thread
-- **Status: not started**
+- [x] Real-time download/upload graph (30s / 1m / 5m ranges) with adaptive Y scale
+- [x] Never block UI thread (collection thread writes, ViewModel marshals to
+      Dispatcher, `OnRender` drawing only)
+- [x] Bounded ring-buffer history (5.5 min retention, 1320 samples max, thread-safe;
+      dedupe rejects same-poll duplicates; capacity/time retention enforced)
+- [x] Time ranges with localized controls; switching never clears history
+  (`TrafficSampleBuffer.Slice` is non-mutating)
+- [x] Adaptive shared scale: immediate spike growth, hysteretic shrink (sustained
+      2-update low), 2 KB/s floor (no divide-by-zero at zero traffic)
+- [x] Native WPF rendering (`TrafficGraphControl` FrameworkElement + `OnRender`),
+      two `StreamGeometry` series, no chart library, no per-sample UI elements
+- [x] Timeline always oldest-left → newest-right even in RTL (control forces LTR)
+- [x] No-network / disconnect / reconnect: no crash, history survives, ages out by
+      retention, reconnect resumes; never fabricates non-zero data
+- [x] Raw bytes/sec in graph data (Core graph models); formatting only at render
+      time via `DataRateFormatter`
+- [x] Localization: en + fa-IR for head, range and legend strings
+- [x] Tests: Core graph (buffer/scale) + VM graph (append/dedupe/slice/reset/zero/large)
+      + localized graph keys
+- [x] Real Windows GUI verification: graph renders under live traffic, range buttons
+      30/60/300 switch, en + fa-IR switch, resize, clean shutdown — no exceptions
+- **Status: done**
+- **Commit:** (see `docs/PROJECT_STATUS.md`)
 
 ### TL-007 Per-Process Traffic
 - [ ] `IProcessTrafficCollector`, process mapping

@@ -2,6 +2,46 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.7] — 2026-09-14 (TL-006 Live Traffic Graph)
+
+### Added
+- `TrafficLens.Core/Graph/` — no-WPF graph layer over raw bytes/second:
+  - `TrafficGraphPoint` — timestamped raw download/upload rates (no formatted strings
+    in graph data; formatting is render-only).
+  - `TrafficSampleBuffer` — bounded (5.5 min retention / 1320 samples) thread-safe ring
+    buffer; duplicate same-poll timestamps rejected (one sample per poll regardless of
+    per-adapter events); wall-clock age-out; non-mutating `Slice(window, now)` so range
+    switching never clears history; real timestamps preserved (gaps drawn honestly).
+  - `AdaptiveGraphScale` — single shared Y max for both series; immediate spike growth;
+    hysteretic shrink (consecutive sustained lows < 35% only) to prevent flicker; 2 KB/s
+    floor prevents divide-by-zero at zero traffic (ADR-012).
+  - `GraphTimeRange` — 30 s / 60 s / 300 s.
+- `TrafficGraphControl` (App `Controls/`) — lightweight native WPF `FrameworkElement`;
+  renders both series as `StreamGeometry` in `OnRender` over a 4-line grid with adaptive
+  axis labels (`DataRateFormatter`); forces LTR so the timeline is always oldest-left →
+  newest-right even under fa-IR; no chart library, no per-sample UI elements.
+- `DashboardViewModel` graph support: feeds the existing ADR-009/010 `AggregateRates`
+  aggregate into the buffer once per poll (dedupe absorbs multi-adapter burst events);
+  `SelectGraphRangeCommand`; localized graph labels; culture-change re-render.
+- `MainWindow` "Live Traffic" section: range buttons (30 s / 1 m / 5 m), download/upload
+  legend swatches, graph control (height 190, scrollable with the dashboard).
+- en + fa-IR resources: `GraphLiveTrafficLabel`, `GraphLast30SecondsLabel`,
+  `GraphLast1MinuteLabel`, `GraphLast5MinutesLabel`, `GraphNowLabel`,
+  `GraphDownloadSeriesLabel`, `GraphUploadSeriesLabel`.
+- Tests: `TrafficSampleBufferTests` + `AdaptiveGraphScaleTests` (20) in
+  `TrafficLens.Network.Tests`; dashboard graph tests (append/dedupe/range-slice/
+  no-network/zero/large, 6) in `TrafficLens.App.Tests`; graph keys added to the
+  localization resource test.
+- ADR-012 (native WPF rendering + documented scale hysteresis).
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **129/129 passing** (115 Network + 14 App).
+- Real Windows GUI (Release, live traffic): graph section renders; ranges 30 s / 1 m / 5 m
+  switch without clearing history; rates tracked live traffic (→ 10.68 Mbps download);
+  en ↔ fa-IR switch re-localized all graph strings without crashing; resize stays
+  responsive; clean close logged "TrafficLens exiting". No exceptions in the log.
+
 ## [0.0.6] — 2026-09-14 (TL-005 Dashboard)
 
 ### Added

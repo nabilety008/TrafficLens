@@ -169,3 +169,42 @@ Reasoning:
 - UI requirements: no unbounded history is accumulated (TL-006 owns the graph
   buffers); connection state (no network / disconnect / reconnect) is surfaced
   via `HasConnection` and localized status text, never exceptions.
+
+## ADR-012: Native WPF graph rendering with a documented adaptive-scale hysteresis
+
+**Status:** Accepted (TL-006)
+
+The live traffic graph is rendered by a custom `FrameworkElement`
+(`TrafficGraphControl`) that draws both series directly into the WPF
+`DrawingContext` (`OnRender`) using two `StreamGeometry` polylines over a fixed
+grid. No third-party chart library is used, and no per-sample UI element is ever
+created: each poll updates a bounded in-memory sample list
+(`TrafficSampleBuffer`, 5.5 min retention / 1320 samples) and invalidates the
+framework element, which redraws from the full slice.
+
+The shared Y-axis maximum (`AdaptiveGraphScale`) follows an explicit rule that is
+unit-tested and documented here:
+
+- **Immediate growth.** If the peak in the current window equals or exceeds the
+  current maximum, the scale is raised immediately to a "nice" ceiling
+  (k × 10^n with k ∈ {1, 2, 5}) that covers the peak. Sudden spikes always stay
+  visible.
+- **Hysteretic shrink.** The scale only lowers after peak traffic has stayed below
+  35% of the current maximum for `ConsecutiveLowUpdatesRequired = 2` consecutive
+  updates, then snaps to a nice ceiling covering `max(peak, floor)`. This
+  prevents the constant up/down flicker a naive per-sample rescale would produce.
+- **Floor.** The scale never drops below 2 KB/s (`FloorBytesPerSecond = 2048`),
+  so an all-zero window still has a non-zero denominator (no divide-by-zero) and
+  renders a flat baseline.
+
+The scale is presentation-only — it never rounds or alters the measured sample
+values (raw bytes/second are preserved in `TrafficGraphPoint`).
+
+Reasoning:
+- Native `OnRender` keeps the graph dependency-free, cheap to invalidate at
+  1 sample/second, and consistent with the app's dark theme brushes; a third-party
+  chart would add weight with no functional gain for a single two-series plot.
+- The scale policy balances the competing requirements — spikes visible, no
+  flicker, zero-safe — with an explicit, testable rule instead of ad-hoc logic.
+- Timeline always draws oldest-left → newest-right (control forces LTR) so the
+  graph remains readable under fa-IR RTL layouts.
