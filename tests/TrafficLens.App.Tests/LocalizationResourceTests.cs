@@ -23,7 +23,14 @@ public class LocalizationResourceTests
         "KindWireless",
         "KindTunnel",
         "KindVirtual",
-        "KindUnknown"
+        "KindUnknown",
+        "GraphLiveTrafficLabel",
+        "GraphLast30SecondsLabel",
+        "GraphLast1MinuteLabel",
+        "GraphLast5MinutesLabel",
+        "GraphNowLabel",
+        "GraphDownloadSeriesLabel",
+        "GraphUploadSeriesLabel"
     };
 
     [Fact]

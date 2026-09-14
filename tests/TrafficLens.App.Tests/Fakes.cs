@@ -37,6 +37,21 @@ internal sealed class FakeCollector : INetworkTrafficCollector
         }
     }
 
+    public void RaiseSample(NetworkSpeedSample sample)
+    {
+        var existing = _samples.FindIndex(s => s.AdapterId.Equals(sample.AdapterId, StringComparison.OrdinalIgnoreCase));
+        if (existing >= 0)
+        {
+            _samples[existing] = sample;
+        }
+        else
+        {
+            _samples.Add(sample);
+        }
+
+        SpeedSampleReady?.Invoke(this, sample);
+    }
+
     public void RaiseNetworkChanged() => NetworkChanged?.Invoke(this, EventArgs.Empty);
 }
 

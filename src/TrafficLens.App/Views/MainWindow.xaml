@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:TrafficLens.App.ViewModels"
+        xmlns:controls="clr-namespace:TrafficLens.App.Controls"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}"
         Width="900" Height="560"
@@ -124,6 +125,60 @@
                         <TextBlock Text="{Binding Dashboard.ActiveAdapterStatusText}"
                                    FontSize="12" Foreground="{StaticResource AccentAltBrush}"
                                    VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding Dashboard.GraphLiveTrafficLabel}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           Margin="0,18,0,8" />
+
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1" Padding="14,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="{Binding Dashboard.GraphLast30SecondsLabel}"
+                                    Command="{Binding Dashboard.SelectGraphRangeCommand}"
+                                    CommandParameter="30"
+                                    Background="{StaticResource SurfaceAltBrush}"
+                                    Foreground="{StaticResource TextBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    Padding="10,4" Margin="0,0,6,0" />
+                            <Button Content="{Binding Dashboard.GraphLast1MinuteLabel}"
+                                    Command="{Binding Dashboard.SelectGraphRangeCommand}"
+                                    CommandParameter="60"
+                                    Background="{StaticResource SurfaceAltBrush}"
+                                    Foreground="{StaticResource TextBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    Padding="10,4" Margin="6,0" />
+                            <Button Content="{Binding Dashboard.GraphLast5MinutesLabel}"
+                                    Command="{Binding Dashboard.SelectGraphRangeCommand}"
+                                    CommandParameter="300"
+                                    Background="{StaticResource SurfaceAltBrush}"
+                                    Foreground="{StaticResource TextBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    Padding="10,4" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6" VerticalAlignment="Center">
+                            <Border Width="10" Height="10" CornerRadius="2" Margin="0,0,6,0" VerticalAlignment="Center"
+                                    Background="{StaticResource AccentBrush}" />
+                            <TextBlock Text="{Binding Dashboard.GraphDownloadSeriesLabel}"
+                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"
+                                       VerticalAlignment="Center" />
+                            <Border Width="10" Height="10" CornerRadius="2" Margin="0,0,6,0" VerticalAlignment="Center"
+                                    Background="{StaticResource AccentAltBrush}" />
+                            <TextBlock Text="{Binding Dashboard.GraphUploadSeriesLabel}"
+                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <controls:TrafficGraphControl Height="190"
+                                                      Points="{Binding Dashboard.GraphPoints}"
+                                                      YAxisMax="{Binding Dashboard.GraphScaleMax}"
+                                                      WindowSeconds="{Binding Dashboard.GraphWindowSeconds}"
+                                                      ReferenceTime="{Binding Dashboard.GraphReferenceTime}" />
                     </StackPanel>
                 </Border>
 

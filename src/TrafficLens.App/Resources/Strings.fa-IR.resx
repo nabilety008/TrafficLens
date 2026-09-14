@@ -78,4 +78,25 @@
   <data name="KindUnknown" xml:space="preserve">
     <value>نامشخص</value>
   </data>
+  <data name="GraphLiveTrafficLabel" xml:space="preserve">
+    <value>ترافیک زنده</value>
+  </data>
+  <data name="GraphLast30SecondsLabel" xml:space="preserve">
+    <value>۳۰ ثانیه اخیر</value>
+  </data>
+  <data name="GraphLast1MinuteLabel" xml:space="preserve">
+    <value>۱ دقیقه اخیر</value>
+  </data>
+  <data name="GraphLast5MinutesLabel" xml:space="preserve">
+    <value>۵ دقیقه اخیر</value>
+  </data>
+  <data name="GraphNowLabel" xml:space="preserve">
+    <value>اکنون</value>
+  </data>
+  <data name="GraphDownloadSeriesLabel" xml:space="preserve">
+    <value>دانلود</value>
+  </data>
+  <data name="GraphUploadSeriesLabel" xml:space="preserve">
+    <value>آپلود</value>
+  </data>
 </root>

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Conversion;
+using TrafficLens.Core.Graph;
 using TrafficLens.Core.Localization;
 using TrafficLens.Core.Models;
 using TrafficLens.Network.Aggregation;
@@ -16,6 +17,10 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly Dispatcher? _dispatcher;
     private readonly IReadOnlyDictionary<NetworkAdapterKind, string> _kindKeys;
+    private readonly TrafficSampleBuffer _graphBuffer = new(
+        maxRetention: TimeSpan.FromMinutes(5.5),
+        capacity: 1320);
+    private readonly AdaptiveGraphScale _graphScale = new();
 
     private IReadOnlyList<NetworkAdapterInfo> _adapters = Array.Empty<NetworkAdapterInfo>();
     private IReadOnlyList<NetworkSpeedSample> _samples = Array.Empty<NetworkSpeedSample>();
@@ -25,6 +30,14 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private long _uploadBytesPerSecond;
     private long _totalBytesPerSecond;
     private bool _hasConnection;
+
+    private IReadOnlyList<TrafficGraphPoint> _graphPoints = Array.Empty<TrafficGraphPoint>();
+    private long _graphScaleMax;
+    private GraphTimeRange _selectedGraphRange = GraphTimeRange.OneMinute;
+    private DateTime _graphReferenceTime = DateTime.MinValue;
+    private bool _is30SecondsSelected;
+    private bool _is1MinuteSelected;
+    private bool _is5MinutesSelected;
 
     private string _dashboardLabel = string.Empty;
     private string _downloadLabel = string.Empty;
@@ -47,6 +60,14 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private string _activeAdapterName = string.Empty;
     private string _activeAdapterKindText = string.Empty;
     private string _activeAdapterStatusText = string.Empty;
+
+    private string _graphLiveTrafficLabel = string.Empty;
+    private string _graphLast30SecondsLabel = string.Empty;
+    private string _graphLast1MinuteLabel = string.Empty;
+    private string _graphLast5MinutesLabel = string.Empty;
+    private string _graphNowLabel = string.Empty;
+    private string _graphDownloadSeriesLabel = string.Empty;
+    private string _graphUploadSeriesLabel = string.Empty;
 
     public DashboardViewModel(
         INetworkTrafficCollector collector,
@@ -72,12 +93,18 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _collector.NetworkChanged += OnAdaptersChanged;
         _adapterProvider.AdaptersChanged += OnAdaptersChanged;
 
+        SelectGraphRangeCommand = new Commands.RelayCommand(ExecuteSelectGraphRange);
+
         RefreshLocalizedStrings();
         ReloadAdapters();
         RefreshAll();
+        RefreshGraph();
+        UpdateRangeSelectionFlags();
     }
 
     public ObservableCollection<AdapterListItemViewModel> Adapters { get; } = new();
+
+    public System.Windows.Input.ICommand SelectGraphRangeCommand { get; }
 
     public void Dispose()
     {
@@ -225,6 +252,104 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _activeAdapterStatusText, value);
     }
 
+    public IReadOnlyList<TrafficGraphPoint> GraphPoints
+    {
+        get => _graphPoints;
+        private set => SetProperty(ref _graphPoints, value);
+    }
+
+    public long GraphScaleMax
+    {
+        get => _graphScaleMax;
+        private set => SetProperty(ref _graphScaleMax, value);
+    }
+
+    public double GraphWindowSeconds => _selectedGraphRange.ToDuration().TotalSeconds;
+
+    public DateTime GraphReferenceTime
+    {
+        get => _graphReferenceTime;
+        private set => SetProperty(ref _graphReferenceTime, value);
+    }
+
+    public GraphTimeRange SelectedGraphRange
+    {
+        get => _selectedGraphRange;
+        private set
+        {
+            if (value == _selectedGraphRange)
+            {
+                return;
+            }
+
+            _selectedGraphRange = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(GraphWindowSeconds));
+            UpdateRangeSelectionFlags();
+            RefreshGraph();
+        }
+    }
+
+    public bool Is30SecondsSelected
+    {
+        get => _is30SecondsSelected;
+        private set => SetProperty(ref _is30SecondsSelected, value);
+    }
+
+    public bool Is1MinuteSelected
+    {
+        get => _is1MinuteSelected;
+        private set => SetProperty(ref _is1MinuteSelected, value);
+    }
+
+    public bool Is5MinutesSelected
+    {
+        get => _is5MinutesSelected;
+        private set => SetProperty(ref _is5MinutesSelected, value);
+    }
+
+    public string GraphLiveTrafficLabel
+    {
+        get => _graphLiveTrafficLabel;
+        private set => SetProperty(ref _graphLiveTrafficLabel, value);
+    }
+
+    public string GraphLast30SecondsLabel
+    {
+        get => _graphLast30SecondsLabel;
+        private set => SetProperty(ref _graphLast30SecondsLabel, value);
+    }
+
+    public string GraphLast1MinuteLabel
+    {
+        get => _graphLast1MinuteLabel;
+        private set => SetProperty(ref _graphLast1MinuteLabel, value);
+    }
+
+    public string GraphLast5MinutesLabel
+    {
+        get => _graphLast5MinutesLabel;
+        private set => SetProperty(ref _graphLast5MinutesLabel, value);
+    }
+
+    public string GraphNowLabel
+    {
+        get => _graphNowLabel;
+        private set => SetProperty(ref _graphNowLabel, value);
+    }
+
+    public string GraphDownloadSeriesLabel
+    {
+        get => _graphDownloadSeriesLabel;
+        private set => SetProperty(ref _graphDownloadSeriesLabel, value);
+    }
+
+    public string GraphUploadSeriesLabel
+    {
+        get => _graphUploadSeriesLabel;
+        private set => SetProperty(ref _graphUploadSeriesLabel, value);
+    }
+
     private void OnSpeedSample(object? sender, NetworkSpeedSample sample) => RunOnUi(RefreshRates);
 
     private void OnAdaptersChanged(object? sender, EventArgs e) =>
@@ -240,6 +365,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             RefreshLocalizedStrings();
             ReloadAdapters();
             RefreshAll();
+            RefreshGraph();
         });
 
     private void RunOnUi(Action action)
@@ -265,6 +391,13 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         ConnectedLabel = _localization["ConnectedLabel"];
         DisconnectedLabel = _localization["DisconnectedLabel"];
         NoActiveConnectionText = _localization["NoActiveConnection"];
+        GraphLiveTrafficLabel = _localization["GraphLiveTrafficLabel"];
+        GraphLast30SecondsLabel = _localization["GraphLast30SecondsLabel"];
+        GraphLast1MinuteLabel = _localization["GraphLast1MinuteLabel"];
+        GraphLast5MinutesLabel = _localization["GraphLast5MinutesLabel"];
+        GraphNowLabel = _localization["GraphNowLabel"];
+        GraphDownloadSeriesLabel = _localization["GraphDownloadSeriesLabel"];
+        GraphUploadSeriesLabel = _localization["GraphUploadSeriesLabel"];
     }
 
     private void ReloadAdapters()
@@ -302,6 +435,15 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private void RefreshAll()
     {
         _aggregate = NetworkTrafficAggregator.AggregateRates(_samples, _adapters);
+
+        if (_aggregate is not null &&
+            _graphBuffer.Add(
+                _aggregate.Timestamp,
+                _aggregate.DownloadBytesPerSecond,
+                _aggregate.UploadBytesPerSecond))
+        {
+            RefreshGraph();
+        }
 
         DownloadBytesPerSecond = _aggregate?.DownloadBytesPerSecond ?? 0;
         UploadBytesPerSecond = _aggregate?.UploadBytesPerSecond ?? 0;
@@ -386,4 +528,27 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
     private string StatusText(bool? isUp) =>
         _localization[isUp == true ? "ConnectedLabel" : "DisconnectedLabel"];
+
+    private void ExecuteSelectGraphRange(object? parameter)
+    {
+        if (parameter is string text && int.TryParse(text, out var seconds))
+        {
+            SelectedGraphRange = GraphTimeRangeExtensions.FromSeconds(seconds);
+        }
+    }
+
+    private void RefreshGraph()
+    {
+        var now = _graphBuffer.LatestTimestamp ?? DateTime.UtcNow;
+        GraphPoints = _graphBuffer.Slice(_selectedGraphRange.ToDuration(), now);
+        GraphScaleMax = _graphScale.Update(GraphPoints);
+        GraphReferenceTime = now;
+    }
+
+    private void UpdateRangeSelectionFlags()
+    {
+        Is30SecondsSelected = _selectedGraphRange == GraphTimeRange.ThirtySeconds;
+        Is1MinuteSelected = _selectedGraphRange == GraphTimeRange.OneMinute;
+        Is5MinutesSelected = _selectedGraphRange == GraphTimeRange.FiveMinutes;
+    }
 }

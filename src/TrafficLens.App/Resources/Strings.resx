@@ -78,4 +78,25 @@
   <data name="KindUnknown" xml:space="preserve">
     <value>Unknown</value>
   </data>
+  <data name="GraphLiveTrafficLabel" xml:space="preserve">
+    <value>Live Traffic</value>
+  </data>
+  <data name="GraphLast30SecondsLabel" xml:space="preserve">
+    <value>Last 30 seconds</value>
+  </data>
+  <data name="GraphLast1MinuteLabel" xml:space="preserve">
+    <value>Last 1 minute</value>
+  </data>
+  <data name="GraphLast5MinutesLabel" xml:space="preserve">
+    <value>Last 5 minutes</value>
+  </data>
+  <data name="GraphNowLabel" xml:space="preserve">
+    <value>Now</value>
+  </data>
+  <data name="GraphDownloadSeriesLabel" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="GraphUploadSeriesLabel" xml:space="preserve">
+    <value>Upload</value>
+  </data>
 </root>
