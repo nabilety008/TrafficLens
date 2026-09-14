@@ -7,7 +7,21 @@ public static class AdapterFilter
 {
     public static bool IsMonitored(RawAdapterSnapshot snapshot)
     {
-        return snapshot.InterfaceType is not (NetworkInterfaceType.Loopback or NetworkInterfaceType.Unknown);
+        if (snapshot.InterfaceType == NetworkInterfaceType.Loopback)
+        {
+            return false;
+        }
+
+        // Phantom interfaces report Unknown type with no device description;
+        // keep them out. Real VPN/virtual devices that happen to report Unknown
+        // are identified by their driver description (OpenVPN/WireGuard/Hyper-V).
+        if (snapshot.InterfaceType == NetworkInterfaceType.Unknown &&
+            !NetworkAdapterKindMapper.HasVirtualOrTunnelDescription(snapshot.Description))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public static NetworkAdapterInfo ToAdapterInfo(RawAdapterSnapshot snapshot)
@@ -17,7 +31,7 @@ public static class AdapterFilter
             snapshot.Name,
             snapshot.Description,
             snapshot.PhysicalAddress,
-            NetworkAdapterKindMapper.Map(snapshot.InterfaceType),
+            NetworkAdapterKindMapper.Map(snapshot.InterfaceType, snapshot.Description),
             snapshot.IsUp,
             IsDefault: false)
         {

@@ -56,6 +56,20 @@ public sealed class DefaultAdapterSelectorTests
         Assert.Equal("eth", DefaultAdapterSelector.Select([loop, ether])?.Id);
     }
 
+    [Fact]
+    public void Select_PrefersPhysicalOverTapAdapterWithSameTypeSignature()
+    {
+        var tap = Snap("tun", NetworkInterfaceType.HighPerformanceSerialBus, isUp: true, hasGateway: true) with
+        {
+            Description = "TAP-Windows Adapter V9 for OpenVPN Connect"
+        };
+        var physical = Snap("eth0", NetworkInterfaceType.Ethernet, isUp: true, hasGateway: true);
+
+        var chosen = DefaultAdapterSelector.Select([tap, physical]);
+
+        Assert.Equal("eth0", chosen?.Id);
+    }
+
     private static RawAdapterSnapshot Snap(string id, NetworkInterfaceType type, bool isUp, bool hasGateway) =>
         new(id, id + "-name", "desc", string.Empty, type, isUp, hasGateway,
             hasGateway ? "10.0.0.2" : null, isUp ? 1_000_000_000L : null, 100, 50);

@@ -24,7 +24,7 @@ public static class DefaultAdapterSelector
         {
             var preferred = pool.FirstOrDefault(s =>
             {
-                var kind = NetworkAdapterKindMapper.Map(s.InterfaceType);
+                var kind = NetworkAdapterKindMapper.Map(s.InterfaceType, s.Description);
                 return kind is not (NetworkAdapterKind.Tunnel or NetworkAdapterKind.Virtual);
             });
 

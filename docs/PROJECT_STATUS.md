@@ -4,14 +4,15 @@ Updated: 2026-09-14
 
 ## Current Milestone
 
-M1 — Global network monitoring (TL-002 + TL-003 done).
+M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashboard).
 
 ## Task IDs
 
 - TL-001 Project Bootstrap — **DONE**
 - TL-002 Global Network Collector — **DONE**
 - TL-003 Download/Upload Calculation — **DONE**
-- TL-004 and later — not started
+- TL-004 Network Adapter Detection — **DONE** (audit + gap fix)
+- TL-005 and later — not started
 
 ## Completed
 
@@ -43,16 +44,37 @@ M1 — Global network monitoring (TL-002 + TL-003 done).
   - `DataRateConverter` (Core) — B/s, KB/s, MB/s, Kbps, Mbps, Gbps for the UI.
   - Extension of ADR-009 policy to rates; ADR-010 (monotonic clock).
   - Tests added (calculator, tracker, conversions, aggregate, collector rates).
+- TL-004 (audit + targeted fix):
+  - Verified all existing TL-002/TL-003 adapter detection satisfies the checklist:
+    Ethernet/Wi-Fi/OpenVPN TAP/DCO/Hyper-V/VMware/all-virtual visible;
+    ID/name/description/type/status, up/down, gateway awareness, default preferred
+    selection, all-adapters mode (down adapters kept), per-adapter rates,
+    connect/disconnect events, GUID-unique identity — all covered.
+  - Gap found and fixed: OpenVPN TAP/DCO drivers register as
+    `HighPerformanceSerialBus` (type 53) and were classified `Unknown`.
+    Added description-aware `NetworkAdapterKindMapper.Map(type, description)`
+    (tap-windows/openvpn/wintun/wireguard → Tunnel;
+    virtual/vmware/hyper-v/vethernet/virtualbox → Virtual).
+    `AdapterFilter.IsMonitored` relaxed for Unknown-type adapters with
+    recognized tunnel/virtual descriptions so WireGuard (or similar) remains
+    visible if its O/S type is Unknown. `DefaultAdapterSelector` uses the
+    description-aware overload so TAP stays non-default.
 
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 65/65 passed (`TrafficLens.Network.Tests`).
+- **Automated tests:** 80/80 passed (`TrafficLens.Network.Tests`).
 - **Real Windows rate verification** (TL-003), concurrent native + collector run:
   - Collector window-mean Wi-Fi: **803,647 B/s** down / **18,423 B/s** up (10.02 s).
   - Native `Get-NetAdapterStatistics` delta: **1,120,590 B/s** down / **26,086 B/s**
     up (14.57 s, longer overlapping window).
   - Same magnitude/ordering/adapter; exact equality not expected (ADR-010).
+- **TL-004 real verification** (live adapter classifier output):
+  - OpenVPN TAP-Windows → **Tunnel** (was Unknown; type 53 + description heuristic).
+  - OpenVPN DCO → **Tunnel**.
+  - Wi-Fi Direct Virtual Adapter → **Virtual** (was Wireless; now type-accurate).
+  - Wi-Fi (Intel AX201, up, gateway) → Wireless, default selected.
+  - Bluetooth PAN → Ethernet, down, all adapters visible.
 - Prior verification (TL-002): cumulative counters matched native statistics;
   default adapter = Wi-Fi (up + gateway, non-tunnel).
 
@@ -63,7 +85,7 @@ M1 — Global network monitoring (TL-002 + TL-003 done).
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 65 tests, all passing.
+- `tests/TrafficLens.Network.Tests` — xUnit, 80 tests, all passing.
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification`.
 
@@ -71,8 +93,6 @@ M1 — Global network monitoring (TL-002 + TL-003 done).
 
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
   by default (`includeTunnels: true` to include on VPN-only hosts).
-- TAP/DCO adapters classify `Unknown` when their interface type is not standard
-  (down in this environment — no effect on totals).
 - String formatting of rates deferred to UI (TL-005).
 - Per-process bytes (ETW/perf) and connections are later milestones.
 

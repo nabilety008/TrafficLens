@@ -58,9 +58,18 @@
 - **Commit:** `6bfa9d6`
 
 ### TL-004 Network Adapter Detection
-- [ ] Enumerate Ethernet, Wi-Fi, VPN, virtual adapters
-- [ ] Default adapter detection (never assume first adapter)
-- **Status: not started**
+- [x] Enumerate Ethernet, Wi-Fi, VPN (OpenVPN TAP/DCO, WireGuard), virtual adapters
+      (Hyper-V, VMware, Wi-Fi Direct) — all visible via `INetworkAdapterProvider`
+- [x] Default adapter detection (up + gateway preferred, never "first adapter"; tunnel/virtual excluded from default)
+- [x] Audit passed: ID/name/description/type/status, up/down, gateway awareness,
+      all-adapters mode (down adapters kept), per-adapter rates, connect/disconnect,
+      no duplicate logical entries
+- [x] Gap fixed: OpenVPN TAP/DCO (interface type `HighPerformanceSerialBus`=53)
+      were classified `Unknown` → description-aware classification (Tunnel/Virtual)
+- [x] Tests: 80 passing (type + description-aware kind mapping, phantom-Unknown
+      filter relaxation, TAP default-selection guard)
+- **Status: done**
+- **Commit:** `see docs/PROJECT_STATUS.md`
 
 ### TL-005 Dashboard
 - [ ] Current download/upload, totals, active adapter, network status
@@ -120,7 +129,7 @@
 | M0 | Project bootstrap, docs, localization foundation | TL-001 | Done |
 | M1 | Global network monitoring | TL-002, TL-003 | Done |
 | M2 | Dashboard and live graph | TL-005, TL-006 | Not started |
-| M3 | Network interfaces | TL-004 | Not started |
+| M3 | Network interfaces | TL-004 | Done |
 | M4 | Per-process traffic | TL-007 | Not started |
 | M5 | Active connections | TL-008 | Not started |
 | M6 | SQLite history | TL-009 | Not started |

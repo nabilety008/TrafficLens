@@ -31,6 +31,28 @@ public sealed class AdapterFilterTests
     }
 
     [Fact]
+    public void IsMonitored_IncludesPolledVpnAdapterTypes()
+    {
+        // OpenVPN TAP/DCO register as HighPerformanceSerialBus (53) on Windows.
+        var tap = Snap(NetworkInterfaceType.HighPerformanceSerialBus);
+        Assert.True(AdapterFilter.IsMonitored(tap));
+    }
+
+    [Fact]
+    public void IsMonitored_UnknownTypeWithVpnDescription_IsMonitored()
+    {
+        var wireguard = Snap(NetworkInterfaceType.Unknown) with { Description = "WireGuard Tunnel" };
+        Assert.True(AdapterFilter.IsMonitored(wireguard));
+    }
+
+    [Fact]
+    public void IsMonitored_UnknownTypeWithoutDescription_IsExcluded()
+    {
+        var phantom = Snap(NetworkInterfaceType.Unknown);
+        Assert.False(AdapterFilter.IsMonitored(phantom));
+    }
+
+    [Fact]
     public void ToAdapterInfo_CopiesKeyFields()
     {
         var snap = Snap(NetworkInterfaceType.Wireless80211) with

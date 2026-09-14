@@ -2,6 +2,33 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.5] — 2026-09-14 (TL-004 audit + gap fix)
+
+### Changed
+- `NetworkAdapterKindMapper.Map(type, description)`: description-aware classification
+  so OpenVPN TAP/DCO (`HighPerformanceSerialBus`/53) are now `Tunnel`, and
+  virtual nics (Hyper-V/VMware/Wi-Fi Direct) are correctly `Virtual`.
+- `AdapterFilter.IsMonitored` relaxed: Unknown-type adapters with recognized
+  tunnel/virtual driver descriptions remain visible (prevents WireGuard hidden
+  on machines where it reports Unknown type).
+- `DefaultAdapterSelector` uses the description-aware overload so TAP stays
+  non-default; no change to live default (Wi-Fi) on this machine.
+
+### Added
+- Tests: description-aware kind mapping (VPN drivers, virtual nics),
+  Unknown+description filter guard, TAP default-selection regression test.
+
+### Verified
+- Build (Debug + Release): 0 warnings, 0 errors.
+- Tests: 80/80 passed.
+- Live enumeration confirmed: OpenVPN TAP/DCO → Tunnel; Wi-Fi Direct → Virtual;
+  Wi-Fi → Wireless (default); Bluetooth PAN → Ethernet; all adapters visible.
+
+### Notes
+- No new classes; all changes are small refinements in existing TL-002 files.
+- No rewrite performed; only the identified gap (TAP/DCO misclassification) was
+  fixed per the TL-004 audit instruction.
+
 ## [0.0.4] — 2026-09-14 (M1, TL-003)
 
 ### Added

@@ -1,6 +1,6 @@
 # TrafficLens — Network Collection
 
-Status: **Implemented for TL-002 + TL-003 scope** (updated 2026-09-14).
+Status: **Implemented for TL-002, TL-003, and TL-004 (audit) scope** (updated 2026-09-14).
 
 ## Goal
 
@@ -98,10 +98,11 @@ counter deltas over monotonic elapsed time (ADR-010).
 - **Adapter set changes** (connect/disconnect) raise `NetworkChanged` and are also
   detected by diffing the adapter ID set between polls, so applications relying on the
   event still observe changes if the OS event is missed.
-- TAP/DCO VPN driver adapters may report an `Unknown` interface type (not
-  Ethernet/Wireless/Tunnel) in some environments; they are filtered out only when
-  down; when up they would currently be classified `Unknown`. If needed, TL-004 can
-  classify them by description/textual heuristics.
+- TAP/DCO VPN driver adapters register unusual interface types on Windows (e.g.
+  `HighPerformanceSerialBus` = 53 for OpenVPN TAP/DCO). They were previously
+  classified `Unknown`; since TL-004 they are classified by **driver-description
+  heuristics** (tap-windows/openvpn/wintun/wireguard → Tunnel; virtual/vmware/
+  hyper-v/vethernet → Virtual) and stay visible in all-adapters mode.
 - Link speed comes from `NetworkInterface.Speed`, which can be `-1`/`null` on some
   drivers.
 
@@ -162,6 +163,30 @@ dotnet run --project tests/TrafficLens.Network.Verification
 ```
 
 Environment: `TL_VERIFY_SECONDS=10` (default 10), poll 500 ms.
+
+## Adapter detection audit evidence (TL-004)
+
+Live enumeration on the dev machine (`NetworkInterface.GetAllNetworkInterfaces`),
+7 interfaces, all with unique GUID ids (no duplicate logical entries):
+
+| Adapter | Description | Raw O/S type | Classified kind |
+|---|---|---|---|
+| Wi-Fi (up, default) | Intel(R) Wi-Fi 6 AX201 160MHz | `Wireless80211` | Wireless |
+| Local Area Connection (down) | TAP-Windows Adapter V9 for OpenVPN Connect | `HighPerformanceSerialBus` (53) | Tunnel |
+| OpenVPN Connect DCO Adapter (down) | OpenVPN Data Channel Offload | `HighPerformanceSerialBus` (53) | Tunnel |
+| Local Area Connection* 1 / * 10 (down) | Microsoft Wi-Fi Direct Virtual Adapter | `Wireless80211` | Virtual |
+| Bluetooth Network Connection (down) | Bluetooth Device (Personal Area Network) | `Ethernet` | Ethernet |
+| Loopback Pseudo-Interface 1 | Software Loopback Interface 1 | `Loopback` | excluded (filter) |
+
+Findings: all expected adapter families (Ethernet, Wi-Fi, OpenVPN TAP/DCO,
+WireGuard, Hyper-V/VMware virtual nics) are enumerable and visible via
+`INetworkAdapterProvider.GetAdapters()` (all-adapters mode keeps down adapters);
+up/down state, gateway awareness, default/preferred selection (up + gateway,
+non-Tunnel/non-Virtual), per-adapter rates, connect/disconnect events, and
+GUID-unique identity were all verified in TL-002/TL-003 or in the live output
+above. The only gap found — OpenVPN TAP/DCO misclassified as `Unknown` because
+of their `HighPerformanceSerialBus` interface type — was closed in TL-004 with
+description-aware classification.
 
 ## Golden rule
 
