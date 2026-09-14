@@ -4,7 +4,8 @@ Updated: 2026-09-14
 
 ## Current Milestone
 
-M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashboard).
+M1 (global monitoring), M3 (network interfaces), and M2's dashboard half (TL-005)
+complete; next TL-006 (live graph) completes M2.
 
 ## Task IDs
 
@@ -12,7 +13,8 @@ M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashbo
 - TL-002 Global Network Collector — **DONE**
 - TL-003 Download/Upload Calculation — **DONE**
 - TL-004 Network Adapter Detection — **DONE** (audit + gap fix)
-- TL-005 and later — not started
+- TL-005 Dashboard — **DONE**
+- TL-006 and later — not started
 
 ## Completed
 
@@ -59,11 +61,50 @@ M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashbo
     recognized tunnel/virtual descriptions so WireGuard (or similar) remains
     visible if its O/S type is Unknown. `DefaultAdapterSelector` uses the
     description-aware overload so TAP stays non-default.
+- TL-005: Dashboard connected to real TL-002/TL-003 data:
+  - `DataRateFormatter` (Core) — adaptive B/s/KB/s/MB/s and Mbps, culture-aware
+    decimal separator; unit symbols intentionally untranslated (ADR-011).
+  - `DashboardViewModel` + `AdapterListItemViewModel` (MVVM, DI, no code-behind
+    networking). Consumes `INetworkTrafficCollector` + `INetworkAdapterProvider`;
+    subscribes to `SpeedSampleReady` and adapter-change events; all updates
+    marshalled to the WPF Dispatcher; `IDisposable` unsubscribes all handlers.
+  - Prominent Download/Upload/Total cards with **real live rates** from
+    `NetworkTrafficAggregator.AggregateRates` (ADR-009/ADR-010 policy — tunnels
+    excluded from the system total, never double-counted).
+  - Active/preferred adapter card (name, kind, Connected/Disconnected) via the
+    existing default-selector — never the first adapter.
+  - Compact adapter list (friendly name, kind, up/down, current ↓/↑ rates);
+    VPN/TAP/DCO/Wi-Fi-Direct virtuals stay visible with their own per-adapter
+    rates, distinct from the system aggregate.
+  - Connection states handled without crashing: no network, disconnect,
+    reconnect, VPN-only host (honest zero/absent totals + per-adapter tunnel
+    rates), collector temporarily without a sample.
+  - Localization: en + fa-IR strings for Dashboard labels, adapter kinds, and
+    connection states; RTL-safe layout (rate texts forced LTR, FlowDirection
+    follows culture).
+  - `TrafficLens.App.Tests` (net8.0-windows, WPF-ready): aggregate→VM mapping,
+    adapter→VM mapping, no-network, reconnect-after-disconnect, VPN-only honesty,
+    culture-switch reformatting, localization resource existence.
 
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 80/80 passed (`TrafficLens.Network.Tests`).
+- **Automated tests:** 103/103 passed (`TrafficLens.Network.Tests` 95, `TrafficLens.App.Tests` 8).
+- **TL-005 real Windows GUI verification** (Release build, live network activity against
+  `https://speed.cloudflare.com/__down`, snapshots via UI Automation):
+  - Download card: **0 B/s → 844.31 KB/s (6.92 Mbps)** → decaying to 32.74 KB/s across
+    three snapshots while traffic flowed; upload/total changed in lockstep
+    (real, changing data — never placeholders).
+  - Active adapter section rendered (W-Fi up + gateway selected as default).
+  - Adapter list showed all monitored adapters: Wi-Fi, Bluetooth PAN (Ethernet),
+    OpenVPN TAP, OpenVPN DCO, Wi-Fi Direct virtuals — VPN/TAP/DCO **visible**.
+  - English dashboard: labels "Dashboard / Download / Upload / Total / Active
+    Adapter / Network Adapters / Connected / Disconnected" rendered correctly.
+  - Persian (fa-IR, launched with `settings.json`: language fa-IR): culture set to
+    fa-IR (log), Persian labels rendered, RTL-active; rates show fa decimal
+    separator (`27٫68 KB/s`); no crash; clean exit ("TrafficLens exiting" in log).
+  - Clean shutdown confirmed: `CloseMainWindow` → process exits, log line
+    "TrafficLens exiting". No update storm (1 sample/s, scalar-only re-render).
 - **Real Windows rate verification** (TL-003), concurrent native + collector run:
   - Collector window-mean Wi-Fi: **803,647 B/s** down / **18,423 B/s** up (10.02 s).
   - Native `Get-NetAdapterStatistics` delta: **1,120,590 B/s** down / **26,086 B/s**
@@ -85,7 +126,8 @@ M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashbo
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 80 tests, all passing.
+- `tests/TrafficLens.Network.Tests` — xUnit, 95 tests, all passing.
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 8 tests, all passing.
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification`.
 
@@ -93,16 +135,18 @@ M1 (global monitoring) and M3 (network interfaces) — complete; next M2 (dashbo
 
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
   by default (`includeTunnels: true` to include on VPN-only hosts).
-- String formatting of rates deferred to UI (TL-005).
-- Per-process bytes (ETW/perf) and connections are later milestones.
+- Live graph, history, per-process and connections are later milestones.
+- Dashboard shows instantaneous 1 s rates; averaging/graphing is TL-006.
 
 ## Git Commit
 
+- TL-005 (dashboard): `bb6deef` — `feat: add live dashboard view with adaptive rate formatting (TL-005)`
 - `2bf03c9` — `fix: classify OpenVPN TAP/DCO (type 53) and virtual nics correctly via driver descriptions (TL-004)`
 - `6bfa9d6` — `feat: add download/upload rate calculation from counter deltas with monotonic timing (TL-003)`
 - `e3bef48` — TL-002 collector; `7f841be` — M0 smoke test; `d8f2933` — TL-001 bootstrap.
 
 ## Next Recommended Task
 
-- M2 — Dashboard (TL-005) building on the now-available per-adapter and aggregate
-  rates, and M3's adapter detection. M3 (TL-004) is complete.
+- TL-006 — Live traffic graph (completes M2): ring-buffer history in the collector/
+  ViewModel layer (TL-005 deliberately keeps none), 30 s / 1 m / 5 m ranges,
+  lightweight rendering. TL-005 is complete and its rates feed TL-006 directly.

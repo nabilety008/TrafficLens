@@ -72,8 +72,23 @@
 - **Commit:** `2bf03c9` (code + tests), `docs/PROJECT_STATUS.md` hash pointer
 
 ### TL-005 Dashboard
-- [ ] Current download/upload, totals, active adapter, network status
-- **Status: not started**
+- [x] Live Download/Upload/Total cards from real collector rates (`SpeedSampleReady` + `AggregateRates`)
+- [x] Adaptive rate formatting (B/s, KB/s, MB/s) + Mbps cards (`DataRateFormatter` in Core)
+- [x] Active/preferred adapter card (name, kind, connected/disconnected) via default-selector
+- [x] Per-adapter list (name, kind, up/down, current up/down rates); tunnels stay visible
+- [x] System cards use the ADR-009/ADR-010 aggregate policy (tunnels excluded, no double count)
+- [x] MVVM: DashboardViewModel consumes abstractions via DI, no networking in code-behind,
+      UI updates marshalled to Dispatcher, events fully unsubscribed (IDisposable)
+- [x] Localization: en + fa-IR resources for Dashboard/Download/Upload/Total/Active Adapter/
+      Connected/Disconnected/Network Adapters/No active connection + kind names; RTL-safe layout
+- [x] Connection state: no-network, disconnect, reconnect, VPN-only host, no-sample window — no crash
+- [x] No polling in VM, no unbounded history, scalar-only rate updates per second
+- [x] Tests: 15 formatter cases (Network.Tests) + 8 App.Tests (aggregate→VM, adapter→VM,
+      no-network, reconnect, VPN-only honesty, culture switch, resource keys)
+- [x] Real Windows GUI verification: dark dashboard renders live rates under real traffic
+      (download 0 B/s → 844 KB/s / 6.92 Mbps → decaying), en + fa-IR both render and exit cleanly
+- **Status: done**
+- **Commit:** `bb6deef` (see `docs/PROJECT_STATUS.md`)
 
 ### TL-006 Live Traffic Graph
 - [ ] Real-time download/upload graph (30s / 1m / 5m ranges)
@@ -128,7 +143,7 @@
 |---|---|---|---|
 | M0 | Project bootstrap, docs, localization foundation | TL-001 | Done |
 | M1 | Global network monitoring | TL-002, TL-003 | Done |
-| M2 | Dashboard and live graph | TL-005, TL-006 | Not started |
+| M2 | Dashboard and live graph | TL-005, TL-006 | In progress |
 | M3 | Network interfaces | TL-004 | Done |
 | M4 | Per-process traffic | TL-007 | Not started |
 | M5 | Active connections | TL-008 | Not started |

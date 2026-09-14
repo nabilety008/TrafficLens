@@ -55,6 +55,16 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Every ViewModel derives from `ViewModelBase` (`INotifyPropertyChanged`).
 - Commands use `RelayCommand`.
 - Data flows: collector -> service -> ViewModel -> View binding.
+- `MainViewModel` is window chrome (title, status, language switch); the
+  dashboard itself is `DashboardViewModel` exposed as `MainViewModel.Dashboard`
+  (`{Binding Dashboard.*}` from XAML).
+- `DashboardViewModel` consumes `INetworkTrafficCollector` and
+  `INetworkAdapterProvider` through DI, reacts to `SpeedSampleReady` and the
+  adapter-changed events, and marshals every update to the WPF Dispatcher with
+  `InvokeAsync`. It unsubscribes in `Dispose()` (no leaked handlers).
+- Rates are formatted with `DataRateFormatter` (Core). No data is polled by the
+  ViewModel and no network APIs are touched in the view layer, keeping ADR-011's
+  thin-dashboard contract testable without the UI.
 
 ## Logging
 

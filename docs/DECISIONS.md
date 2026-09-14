@@ -142,3 +142,30 @@ Reasoning:
   transitions; re-baselining is the honest response.
 - Adapter-level views describe each physical/VPN link truthfully; only the
   system-wide number needs the no-double-count caveat.
+
+## ADR-011: Dashboard is a thin event-driven ViewModel over collector/provider abstractions
+
+**Status:** Accepted (TL-005)
+
+`DashboardViewModel` (App) consumes only `INetworkTrafficCollector` and
+`INetworkAdapterProvider` (via DI), subscribes to `SpeedSampleReady` and the
+adapter-changed events, and marshals every update to the WPF `Dispatcher`
+(`InvokeAsync`) — no polling loop inside the ViewModel, no Windows networking
+APIs in the view layer. Rates come exclusively from the existing
+`NetworkTrafficAggregator.AggregateRates` policy (ADR-009/ADR-010): the three
+prominent cards aggregate non-tunnel adapters, while each adapter row keeps its
+own per-adapter rates including tunnels. Unit strings (B/s, KB/s, MB/s, Mbps)
+are technical notation and are never translated; only number formatting (decimal
+separator) follows the current culture via `DataRateFormatter` (Core), which is a
+pure static formatter with no XAML dependencies.
+
+Reasoning:
+- Keeps UI binding, no code-behind networking (MVVM rule), no update storm
+  (one sample per second, unchanged strings are not re-raised).
+- The dashboard never fabricates: VPN-only hosts show honest zero/absent totals
+  while tunnel rows still render their real per-adapter rates.
+- Presentation formatting must be unit-testable without WPF, hence it lives in
+  Core beside `DataRateConverter` rather than in a view converter.
+- UI requirements: no unbounded history is accumulated (TL-006 owns the graph
+  buffers); connection state (no network / disconnect / reconnect) is surfaced
+  via `HasConnection` and localized status text, never exceptions.

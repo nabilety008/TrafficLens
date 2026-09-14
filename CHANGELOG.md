@@ -2,6 +2,45 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.6] — 2026-09-14 (TL-005 Dashboard)
+
+### Added
+- `TrafficLens.Core/Conversion/DataRateFormatter` — presentation formatting for
+  live rates: adaptive B/s / KB/s / MB/s and Mbps; culture-aware decimal
+  separator; unit symbols kept as technical notation (untranslated).
+- `DashboardViewModel` + `AdapterListItemViewModel` (App) — MVVM dashboard over
+  the existing collector/provider abstractions, bound to `MainViewModel.Dashboard`.
+- `MainWindow` dashboard layout: Download / Upload / Total cards, Active Adapter
+  card, Network Adapters list; scrollable, stays intact at smaller window sizes.
+- English (en) and Persian (fa-IR) resources for dashboard labels, adapter kinds
+  and connection states.
+- `tests/TrafficLens.App.Tests` (xUnit, net8.0-windows) for ViewModel mapping,
+  no-network/reconnect/VPN-only states, culture switch, and resource existence.
+- Formatter tests (15 cases) in `tests/TrafficLens.Network.Tests`.
+- ADR-011 (thin event-driven dashboard; Core formatter; aggregate policy reuse).
+
+### Changed
+- `App.xaml.cs` — registers `AddNetworkServices()`, `DashboardViewModel`; starts
+  the collector on startup; logs "TrafficLens exiting" on clean shutdown; DI now
+  also disposes collector (stops the poll loop).
+- `MainViewModel` — reduced to window chrome (title, status, language switch);
+  dashboard state moved into the injected `Dashboard` property.
+- VM updates are marshalled to the WPF Dispatcher (`InvokeAsync`); all collector/
+  provider/localization event subscriptions are released via `IDisposable`.
+- Adapter-list automation names via `ToString()` so screen readers see adapter
+  names, not ViewModel type names.
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **103/103 passing** (95 Network + 8 App).
+- Real Windows GUI (Release, live traffic): Download card moved
+  0 B/s → 844.31 KB/s (6.92 Mbps) → decaying to 32.74 KB/s as traffic flowed;
+  adapter list showed Wi-Fi + OpenVPN TAP/DCO + Wi-Fi Direct virtuals + Bluetooth;
+  en and fa-IR dashboards both rendered without crashing; clean close logged
+  "TrafficLens exiting".
+- ADR-009/010 policy holds: peak ~6.92 Mbps on the system cards matched the
+  non-tunnel aggregate while tunnel rows keep their own rates; no double counting.
+
 ## [0.0.5] — 2026-09-14 (TL-004 audit + gap fix)
 
 ### Changed
