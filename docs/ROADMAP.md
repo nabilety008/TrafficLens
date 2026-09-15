@@ -11,8 +11,8 @@
 | M4 | Per-process traffic | Not started |
 | M5 | Active connections | Not started |
 | M6 | SQLite history | Not started |
-| M7 | System tray + floating widget | Not started |
-| M8 | Alerts + settings | Not started |
+| M7 | System tray + floating widget | Done |
+| M8 | Alerts + settings | In progress (TL-012 alerts done; TL-013 settings remains) |
 | M9 | Stability, performance, tests, packaging | Not started |
 | M10 | Full Persian localization + language switcher | Not started |
 

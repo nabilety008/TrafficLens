@@ -2,6 +2,66 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.15] — 2026-09-15 (TL-012 complete — alerts)
+
+### Added
+- Core alert domain (`TrafficLens.Core/Alerts`, no WPF/OS dependencies):
+  `AlertType` (HighDownloadSpeed / HighUploadSpeed / DailyDownloadLimit /
+  DailyUploadLimit / DailyTotalLimit), `AlertConfig` (immutable record;
+  all 5 rules **disabled by default** with suggested thresholds 50 MB/s /
+  20 MB/s / 50 GB / 20 GB / 100 GB and a 5 min cooldown), `AlertEvent`,
+  `AlertSignal`, `AlertEngine` (pure, gate-locked, clock + `TimeZoneInfo`
+  injected), `AlertHistoryBuffer` (session-only, capacity 100, newest-first).
+- Speed rule semantics: triggers on **upward crossing only**; remaining above
+  the threshold never repeats; dropping below re-arms but does not clear the
+  cooldown, so flapping yields ≤ 1 alert per cooldown window (no spam).
+- Daily usage rule semantics: at most once per **local calendar day**
+  (DST-safe), with the last-triggered local date persisted and restored on
+  startup so a same-day restart (or crash) never re-fires; the next day
+  re-arms.
+- `AlertService`/`IAlertService` (App, singleton) — subscribes the existing
+  `SpeedSampleReady` (evaluated via `NetworkTrafficAggregator.AggregateRates`,
+  ADR-009/010 policy) and the cached history snapshot on `HistoryChanged`
+  (never touches SQL); raises `AlertRaised`, logs every trigger, clean
+  `Dispose`. `AlertSettings` (flat settings keys + Load/Save plus persisted
+  `alerts.lastTriggered.*` dates), `AlertNotification` +
+  `AlertMessageFormatter`.
+- Tray balloons: `ISystemTrayService.ShowAlert` / `SystemTrayService.ShowAlert`
+  (Warning balloon, 8 s; dropped+logged only when the tray is unavailable);
+  `BalloonTipClicked → OpenRequested` reuses the TL-011 singleton-restore
+  handler.
+- Alerts page: `AlertsViewModel` (count + TimeText + newest-first rows),
+  `Views/AlertsView.xaml` (+ DI code-behind), Alerts nav button + host in
+  `MainViewModel`/`MainWindow`, DI registrations and `AlertRaised → ShowAlert`
+  wiring in `App.xaml.cs`.
+- Localization en + fa-IR: `AlertsNavLabel`, `AlertsTitleLabel`,
+  `AlertsNoAlertsLabel`, `AlertsCountFormat`, `AlertTitle`, `AlertType*` ×6,
+  `AlertMsg*` ×5.
+- `scripts/tl012-verify.ps1` — real-Windows alert verification (speed
+  crossing/no-spam/re-arm, daily once-per-day + same-day-restart persistence,
+  notification-while-hidden, regression + graceful exit).
+- ADR-020 (local alert architecture: no SQL in the alert path, crossing-gated
+  speed rules, once-per-local-day usage rules, session buffer).
+
+### Tests
+- `AlertEngineTests` (17 engine cases + 3 buffer tests) — upward-crossing-
+  only, cooldown window, no-repeat-while-above, re-arm, once-per-day,
+  DST-safe UTC+14 local-day identity, next-day re-arm, restore semantics.
+  `AlertServiceTests` (10) — pipeline wiring, daily suspension when history is
+  unavailable, persistence, dispose. `AlertsViewModelTests` (4). `Fakes.cs`
+  gained `FakeHistoryService`/`FakeAlertService`/`FakeTrayService.ShowAlert`;
+  localization resource keys extended.
+- Total 349 tests (App 116 / Network 206 / Infrastructure 27), Debug + Release
+  0 warnings / 0 errors.
+
+### Verified
+- Real Windows GUI verification (`scripts/tl012-verify.ps1`, Release): speed
+  alert threshold 256 KB/s + controlled download → exactly one notification,
+  no spam while above, re-arm after drop; daily total 10 MB → once per local
+  day, persisted `alerts.lastTriggered.dailyTotal`, same-day restart → no
+  repeat; notification delivered while hidden with the tray alive; default
+  (alerts disabled) regression + graceful exit with no ETW orphans.
+
 ## [0.0.14] — 2026-09-15 (TL-011 complete — system tray)
 
 ### Added

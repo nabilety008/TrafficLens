@@ -45,6 +45,71 @@
 - **Status: done**
 - **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
 
+### TL-012 Alerts — **DONE**
+- [x] Core alert domain (`src/TrafficLens.Core/Alerts`, no WPF/OS dependencies):
+      `AlertType` (HighDownloadSpeed / HighUploadSpeed / DailyDownloadLimit /
+      DailyUploadLimit / DailyTotalLimit with `IsSpeedRule`/`IsDailyUsageRule`),
+      `AlertConfig` (immutable record + `Default()`; 5 rules all **disabled by
+      default** with suggested thresholds 50 MB/s / 20 MB/s / 50 GB / 20 GB /
+      100 GB and 5 min cooldown), `AlertEvent` (type/value/threshold/occurred),
+      `AlertSignal`, `AlertEngine` (pure, gate-locked, clock-injected), and
+      `AlertHistoryBuffer` (session-only, capacity 100, newest-first)
+- [x] Speed semantics (tested): triggers on **upward crossing only**;
+      `rate ≥ threshold` consumes the armed crossing and signals only when
+      `now ≥ CooldownUntilUtc`; dropping below re-arms but **does not clear the
+      cooldown** — remaining above never repeats, flapping yields ≤ 1 alert per
+      cooldown window; no spam
+- [x] Daily semantics (tested): at most once per **local calendar day**
+      (DST-safe via injected `TimeZoneInfo`); the last-triggered local date is
+      persisted (`alerts.lastTriggered.…`) on trigger and restored on
+      construction so a same-day restart (or crash) never re-fires; next local
+      day re-arms
+- [x] Alert pipeline never touches SQL: speed evaluated from
+      `INetworkTrafficCollector.GetCurrentSamples()` +
+      `INetworkAdapterProvider.GetAdapters()` via the existing
+      `NetworkTrafficAggregator.AggregateRates` (ADR-009/010 policy) on
+      `SpeedSampleReady`; daily evaluated from the cached
+      `ITrafficHistoryService.GetSnapshot()` on `HistoryChanged` — history
+      unavailable ⇒ daily rules suspended silently, speed continues
+- [x] App services (`TrafficLens.App/Services`): `AlertSettings` (flat settings
+      keys + Load/Save + Load/SaveTriggeredDates, invariant culture),
+      `AlertNotification` + `AlertMessageFormatter` (structured, re-localized on
+      culture change), `IAlertService` + `AlertService` (singleton, owns the
+      engine, subscribes both pipelines, raises `AlertRaised`, logs every
+      trigger, clean `Dispose`)
+- [x] Tray delivery: `ISystemTrayService.ShowAlert(title, message)` +
+      `SystemTrayService.ShowAlert` (RunOnUi, EnsureCreated, Warning balloon,
+      8 s, dropped+logged if tray unavailable); `BalloonTipClicked` →
+      `OpenRequested` (same singleton-restore handler verified in TL-011)
+- [x] Alerts page (M8 UI surface): `AlertsViewModel` (count formatter,
+      TimeText via `ToLocalTime`, newest-first rows), `Views/AlertsView.xaml`
+      (+DI code-behind), `MainViewModel` Alerts nav + `ShowAlertsCommand`,
+      `MainWindow` Alerts button + `AlertsHost` ContentControl, `App.xaml.cs`
+      registrations + `AlertRaised → ShowAlert` wiring
+- [x] Localization en + fa-IR: `AlertsNavLabel`, `AlertsTitleLabel`,
+      `AlertsNoAlertsLabel`, `AlertsCountFormat`, `AlertTitle`, 6×
+      `AlertType*`, 5× `AlertMsg*`; `LocalizationResourceTests.RequiredKeys`
+      extended
+- [x] Tests: `AlertEngineTests` (17 engine cases — upward-crossing-only,
+      cooldown window, no-repeat-while-above, re-arm, once-per-day, DST-safe
+      UTC+14 local-day identity, next-day re-arm, restore semantics; 3 buffer
+      tests), `AlertServiceTests` (10), `AlertsViewModelTests` (4);
+      `Fakes.cs` gained `FakeHistoryService`/`FakeAlertService`/
+      `FakeTrayService.ShowAlert`
+- [x] Build Debug + Release: **0 warnings / 0 errors**; **349/349 tests**
+      (App 116 / Network 206 / Infrastructure 27)
+- [x] Real Windows GUI verification (`scripts/tl012-verify.ps1`): (A) speed
+      256 KB/s threshold + controlled `1Gb.dat` download → exactly one
+      notification, no spam while above, re-arm after drop-below; (B) daily
+      total 10 MB → once per local day, `alerts.lastTriggered.dailyTotal`
+      persisted, same-day restart → no repeat; (C) notification while hidden
+      in tray (no "notification dropped", tray icon alive); (D) full
+      regression with default-disabled alerts + graceful exit, no ETW orphans
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ARCHITECTURE, DECISIONS
+      ADR-020)
+- **Status: done**
+- **Commit:** `6512011` (code + tests + script; see `docs/PROJECT_STATUS.md`)
+
 ### TL-001 Project Bootstrap — **DONE**
 - [x] Inspect .NET environment (installed .NET 8 SDK 8.0.425)
 - [x] Create `TrafficLens.sln` and solution folder structure
@@ -365,13 +430,10 @@
 - **Status: done**
 - **Commit:** (see `docs/PROJECT_STATUS.md`)
 
-### TL-011 System Tray
-- [ ] Tray icon, show/hide, minimize to tray, exit
-- **Status: not started**
-
+### TL-011 System Tray — **done** (see the completed block at the top)
 ### TL-012 Alerts
 - [ ] Local alert architecture (usage thresholds, notifications)
-- **Status: not started**
+- **Status: done** (see the completed block at the top)
 
 ### TL-013 Settings
 - [ ] Settings UI and persistence
@@ -400,7 +462,7 @@
 | M4 | Per-process traffic | TL-007 | Done |
 | M5 | Active connections | TL-008 | Done |
 | M6 | SQLite history | TL-009 | Done |
-| M7 | Tray and widget | TL-010, TL-011 | In progress (TL-010 done; TL-011 owns tray) |
-| M8 | Alerts and settings | TL-012, TL-013 | Not started |
+| M7 | Tray and widget | TL-010, TL-011 | Done |
+| M8 | Alerts and settings | TL-012, TL-013 | In progress (TL-012 alerts done; TL-013 owns settings) |
 | M9 | Stability, performance, tests, packaging | TL-015 | Not started |
 | M10 | Full Persian localization | TL-016 | Not started |

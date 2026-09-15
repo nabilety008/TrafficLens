@@ -4,14 +4,14 @@ Updated: 2026-09-15
 
 ## Current Milestone
 
-M7 (system tray) is **complete**: TL-010 (floating widget) and TL-011 (system
-tray) are both done and verified — one tray icon with Open / Show-Hide Widget /
-Always-on-Top / Exit, minimize-to-tray and close-to-tray (defaults true), a
-single idempotent exit coordinator feeding a clean graceful shutdown, a
-once-ever close-to-tray balloon, runtime-drawn localized tray menu, and the
-floating widget pin tooltip bound to the shared label. M1, M2, M3, M4
-(per-process traffic), M5, and M6 (SQLite history) are complete. M8 (settings /
-next milestone) is the scheduled follow-up.
+M8 (alerts and settings) is in progress: **TL-012 (alerts) is complete and
+verified** — a pure Core alert engine (two speed rules + three daily usage
+rules, all disabled by default with suggested thresholds), live tray-balloon
+notifications (speed from the existing aggregate pipeline, daily from the
+cached history snapshot, never touching SQL), a new Alerts page, en + fa-IR
+localization, 32 new alert unit tests, and a full real-Windows verification
+script. M7 (TL-010 floating widget + TL-011 system tray) is complete, as are
+M1–M6. TL-013 (the full settings page) is the remaining M8 item.
 
 ## Task IDs
 
@@ -28,7 +28,8 @@ next milestone) is the scheduled follow-up.
 - TL-009 SQLite History — **DONE**
 - TL-010 Floating Widget — **DONE**
 - TL-011 System Tray — **DONE**
-- TL-012 and later — not started
+- TL-012 Alerts — **DONE**
+- TL-013 and later — not started
 
 ## Completed
 
@@ -310,6 +311,48 @@ next milestone) is the scheduled follow-up.
   - Localization en + fa-IR: `OpenTrafficLensLabel`, `ExitLabel`,
     `MinimizeToTrayLabel`, `CloseToTrayLabel`, `TrayCloseNoticeBalloon`; internal
     tray technical name stays LTR.
+- TL-012 (alerts, M8):
+  - Core alert domain (`TrafficLens.Core/Alerts`, no WPF/OS dependencies):
+    `AlertType` (HighDownloadSpeed / HighUploadSpeed / DailyDownloadLimit /
+    DailyUploadLimit / DailyTotalLimit with `IsSpeedRule`/`IsDailyUsageRule`),
+    `AlertConfig` (immutable record; all **5 rules disabled by default** with
+    suggested thresholds 50 MB/s, 20 MB/s, 50 GB, 20 GB, 100 GB; default 5 min
+    cooldown), `AlertEvent`, `AlertSignal`, `AlertEngine` (pure, gate-locked,
+    clock + `TimeZoneInfo` injected), `AlertHistoryBuffer` (session-only,
+    capacity 100, newest-first).
+  - Speed semantics (tested): triggers on **upward crossing only**;
+    `rate ≥ threshold` consumes the armed crossing and signals only when
+    `now ≥ CooldownUntilUtc`; dropping below re-arms but does **not** clear the
+    cooldown, so "remain above" never repeats and flapping yields ≤ one alert
+    per cooldown window (no spam).
+  - Daily semantics (tested): at most once per **local calendar day**
+    (DST-safe); the last-triggered local date is persisted
+    (`alerts.lastTriggered.dailyDownload|dailyUpload|dailyTotal`) on trigger and
+    restored on construction so a **same-day restart (or crash) never re-fires**;
+    the next local day re-arms.
+  - Pipeline never touches SQL: speed is evaluated from
+    `INetworkTrafficCollector.GetCurrentSamples()` +
+    `INetworkAdapterProvider.GetAdapters()` via the existing
+    `NetworkTrafficAggregator.AggregateRates` (ADR-009/010 policy) on
+    `SpeedSampleReady`; daily is evaluated from the cached
+    `ITrafficHistoryService.GetSnapshot()` on `HistoryChanged`. History
+    unavailable ⇒ daily rules suspend silently (logged once), speed continues.
+  - App (`TrafficLens.App/Services`): `AlertSettings` (flat settings keys,
+    Load/Save + Load/SaveTriggeredDates, invariant culture), `AlertNotification`
+    + `AlertMessageFormatter` (structured, re-localized on culture change),
+    `IAlertService`/`AlertService` (singleton; owns the engine; subscribes both
+    pipelines; raises `AlertRaised`; logs every trigger; clean `Dispose`).
+  - Tray delivery: `ISystemTrayService.ShowAlert` +
+    `SystemTrayService.ShowAlert` (RunOnUi, EnsureCreated, Warning balloon, 8 s,
+    dropped+logged only if the tray is unavailable);
+    `BalloonTipClicked → OpenRequested` (the same singleton-restore handler
+    verified by TL-011).
+  - Alerts page: `AlertsViewModel`, `Views/AlertsView.xaml` (+DI code-behind),
+    `MainViewModel` Alerts navigation, `MainWindow` Alerts host, `App.xaml.cs`
+    DI registrations + `AlertRaised → ShowAlert` wiring.
+  - Localization en + fa-IR: `AlertsNavLabel`, `AlertsTitleLabel`,
+    `AlertsNoAlertsLabel`, `AlertsCountFormat`, `AlertTitle`, `AlertType*` ×6,
+    `AlertMsg*` ×5; `LocalizationResourceTests.RequiredKeys` extended.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -354,8 +397,38 @@ next milestone) is the scheduled follow-up.
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 317/317 passed (`TrafficLens.Network.Tests` 206,
-  `TrafficLens.App.Tests` 84, `TrafficLens.Infrastructure.Tests` 27).
+- **Automated tests:** 349/349 passed (`TrafficLens.Network.Tests` 206,
+  `TrafficLens.App.Tests` 116, `TrafficLens.Infrastructure.Tests` 27).
+- **TL-012 real Windows alerts GUI verification** (Release build,
+  `scripts/tl012-verify.ps1`, real host; settings are read once per process
+  startup, so each block relaunches from freshly written settings):
+   - **A) Speed alert, threshold 256 KB/s, cooldown 10 s:** a controlled
+     `1Gb.dat` download crossed the threshold and produced **exactly one**
+     `Alert triggered: HighDownloadSpeed` line; the sustained multi-sample
+     download produced no repeat (no spam while above); after traffic dropped
+     below and the cooldown elapsed, a second download re-triggered **once**
+     (re-arm semantics); the tray path stayed healthy (zero
+     "Alert notification dropped", app alive).
+   - **B) Daily total usage limit, threshold 10 MB:** a daily trigger fired
+     exactly once after Today usage crossed the threshold (history flush
+     ~30 s); `alerts.lastTriggered.dailyTotal` was persisted as today's local
+     date (`yyyy-MM-dd`); a **same-day restart produced no repeat** (restored
+     date holds). Next-local-day re-arm is covered by the engine unit tests.
+   - **C) Notification while hidden:** with the main window hidden
+     (minimize-to-tray), a speed alert still fired and was delivered to the
+     tray (no "notification dropped"); the tray icon remained and the app
+     stayed alive. Balloon click → restore routes through the tray
+     `OpenRequested` handler already verified live in TL-011 — a real balloon
+     click cannot be automated against the Windows 11 XAML tray.
+   - **D) Regression:** default (all alerts disabled) launch renders every
+     page (dashboard/graph/apps/connections/history/alerts), collectors +
+     history run with deltas recorded and nothing fired; `CloseToTray=false`
+     close exits gracefully with no orphan ETW session; 2 lifecycle cycles
+     clean (no lingering process, no ETW orphans).
+   - **Honest coverage notes:** balloon text/click are OS-rendered; delivery is
+     asserted via the wired `AlertRaised → ShowAlert` path; once-per-day,
+     next-day re-arm, DST day identity, cooldown and no-spam semantics are
+     purely logical and covered by `AlertEngine` unit tests.
 - **TL-009 real Windows history verification** (`--history` mode, live host, throwaway
    temp DB — never the user's `%LOCALAPPDATA%` DB):
    - Pipeline ran end-to-end: live collector → accumulator → minute buckets →
@@ -526,11 +599,13 @@ next milestone) is the scheduled follow-up.
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
   formatter cases, metadata-provider tests, and the TL-008 connection parser /
   key / selection / endpoint-formatter suites).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 84 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 116 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
   FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
-  TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests, and resource keys).
+  TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests,
+  17 TL-012 AlertEngine tests + 3 alert-buffer tests, 10 AlertService tests,
+  4 AlertsViewModel tests, and resource keys).
 - `tests/TrafficLens.Infrastructure.Tests` — xUnit, 27 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider).
@@ -575,6 +650,7 @@ next milestone) is the scheduled follow-up.
 ## Git Commit
 
 - TL-011 (system tray): `6e4d122` — `feat: add system tray with minimize/close-to-tray, singleton restore, and coordinator-based exit (TL-011)`; docs `8f230ec`.
+- TL-012 (alerts): `6512011` — `feat: add local alert engine with speed/daily usage rules, tray balloon notifications, and Alerts page (TL-012)`; docs `<tl012-docs>`.
 - TL-010 (floating widget): `f3dc2e9` — `feat: add always-on-top floating widget reusing live aggregate rates with persisted position/topmost (TL-010)`; docs `a527168`.
 - TL-009 (SQLite history): `861269c` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
 - TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
@@ -588,7 +664,8 @@ next milestone) is the scheduled follow-up.
 
 ## Next Recommended Task
 
-- TL-011 (system tray) is complete and verified, closing M7. Next scheduled item
-  is the **TL-012..TL-013 milestone (settings)** — the full Settings page
-  (language, start-with-Windows, tray options) that subsumes the minimal tray
-  options popup introduced in TL-011.
+- TL-012 (alerts) is complete and verified, advancing M8. Next scheduled item
+  is **TL-013 (settings)** — the full Settings page (language, start-with-
+  Windows, tray options, alert thresholds) that subsumes the minimal tray
+  options popup introduced in TL-011 and provides the UI for the alert rules
+  that TL-012 currently configures via settings keys only.

@@ -274,6 +274,60 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
   `trayService.ExitRequested → coordinator.RequestApplicationExit()` then
   `trayService.Show()`; widget restore runs via `IFloatingWidgetService`.
 
+## Alerts layer (TL-012)
+
+- `TrafficLens.Core/Alerts` holds the no-OS alert domain:
+  - `AlertType` — the five rules (HighDownloadSpeed / HighUploadSpeed /
+    DailyDownloadLimit / DailyUploadLimit / DailyTotalLimit) with
+    `IsSpeedRule()`/`IsDailyUsageRule()` classifiers.
+  - `AlertConfig` — immutable record; **all five rules disabled by default**
+    with suggested thresholds (50 MB/s / 20 MB/s / 50 GB / 20 GB / 100 GB)
+    and a default 5 min cooldown.
+  - `AlertEngine` — pure, gate-locked evaluator with an injected clock and
+    `TimeZoneInfo` (no wall-clock/OS coupling). Speed rules trigger on
+    **upward crossing only**: `rate ≥ threshold` consumes the armed crossing
+    and signals only once `now ≥ CooldownUntilUtc`; dropping below re-arms
+    (cooldown is not cleared), so staying above never repeats and flapping
+    yields ≤ 1 alert per cooldown window. Daily rules allow at most one signal
+    per **local calendar day**; the last-triggered local date is exposed via
+    `TriggeredDailyDates()` and restored via `RestoreTriggeredDates()` (the
+    service persists them). History-unavailable snapshots suspend the daily
+    rules silently.
+  - `AlertEvent` / `AlertSignal` — structured event + engine output.
+  - `AlertHistoryBuffer` — session-only, bounded (capacity 100), newest-first.
+- `TrafficLens.App/Services` owns the subscription + delivery side:
+  - `AlertService` (singleton, `IAlertService`) — subscribes
+    `INetworkTrafficCollector.SpeedSampleReady` and derives rates purely from
+    `GetCurrentSamples()` + `GetAdapters()` via the existing
+    `NetworkTrafficAggregator.AggregateRates` (ADR-009/010 policy, so the speed
+    rules measure the same system totals the dashboard shows); evaluates the
+    three daily rules from the cached `ITrafficHistoryService.GetSnapshot()` on
+    `HistoryChanged`. **No SQL is ever run in the alert path.** Raises
+    `AlertRaised`, logs every trigger, persists triggered dates, and disposes
+    cleanly.
+  - `AlertSettings` — maps `AlertConfig` + triggered dates to/from the existing
+    flat `ISettingsService` store (`alerts.cooldownSeconds`,
+    `alerts.<rule>.enabled`, `alerts.<rule>.threshold`,
+    `alerts.lastTriggered.<dailyRule>` as `yyyy-MM-dd`; invariant culture).
+  - `AlertNotification` + `AlertMessageFormatter` — builds localized balloon
+    title/message from an `AlertEvent`; re-localizes on culture change.
+- Tray delivery: `ISystemTrayService.ShowAlert(title, message)` →
+  `SystemTrayService.ShowAlert` shows a WinForms warning balloon (8 s) on the
+  existing NotifyIcon; the alert is dropped + logged only if the tray is
+  unavailable. `BalloonTipClicked` raises the tray `OpenRequested` event, so a
+  balloon click restores the same singleton window (TL-011 handler).
+- Alerts page: `AlertsViewModel` (localized count, rows with
+  value/threshold/type/time via `ToLocalTime`), `Views/AlertsView.xaml` (+ DI
+  code-behind), Alerts nav button + `AlertsHost` in `MainViewModel`/
+  `MainWindow`. `App.xaml.cs` registers the service/viewmodel/view and wires
+  `AlertRaised → ShowAlert`. All UI strings come from `Strings*.resx`
+  (en + fa-IR).
+- Data flow: collector samples / history snapshot → `AlertEngine` (locked,
+  pure) → `AlertSignal` → `AlertService` (raise + persist + log + buffer) →
+  `AlertRaised` → tray balloon (via `ShowAlert`) and Alerts page (via
+  `AlertsViewModel`). Speed re-evaluates each sample (cooldown-gated); daily
+  re-evaluates on each history flush (~30 s).
+
 ## Future Plans
 
 - Full settings page (TL-013) — currently just the minimal tray options popup.

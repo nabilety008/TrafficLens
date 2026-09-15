@@ -492,3 +492,53 @@ Reasoning:
   verification drives minimize/close via Win32 messages and checks the NotifyIcon
   message-window proxy.
 
+## ADR-020: Local alert engine over existing pipelines (no SQL in the alert path)
+
+**Status:** Accepted (TL-012)
+
+Alerts are evaluated in a pure, injectable **`AlertEngine`** (Core) fed only by
+the two pipelines TrafficLens already runs — the network collector's
+`SpeedSampleReady` and the cached history `HistoryChanged` snapshot:
+- **Speed rules** (`HighDownloadSpeed`/`HighUploadSpeed`) derive rate solely from
+  `INetworkTrafficCollector.GetCurrentSamples()` + `INetworkAdapterProvider
+  .GetAdapters()` via the existing `NetworkTrafficAggregator.AggregateRates`
+  (ADR-009/010 policy), so they measure exactly the system totals the dashboard
+  shows.
+- **Daily usage rules** (`DailyDownloadLimit`/`DailyUploadLimit`/`DailyTotalLimit`)
+  read only the cached immutable `HistorySnapshot.Today.*` — never the SQLite
+  database (queries run only inside the history service; the alert service holds
+  the reference to its immutable snapshot).
+- Subscription-based, push-only: the alert service has **no poll loop, no timer,
+  and no DB handles**. If history storage is unavailable, daily rules suspend
+  silently (logged once) while speed rules keep working.
+
+Two distinct gating semantics (both pure and unit-tested):
+- **Speed = edge-triggered with cooldown.** An alert fires only when the rate
+  crosses the threshold from below *and* the cooldown has elapsed. Remaining
+  above never repeats, and a drop below re-arms without clearing the cooldown —
+  so sustained high traffic or flapping around a threshold produces at most one
+  balloon per cooldown window (default 5 min), which is what a user actually
+  wants from a local monitor.
+- **Daily = once per local calendar day, restart-safe.** The last-triggered
+  local date is computed with the same DST-correct `TimeZoneInfo` logic as the
+  history ranges (TL-009) and persisted to settings; on startup the engine
+  restores it, so a same-day restart or crash never re-fires the alert, while
+  the next local day re-arms automatically.
+
+Delivery is the existing tray `NotifyIcon` balloon (`ShowAlert`, Warning icon,
+8 s), and the Balloon click funnels into the TL-011 `OpenRequested` singleton
+restore. A session-only bounded history buffer (capacity 100) backs the Alerts
+page; it is intentionally **not persisted** (persisted alert history is a
+future refinement, not required for V1 alerts).
+
+Reasoning:
+- Local-first + agent-friendly: no cloud callbacks, no always-on push service;
+  everything stays on the machine and is testable without a real NIC.
+- Reusing the aggregate pipeline and the cached history snapshot avoids a second
+  polling loop and keeps the alert layer free of SQLite/file/UI concerns, so
+  `AlertEngine` is fully unit-testable (clock + time zone injected).
+- Edge-triggered cooldown and once-per-local-day are the two semantics that
+  cannot "spam" or double-fire in practice; both are enforced in pure logic and
+  proven by real-Windows verification (a sustained download produced exactly one
+  balloon; a same-day restart produced no repeat).
+
