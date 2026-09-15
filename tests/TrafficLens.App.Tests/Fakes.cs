@@ -122,3 +122,38 @@ internal sealed class FakeProcessCollector : IProcessTrafficCollector
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 }
+
+internal sealed class FakeConnectionProvider : IConnectionProvider
+{
+    private readonly List<ConnectionInfo> _connections = new();
+
+    public string? LastError { get; private set; }
+
+    public event EventHandler<IReadOnlyList<ConnectionInfo>>? ConnectionsChanged;
+
+    public IReadOnlyList<ConnectionInfo> GetCurrentConnections() => _connections.ToArray();
+
+    public Task<IReadOnlyList<ConnectionInfo>> GetActiveConnectionsAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<ConnectionInfo>>(_connections.ToArray());
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync() => Task.CompletedTask;
+
+    public void Dispose()
+    {
+    }
+
+    public void Publish(params ConnectionInfo[] connections)
+    {
+        _connections.Clear();
+        _connections.AddRange(connections);
+        ConnectionsChanged?.Invoke(this, connections.ToArray());
+    }
+
+    public void SetError(string? error)
+    {
+        LastError = error;
+        ConnectionsChanged?.Invoke(this, GetCurrentConnections());
+    }
+}

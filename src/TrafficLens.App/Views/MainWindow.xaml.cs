@@ -10,12 +10,17 @@ public partial class MainWindow : Window
 {
     private readonly ILocalizationService _localization;
 
-    public MainWindow(MainViewModel viewModel, ILocalizationService localization, ApplicationsView applicationsView)
+    public MainWindow(
+        MainViewModel viewModel,
+        ILocalizationService localization,
+        ApplicationsView applicationsView,
+        ConnectionsView connectionsView)
     {
         _localization = localization;
         InitializeComponent();
         DataContext = viewModel;
         ApplicationsHost.Content = applicationsView;
+        ConnectionsHost.Content = connectionsView;
 
         _localization.CultureChanged += OnCultureChanged;
         UpdateFlowDirection();

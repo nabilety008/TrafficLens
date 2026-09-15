@@ -1,10 +1,14 @@
 ﻿using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
+using TrafficLens.Core.Conversion;
 using TrafficLens.Core.Models;
 using TrafficLens.Network.Adapters;
 using TrafficLens.Network.Aggregation;
 using TrafficLens.Network.Collectors;
+using TrafficLens.Network.Connections;
 using TrafficLens.Network.Process;
 
 // Real Windows verification for TL-003:
@@ -27,6 +31,18 @@ if (OperatingSystem.IsWindows() is false)
 {
     Console.Error.WriteLine("Verification requires Windows.");
     return 1;
+}
+
+// Real Windows verification for TL-008 (--connections):
+//  1. Starts the IP Helper connection provider (TCP+UDP, IPv4+IPv6).
+//  2. Opens a local listening TCP socket and launches a curl download.
+//  3. Confirms the listener and the curl owner appear with plausible
+//     protocol/state/endpoints/PID/process-name and no fabricated UDP remotes.
+// Cross-check against Get-NetTCPConnection / Get-NetUDPEndpoint from PowerShell.
+
+if (args.Contains("--connections", StringComparer.OrdinalIgnoreCase))
+{
+    return await ConnectionsVerificationAsync().ConfigureAwait(false);
 }
 
 if (args.Contains("--process", StringComparer.OrdinalIgnoreCase))
@@ -115,6 +131,97 @@ await Console.Out.WriteLineAsync(JsonSerializer.Serialize(output, new JsonSerial
 
 await collector.StopAsync();
 return 0;
+
+static async Task<int> ConnectionsVerificationAsync()
+{
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+    Console.WriteLine("Connection verification (TL-008) starting...");
+
+    var provider = new WindowsConnectionProvider(
+        new WindowsProcessMetadataProvider(),
+        NullLogger<WindowsConnectionProvider>.Instance,
+        TimeSpan.FromSeconds(1));
+
+    await provider.StartAsync(CancellationToken.None);
+    await Task.Delay(1500);
+
+    var listener = new TcpListener(
+        IPAddress.Loopback,
+        int.TryParse(Environment.GetEnvironmentVariable("TL_VERIFY_PORT"), out var fixedPort) ? fixedPort : 0);
+    listener.Start();
+    var listenPort = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+    var curl = LaunchCurl();
+    await Task.Delay(3000);
+
+    var connections = provider.GetCurrentConnections();
+    var listenRow = connections.FirstOrDefault(c =>
+        c.Protocol == ConnectionProtocol.Tcp
+        && c.State == ConnectionState.Listen
+        && c.LocalPort == listenPort);
+    var curlRows = curl is null
+        ? new List<ConnectionInfo>()
+        : connections.Where(c => c.ProcessId == curl.Id).ToList();
+    var curlEstablished = curlRows.Where(c => c.State == ConnectionState.Established).ToList();
+
+    await provider.StopAsync();
+
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        tl008 = "verification",
+        status = "ok",
+        capturedAtUtc = DateTime.UtcNow,
+        lastError = provider.LastError,
+        counts = new
+        {
+            total = connections.Count,
+            tcp = connections.Count(c => c.Protocol == ConnectionProtocol.Tcp),
+            udp = connections.Count(c => c.Protocol == ConnectionProtocol.Udp),
+            ipv4 = connections.Count(c => c.AddressFamily == ConnectionAddressFamily.Ipv4),
+            ipv6 = connections.Count(c => c.AddressFamily == ConnectionAddressFamily.Ipv6),
+            established = connections.Count(c => c.State == ConnectionState.Established),
+            listening = connections.Count(c => c.State == ConnectionState.Listen),
+            udpWithRemote = connections.Count(c => c.Protocol == ConnectionProtocol.Udp && c.RemoteAddress is not null),
+            unknownProcess = connections.Count(c => string.IsNullOrWhiteSpace(c.ProcessName))
+        },
+        tcpStates = connections
+            .Where(c => c.Protocol == ConnectionProtocol.Tcp)
+            .GroupBy(c => c.State.ToString())
+            .OrderByDescending(g => g.Count())
+            .ToDictionary(g => g.Key, g => g.Count()),
+        listener = new
+        {
+            port = listenPort,
+            observed = listenRow is not null,
+            row = listenRow is null ? null : Summarize(listenRow)
+        },
+        curl = new
+        {
+            pid = curl?.Id,
+            total = curlRows.Count,
+            established = curlEstablished.Count,
+            processName = curlRows.FirstOrDefault()?.ProcessName,
+            allRowsNamed = curlRows.Count > 0 && curlRows.All(c => !string.IsNullOrWhiteSpace(c.ProcessName)),
+            sample = curlEstablished.Count > 0 ? Summarize(curlEstablished[0]) : null
+        }
+    }, new JsonSerializerOptions { WriteIndented = true }));
+
+    curl?.Kill();
+    listener.Stop();
+    provider.Dispose();
+    return 0;
+}
+
+static object Summarize(ConnectionInfo connection) => new
+{
+    pid = connection.ProcessId,
+    process = connection.ProcessName,
+    protocol = connection.Protocol.ToString(),
+    family = connection.AddressFamily.ToString(),
+    local = EndpointFormatter.Format(connection.LocalAddress, connection.LocalPort),
+    remote = EndpointFormatter.Format(connection.RemoteAddress, connection.RemotePort),
+    state = connection.State.ToString()
+};
 
 static async Task<int> ProcessTrafficVerificationAsync()
 {

@@ -61,6 +61,17 @@ public partial class App : Application
         {
             logger.LogError(ex, "Failed to start process traffic collector");
         }
+
+        var connectionProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
+        try
+        {
+            _ = connectionProvider.StartAsync(CancellationToken.None);
+            logger.LogInformation("Connection provider started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start connection provider");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -94,6 +105,8 @@ public partial class App : Application
         services.AddSingleton<ProcessIconResolver>();
         services.AddSingleton<ApplicationsViewModel>();
         services.AddSingleton<ApplicationsView>();
+        services.AddSingleton<ConnectionsViewModel>();
+        services.AddSingleton<ConnectionsView>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

@@ -174,4 +174,112 @@
   <data name="TotalTransferredLabel" xml:space="preserve">
     <value>Total Transferred</value>
   </data>
+  <data name="ConnectionsLabel" xml:space="preserve">
+    <value>Connections</value>
+  </data>
+  <data name="ProtocolLabel" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="StateLabel" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="LocalEndpointLabel" xml:space="preserve">
+    <value>Local Endpoint</value>
+  </data>
+  <data name="RemoteEndpointLabel" xml:space="preserve">
+    <value>Remote Endpoint</value>
+  </data>
+  <data name="ShowLabel" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="AddressFamilyLabel" xml:space="preserve">
+    <value>Address Family</value>
+  </data>
+  <data name="SearchConnectionsPlaceholder" xml:space="preserve">
+    <value>Search connections</value>
+  </data>
+  <data name="NoActiveConnectionsLabel" xml:space="preserve">
+    <value>No active connections</value>
+  </data>
+  <data name="ConnectionErrorLabel" xml:space="preserve">
+    <value>Connection list unavailable</value>
+  </data>
+  <data name="UnknownProcessLabel" xml:space="preserve">
+    <value>Unknown Process</value>
+  </data>
+  <data name="AllLabel" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="EstablishedLabel" xml:space="preserve">
+    <value>Established</value>
+  </data>
+  <data name="ListeningLabel" xml:space="preserve">
+    <value>Listening</value>
+  </data>
+  <data name="TcpLabel" xml:space="preserve">
+    <value>TCP</value>
+  </data>
+  <data name="UdpLabel" xml:space="preserve">
+    <value>UDP</value>
+  </data>
+  <data name="Ipv4Label" xml:space="preserve">
+    <value>IPv4</value>
+  </data>
+  <data name="Ipv6Label" xml:space="preserve">
+    <value>IPv6</value>
+  </data>
+  <data name="StateClosedLabel" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="StateListenLabel" xml:space="preserve">
+    <value>Listening</value>
+  </data>
+  <data name="StateSynSentLabel" xml:space="preserve">
+    <value>SYN-SENT</value>
+  </data>
+  <data name="StateSynReceivedLabel" xml:space="preserve">
+    <value>SYN-RECEIVED</value>
+  </data>
+  <data name="StateEstablishedLabel" xml:space="preserve">
+    <value>Established</value>
+  </data>
+  <data name="StateFinWait1Label" xml:space="preserve">
+    <value>FIN-WAIT-1</value>
+  </data>
+  <data name="StateFinWait2Label" xml:space="preserve">
+    <value>FIN-WAIT-2</value>
+  </data>
+  <data name="StateCloseWaitLabel" xml:space="preserve">
+    <value>CLOSE-WAIT</value>
+  </data>
+  <data name="StateClosingLabel" xml:space="preserve">
+    <value>CLOSING</value>
+  </data>
+  <data name="StateLastAckLabel" xml:space="preserve">
+    <value>LAST-ACK</value>
+  </data>
+  <data name="StateTimeWaitLabel" xml:space="preserve">
+    <value>TIME-WAIT</value>
+  </data>
+  <data name="SortDefaultLabel" xml:space="preserve">
+    <value>Active first</value>
+  </data>
+  <data name="SortProcessLabel" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="SortPidLabel" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="SortProtocolLabel" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="SortStateLabel" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="SortLocalLabel" xml:space="preserve">
+    <value>Local endpoint</value>
+  </data>
+  <data name="SortRemoteLabel" xml:space="preserve">
+    <value>Remote endpoint</value>
+  </data>
 </root>

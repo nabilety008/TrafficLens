@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using TrafficLens.Network.Adapters;
 using TrafficLens.Network.Collectors;
+using TrafficLens.Network.Connections;
 using TrafficLens.Network.Process;
 using TrafficLens.Core.Abstractions;
 
@@ -20,6 +21,11 @@ public static class NetworkServiceCollectionExtensions
         services.AddSingleton<IProcessTrafficCollector>(sp =>
             new WindowsEtwProcessTrafficCollector(
                 sp.GetRequiredService<ILogger<WindowsEtwProcessTrafficCollector>>()));
+        services.AddSingleton<IProcessMetadataProvider, WindowsProcessMetadataProvider>();
+        services.AddSingleton<IConnectionProvider>(sp =>
+            new WindowsConnectionProvider(
+                sp.GetRequiredService<IProcessMetadataProvider>(),
+                sp.GetRequiredService<ILogger<WindowsConnectionProvider>>()));
         return services;
     }
 }

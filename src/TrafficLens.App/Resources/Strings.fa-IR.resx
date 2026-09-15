@@ -174,4 +174,112 @@
   <data name="TotalTransferredLabel" xml:space="preserve">
     <value>مجموع انتقال داده</value>
   </data>
+  <data name="ConnectionsLabel" xml:space="preserve">
+    <value>اتصالات</value>
+  </data>
+  <data name="ProtocolLabel" xml:space="preserve">
+    <value>پروتکل</value>
+  </data>
+  <data name="StateLabel" xml:space="preserve">
+    <value>وضعیت</value>
+  </data>
+  <data name="LocalEndpointLabel" xml:space="preserve">
+    <value>آدرس محلی</value>
+  </data>
+  <data name="RemoteEndpointLabel" xml:space="preserve">
+    <value>آدرس مقصد</value>
+  </data>
+  <data name="ShowLabel" xml:space="preserve">
+    <value>نمایش</value>
+  </data>
+  <data name="AddressFamilyLabel" xml:space="preserve">
+    <value>خانواده آدرس</value>
+  </data>
+  <data name="SearchConnectionsPlaceholder" xml:space="preserve">
+    <value>جستجوی اتصالات</value>
+  </data>
+  <data name="NoActiveConnectionsLabel" xml:space="preserve">
+    <value>اتصال فعالی وجود ندارد</value>
+  </data>
+  <data name="ConnectionErrorLabel" xml:space="preserve">
+    <value>فهرست اتصالات در دسترس نیست</value>
+  </data>
+  <data name="UnknownProcessLabel" xml:space="preserve">
+    <value>فرآیند ناشناخته</value>
+  </data>
+  <data name="AllLabel" xml:space="preserve">
+    <value>همه</value>
+  </data>
+  <data name="EstablishedLabel" xml:space="preserve">
+    <value>برقرار</value>
+  </data>
+  <data name="ListeningLabel" xml:space="preserve">
+    <value>در حال گوش‌دادن</value>
+  </data>
+  <data name="TcpLabel" xml:space="preserve">
+    <value>TCP</value>
+  </data>
+  <data name="UdpLabel" xml:space="preserve">
+    <value>UDP</value>
+  </data>
+  <data name="Ipv4Label" xml:space="preserve">
+    <value>IPv4</value>
+  </data>
+  <data name="Ipv6Label" xml:space="preserve">
+    <value>IPv6</value>
+  </data>
+  <data name="StateClosedLabel" xml:space="preserve">
+    <value>بسته</value>
+  </data>
+  <data name="StateListenLabel" xml:space="preserve">
+    <value>در حال گوش‌دادن</value>
+  </data>
+  <data name="StateSynSentLabel" xml:space="preserve">
+    <value>ارسال SYN</value>
+  </data>
+  <data name="StateSynReceivedLabel" xml:space="preserve">
+    <value>دریافت SYN</value>
+  </data>
+  <data name="StateEstablishedLabel" xml:space="preserve">
+    <value>برقرار</value>
+  </data>
+  <data name="StateFinWait1Label" xml:space="preserve">
+    <value>انتظار FIN ۱</value>
+  </data>
+  <data name="StateFinWait2Label" xml:space="preserve">
+    <value>انتظار FIN ۲</value>
+  </data>
+  <data name="StateCloseWaitLabel" xml:space="preserve">
+    <value>انتظار بسته‌شدن</value>
+  </data>
+  <data name="StateClosingLabel" xml:space="preserve">
+    <value>در حال بسته‌شدن</value>
+  </data>
+  <data name="StateLastAckLabel" xml:space="preserve">
+    <value>آخرین تأیید</value>
+  </data>
+  <data name="StateTimeWaitLabel" xml:space="preserve">
+    <value>انتظار زمانی</value>
+  </data>
+  <data name="SortDefaultLabel" xml:space="preserve">
+    <value>اتصالات فعال اول</value>
+  </data>
+  <data name="SortProcessLabel" xml:space="preserve">
+    <value>فرآیند</value>
+  </data>
+  <data name="SortPidLabel" xml:space="preserve">
+    <value>شناسه فرآیند</value>
+  </data>
+  <data name="SortProtocolLabel" xml:space="preserve">
+    <value>پروتکل</value>
+  </data>
+  <data name="SortStateLabel" xml:space="preserve">
+    <value>وضعیت</value>
+  </data>
+  <data name="SortLocalLabel" xml:space="preserve">
+    <value>آدرس محلی</value>
+  </data>
+  <data name="SortRemoteLabel" xml:space="preserve">
+    <value>آدرس مقصد</value>
+  </data>
 </root>
