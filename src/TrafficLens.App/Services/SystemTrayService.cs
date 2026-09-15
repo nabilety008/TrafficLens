@@ -84,6 +84,24 @@ public sealed class SystemTrayService : ISystemTrayService
         });
     }
 
+    public void ShowAlert(string title, string message)
+    {
+        RunOnUi(() =>
+        {
+            if (_disposed || _icon is null)
+            {
+                _logger.LogWarning("Alert notification dropped: system tray is unavailable");
+                return;
+            }
+
+            EnsureCreated();
+            _icon.BalloonTipTitle = title;
+            _icon.BalloonTipText = message;
+            _icon.BalloonTipIcon = ToolTipIcon.Warning;
+            _icon.ShowBalloonTip(8000);
+        });
+    }
+
     public void Dispose()
     {
         try
@@ -176,6 +194,7 @@ public sealed class SystemTrayService : ISystemTrayService
             Visible = false
         };
         _icon.DoubleClick += (_, _) => OpenRequested?.Invoke(this, EventArgs.Empty);
+        _icon.BalloonTipClicked += (_, _) => OpenRequested?.Invoke(this, EventArgs.Empty);
 
         _floatingWidgetService.IsVisibleChanged += OnWidgetVisibilityChanged;
         _floatingWidgetService.AlwaysOnTopChanged += OnAlwaysOnTopChanged;

@@ -92,6 +92,19 @@ public partial class App : Application
         var trayService = _serviceProvider.GetRequiredService<ISystemTrayService>();
         trayService.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
         trayService.Show();
+
+        var alertService = _serviceProvider.GetRequiredService<IAlertService>();
+        if (localization is not null)
+        {
+            alertService.AlertRaised += (_, args) =>
+            {
+                var notification = new AlertNotification(
+                    AlertMessageFormatter.Title(localization),
+                    AlertMessageFormatter.Message(localization, args.Alert),
+                    args.Alert);
+                trayService.ShowAlert(notification.Title, notification.Message);
+            };
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -131,6 +144,9 @@ public partial class App : Application
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<HistoryView>();
+        services.AddSingleton<IAlertService, AlertService>();
+        services.AddSingleton<AlertsViewModel>();
+        services.AddSingleton<AlertsView>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();

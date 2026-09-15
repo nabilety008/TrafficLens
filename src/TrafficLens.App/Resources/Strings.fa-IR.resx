@@ -333,7 +333,55 @@
   <data name="CloseToTrayLabel" xml:space="preserve">
     <value>بستن به سینی سیستم</value>
   </data>
-  <data name="TrayCloseNoticeBalloon" xml:space="preserve">
-    <value>ترافیک‌لنز همچنان در سینی سیستم در حال اجرا است.</value>
+<data name="TrayCloseNoticeBalloon" xml:space="preserve">
+    <value>ترافیک‌لنز همچنان در سینی سیستم در حال اجراست.</value>
+  </data>
+  <data name="AlertsNavLabel" xml:space="preserve">
+    <value>هشدارها</value>
+  </data>
+  <data name="AlertsTitleLabel" xml:space="preserve">
+    <value>هشدارها</value>
+  </data>
+  <data name="AlertsNoAlertsLabel" xml:space="preserve">
+    <value>هیچ هشداری ثبت نشده است.</value>
+  </data>
+  <data name="AlertsCountFormat" xml:space="preserve">
+    <value>تعداد هشدارها: {0}</value>
+  </data>
+  <data name="AlertTitle" xml:space="preserve">
+    <value>TrafficLens</value>
+  </data>
+  <data name="AlertTypeHighDownloadSpeed" xml:space="preserve">
+    <value>سرعت دانلود بالا</value>
+  </data>
+  <data name="AlertTypeHighUploadSpeed" xml:space="preserve">
+    <value>سرعت آپلود بالا</value>
+  </data>
+  <data name="AlertTypeDailyDownloadLimit" xml:space="preserve">
+    <value>سقف دانلود روزانه</value>
+  </data>
+  <data name="AlertTypeDailyUploadLimit" xml:space="preserve">
+    <value>سقف آپلود روزانه</value>
+  </data>
+  <data name="AlertTypeDailyTotalLimit" xml:space="preserve">
+    <value>سقف مصرف روزانه</value>
+  </data>
+  <data name="AlertTypeUnknown" xml:space="preserve">
+    <value>هشدار</value>
+  </data>
+  <data name="AlertMsgHighDownloadSpeed" xml:space="preserve">
+    <value>سرعت دانلود بالا: {0} (حد مجاز {1})</value>
+  </data>
+  <data name="AlertMsgHighUploadSpeed" xml:space="preserve">
+    <value>سرعت آپلود بالا: {0} (حد مجاز {1})</value>
+  </data>
+  <data name="AlertMsgDailyDownloadLimit" xml:space="preserve">
+    <value>سقف دانلود روزانه رسیده: {0} امروز (حد مجاز {1})</value>
+  </data>
+  <data name="AlertMsgDailyUploadLimit" xml:space="preserve">
+    <value>سقف آپلود روزانه رسیده: {0} امروز (حد مجاز {1})</value>
+  </data>
+  <data name="AlertMsgDailyTotalLimit" xml:space="preserve">
+    <value>سقف مصرف روزانه رسیده: {0} امروز (حد مجاز {1})</value>
   </data>
 </root>

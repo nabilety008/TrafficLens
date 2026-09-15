@@ -17,6 +17,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private string _dashboardNavLabel = string.Empty;
     private string _connectionsNavLabel = string.Empty;
     private string _historyNavLabel = string.Empty;
+    private string _alertsNavLabel = string.Empty;
     private string _floatingWidgetToggleLabel = string.Empty;
     private string _minimizeToTrayLabel = string.Empty;
     private string _closeToTrayLabel = string.Empty;
@@ -26,6 +27,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private bool _isApplicationsVisible;
     private bool _isConnectionsVisible;
     private bool _isHistoryVisible;
+    private bool _isAlertsVisible;
 
     public MainViewModel(
         ILocalizationService localization,
@@ -34,6 +36,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         ApplicationsViewModel applications,
         ConnectionsViewModel connections,
         HistoryViewModel history,
+        AlertsViewModel alerts,
         IFloatingWidgetService floatingWidgetService)
     {
         _localization = localization;
@@ -42,6 +45,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         Applications = applications;
         Connections = connections;
         History = history;
+        Alerts = alerts;
         _floatingWidgetService = floatingWidgetService;
 
         _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
@@ -57,6 +61,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         ShowApplicationsCommand = new RelayCommand(() => SelectPage(Page.Applications));
         ShowConnectionsCommand = new RelayCommand(() => SelectPage(Page.Connections));
         ShowHistoryCommand = new RelayCommand(() => SelectPage(Page.History));
+        ShowAlertsCommand = new RelayCommand(() => SelectPage(Page.Alerts));
         ToggleFloatingWidgetCommand = new RelayCommand(() => _floatingWidgetService.Toggle());
     }
 
@@ -70,6 +75,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public HistoryViewModel History { get; }
 
+    public AlertsViewModel Alerts { get; }
+
     public string ConnectionsNavLabel
     {
         get => _connectionsNavLabel;
@@ -80,6 +87,12 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     {
         get => _historyNavLabel;
         private set => SetProperty(ref _historyNavLabel, value);
+    }
+
+    public string AlertsNavLabel
+    {
+        get => _alertsNavLabel;
+        private set => SetProperty(ref _alertsNavLabel, value);
     }
 
     public string ApplicationsNavLabel
@@ -144,6 +157,12 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _isHistoryVisible, value);
     }
 
+    public bool IsAlertsVisible
+    {
+        get => _isAlertsVisible;
+        private set => SetProperty(ref _isAlertsVisible, value);
+    }
+
     public bool IsDashboardVisible
     {
         get => _isDashboardVisible;
@@ -180,6 +199,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public ICommand ShowHistoryCommand { get; }
 
+    public ICommand ShowAlertsCommand { get; }
+
     public ICommand ToggleFloatingWidgetCommand { get; }
 
     public string FloatingWidgetToggleLabel
@@ -194,6 +215,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         IsApplicationsVisible = page == Page.Applications;
         IsConnectionsVisible = page == Page.Connections;
         IsHistoryVisible = page == Page.History;
+        IsAlertsVisible = page == Page.Alerts;
     }
 
     private void OnCultureChanged(object? sender, EventArgs e) => RefreshLocalizedStrings();
@@ -208,6 +230,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         DashboardNavLabel = _localization["DashboardLabel"];
         ConnectionsNavLabel = _localization["ConnectionsLabel"];
         HistoryNavLabel = _localization["HistoryLabel"];
+        AlertsNavLabel = _localization["AlertsNavLabel"];
         MinimizeToTrayLabel = _localization["MinimizeToTrayLabel"];
         CloseToTrayLabel = _localization["CloseToTrayLabel"];
         RefreshFloatingWidgetToggleLabel();
@@ -223,6 +246,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         Dashboard,
         Applications,
         Connections,
-        History
+        History,
+        Alerts
     }
 }

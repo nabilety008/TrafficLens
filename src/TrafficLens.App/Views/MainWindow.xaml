@@ -109,6 +109,12 @@
                         Background="{StaticResource SurfaceBrush}"
                         Foreground="{StaticResource TextBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
+                        Padding="14,6" Margin="0,0,8,0" />
+                <Button Content="{Binding AlertsNavLabel}"
+                        Command="{Binding ShowAlertsCommand}"
+                        Background="{StaticResource SurfaceBrush}"
+                        Foreground="{StaticResource TextBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
                         Padding="14,6" />
             </StackPanel>
         </Border>
@@ -313,6 +319,9 @@
 
         <ContentControl x:Name="HistoryHost" Grid.Row="2"
                                  Visibility="{Binding IsHistoryVisible, Converter={StaticResource BoolToVis}}" />
+
+        <ContentControl x:Name="AlertsHost" Grid.Row="2"
+                                 Visibility="{Binding IsAlertsVisible, Converter={StaticResource BoolToVis}}" />
 
         <StatusBar Grid.Row="3" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextMutedBrush}">
             <TextBlock Text="{Binding StatusMessage}" FontSize="11" />

@@ -17,4 +17,11 @@ public interface ISystemTrayService : IDisposable
     void Show();
 
     void ShowFirstCloseToTrayNotice();
+
+    /// <summary>
+    /// Raises a system tray balloon notification. A click on the balloon restores
+    /// the main window (raises <see cref="OpenRequested"/>). Safe to call when the
+    /// tray is disposed: the call is dropped and logged rather than throwing.
+    /// </summary>
+    void ShowAlert(string title, string message);
 }

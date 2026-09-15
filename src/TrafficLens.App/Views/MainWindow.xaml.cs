@@ -26,7 +26,8 @@ public partial class MainWindow : Window
         ApplicationExitCoordinator exitCoordinator,
         ApplicationsView applicationsView,
         ConnectionsView connectionsView,
-        HistoryView historyView)
+        HistoryView historyView,
+        AlertsView alertsView)
     {
         _localization = localization;
         _trayService = trayService;
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
         ApplicationsHost.Content = applicationsView;
         ConnectionsHost.Content = connectionsView;
         HistoryHost.Content = historyView;
+        AlertsHost.Content = alertsView;
 
         _localization.CultureChanged += OnCultureChanged;
         UpdateFlowDirection();

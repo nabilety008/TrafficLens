@@ -1,5 +1,7 @@
 using TrafficLens.App.Services;
 using TrafficLens.Core.Abstractions;
+using TrafficLens.Core.Alerts;
+using TrafficLens.Core.History;
 using TrafficLens.Core.Models;
 
 namespace TrafficLens.App.Tests;
@@ -174,6 +176,52 @@ internal sealed class FakeSettingsService : ISettingsService
     public void Save() => SaveCalls++;
 }
 
+internal sealed class FakeHistoryService : ITrafficHistoryService
+{
+    public event EventHandler? HistoryChanged;
+
+    public bool IsAvailable { get; set; } = true;
+
+    public string? LastError { get; set; }
+
+    public HistorySnapshot Snapshot { get; set; } = HistorySnapshot.Unavailable(null);
+
+    public HistorySnapshot GetSnapshot() => Snapshot;
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync() => Task.CompletedTask;
+
+    public void Dispose()
+    {
+    }
+
+    public void RaiseChanged() => HistoryChanged?.Invoke(this, EventArgs.Empty);
+}
+
+internal sealed class FakeAlertService : IAlertService
+{
+    private readonly List<AlertEvent> _recent = new();
+
+    public int RefreshCalls { get; private set; }
+
+    public int DisposeCalls { get; private set; }
+
+    public event EventHandler<AlertRaisedEventArgs>? AlertRaised;
+
+    public IReadOnlyList<AlertEvent> RecentAlerts => _recent.ToArray();
+
+    public void RefreshConfig() => RefreshCalls++;
+
+    public void Dispose() => DisposeCalls++;
+
+    public void Raise(AlertEvent alert)
+    {
+        _recent.Add(alert);
+        AlertRaised?.Invoke(this, new AlertRaisedEventArgs(alert));
+    }
+}
+
 internal sealed class FakeTrayService : ISystemTrayService
 {
     public int ShowCalls { get; private set; }
@@ -182,6 +230,8 @@ internal sealed class FakeTrayService : ISystemTrayService
 
     public int NoticeCalls { get; private set; }
 
+    public int AlertCalls { get; private set; }
+
     public event EventHandler? OpenRequested;
 
     public event EventHandler? ExitRequested;
@@ -189,6 +239,8 @@ internal sealed class FakeTrayService : ISystemTrayService
     public void Show() => ShowCalls++;
 
     public void ShowFirstCloseToTrayNotice() => NoticeCalls++;
+
+    public void ShowAlert(string title, string message) => AlertCalls++;
 
     public void Dispose() => DisposeCalls++;
 

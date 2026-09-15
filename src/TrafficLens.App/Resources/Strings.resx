@@ -336,4 +336,52 @@
   <data name="TrayCloseNoticeBalloon" xml:space="preserve">
     <value>TrafficLens is still running in the system tray.</value>
   </data>
+  <data name="AlertsNavLabel" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="AlertsTitleLabel" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="AlertsNoAlertsLabel" xml:space="preserve">
+    <value>No alerts have been triggered.</value>
+  </data>
+  <data name="AlertsCountFormat" xml:space="preserve">
+    <value>Alerts triggered: {0}</value>
+  </data>
+  <data name="AlertTitle" xml:space="preserve">
+    <value>TrafficLens</value>
+  </data>
+  <data name="AlertTypeHighDownloadSpeed" xml:space="preserve">
+    <value>High download speed</value>
+  </data>
+  <data name="AlertTypeHighUploadSpeed" xml:space="preserve">
+    <value>High upload speed</value>
+  </data>
+  <data name="AlertTypeDailyDownloadLimit" xml:space="preserve">
+    <value>Daily download limit</value>
+  </data>
+  <data name="AlertTypeDailyUploadLimit" xml:space="preserve">
+    <value>Daily upload limit</value>
+  </data>
+  <data name="AlertTypeDailyTotalLimit" xml:space="preserve">
+    <value>Daily total limit</value>
+  </data>
+  <data name="AlertTypeUnknown" xml:space="preserve">
+    <value>Alert</value>
+  </data>
+  <data name="AlertMsgHighDownloadSpeed" xml:space="preserve">
+    <value>High download speed: {0} (limit {1})</value>
+  </data>
+  <data name="AlertMsgHighUploadSpeed" xml:space="preserve">
+    <value>High upload speed: {0} (limit {1})</value>
+  </data>
+  <data name="AlertMsgDailyDownloadLimit" xml:space="preserve">
+    <value>Daily download limit reached: {0} today (limit {1})</value>
+  </data>
+  <data name="AlertMsgDailyUploadLimit" xml:space="preserve">
+    <value>Daily upload limit reached: {0} today (limit {1})</value>
+  </data>
+  <data name="AlertMsgDailyTotalLimit" xml:space="preserve">
+    <value>Daily total usage limit reached: {0} today (limit {1})</value>
+  </data>
 </root>

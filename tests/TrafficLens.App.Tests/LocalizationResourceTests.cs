@@ -109,7 +109,23 @@ public class LocalizationResourceTests
         "ExitLabel",
         "MinimizeToTrayLabel",
         "CloseToTrayLabel",
-        "TrayCloseNoticeBalloon"
+        "TrayCloseNoticeBalloon",
+        "AlertsNavLabel",
+        "AlertsTitleLabel",
+        "AlertsNoAlertsLabel",
+        "AlertsCountFormat",
+        "AlertTitle",
+        "AlertTypeHighDownloadSpeed",
+        "AlertTypeHighUploadSpeed",
+        "AlertTypeDailyDownloadLimit",
+        "AlertTypeDailyUploadLimit",
+        "AlertTypeDailyTotalLimit",
+        "AlertTypeUnknown",
+        "AlertMsgHighDownloadSpeed",
+        "AlertMsgHighUploadSpeed",
+        "AlertMsgDailyDownloadLimit",
+        "AlertMsgDailyUploadLimit",
+        "AlertMsgDailyTotalLimit"
     };
 
     [Fact]
