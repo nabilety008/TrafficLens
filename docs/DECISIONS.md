@@ -433,3 +433,62 @@ Reasoning:
   semantics) for **TL-011**; the widget is presentational and must not grow into
   a second app shell.
 
+## ADR-019: System tray via System.Windows.Forms.NotifyIcon with a coordinator-based exit pipeline
+
+**Status:** Accepted (TL-011)
+
+A single tray icon is implemented with the built-in **`System.Windows.Forms
+NotifyIcon`** (no third-party tray library). `TrafficLens.App` keeps
+`<UseWPF>true</UseWPF>` and references `Microsoft.WindowsDesktop.App.WindowsForms`
+as a plain `<FrameworkReference>` (no `UseWindowsForms`), so no WinForms global
+usings leak into the WPF codebase and there are no CS0104 `Point`/`Brush`/
+`Color`/`UserControl` ambiguities.
+
+Behavior:
+- Exactly **one icon, created once** at startup and disposed only on real exit
+  (runtime-drawn 32×32 `Bitmap` → `GetHicon()` → `Icon.FromHandle`, destroyed via
+  `DestroyIcon`); tooltip `TrafficLens`; no ghost icon.
+- Tray menu: Open TrafficLens / Show-Hide Floating Widget / Always on Top
+  (checkable) / separator / Exit. The Always-on-Top item toggles the same widget
+  pin state as the in-widget pin button (one source of truth), and the widget
+  pin's tooltip/accessibility text binds the shared `AlwaysOnTopLabel`
+  (TL-010 polish). Culture changes relabel the menu in place — no NotifyIcon
+  recreation.
+- `MinimizeToTray` (default true) and `CloseToTray` (default true) settings via
+  the existing `ISettingsService`. Minimize → `StateChanged` cancels the
+  minimize and hides the main window. X close → `CloseToTray` decides
+  **HideToTray** or **Exit**. The first close-to-tray shows a
+  once-ever balloon (`TrayCloseNoticeShown` persisted) while collectors keep
+  running and history keeps accumulating in the background.
+- **Single exit pipeline**: `ApplicationExitCoordinator.RequestApplicationExit()`
+  latches `IsExitRequested` (no close can be intercepted afterwards), disposes
+  tray + widget, and calls `Application.Current.Shutdown()` (Dispatcher-safe).
+  `App.xaml` uses `ShutdownMode="OnExplicitShutdown"` so tray-hide is a real
+  background run. Collectors/history/DI are disposed by container disposal;
+  there is **no `Environment.Exit`/`Process.Kill`**. All exit routes — tray
+  `Exit`, minimize-then-close with `CloseToTray=false` — funnel through this one
+  coordinator (a close with `CloseToTray=false` calls the coordinator right in
+  `MainWindow.Closing`; merely closing the window would leave the app running
+  under `OnExplicitShutdown` — an actual bug caught by real-Windows
+  verification and fixed).
+- WinForms `NotifyIcon` creates a hidden top-level message window
+  (`WindowsForms10.Window.0.app.<hash>_r3_ad1`) owned by the app process; this
+  window is the in-process proxy used to verify icon creation/disposal from
+  scripts (classic `ToolbarWindow32` tray-button enumeration is unavailable on
+  the Windows 11 XAML shell, and UI Automation finds no "TrafficLens" tray
+  element).
+
+Reasoning:
+- NotifyIcon is in-box, stable, and language-neutral (the tray technical name is
+  LTR), matching the local-first/no-third-party policy.
+- One icon + one exit pipeline keeps lifecycle trivially testable and prevents
+  ghost icons after hard kills or double exits (idempotent).
+- Centralizing exit in the coordinator keeps `Exit` and `CloseToTray=false`
+  behavior identical and unit-testable without a real tray (covered by
+  `TrayBehaviorTests` + `ApplicationExitCoordinatorTests`).
+- Tray clicks cannot be synthesized against the Windows 11 XAML tray from an
+  external process; menu/click wiring is therefore verified by unit tests and
+  the same `OpenRequested`/`ExitRequested` handlers, while real-Windows
+  verification drives minimize/close via Win32 messages and checks the NotifyIcon
+  message-window proxy.
+

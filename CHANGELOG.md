@@ -2,6 +2,55 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.14] — 2026-09-15 (TL-011 complete — system tray)
+
+### Added
+- `ISystemTrayService` + `SystemTrayService` (App) — one WinForms `NotifyIcon`
+  via `<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />`
+  (`UseWPF` kept; no `UseWindowsForms` global usings). Single icon created once,
+  disposed only on real exit; tooltip `TrafficLens`; hidden
+  `WindowsForms10..._ad1` message window as the in-process verification proxy.
+- Runtime-drawn 32×32 tray icon — dark rounded square with `#4FC3F7`/`#26A69A`
+  chevrons on `#1E1E2E`, readable 16–32 px (`GetHicon`+`Icon.FromHandle`,
+  `DestroyIcon` on dispose).
+- Tray menu: Open TrafficLens / Show-Hide Floating Widget / Always on Top
+  (checkable) / separator / Exit. Relabeled in place on culture change (never
+  recreated). Always on Top drives the same widget pin state; widget pin
+  tooltip/accessibility binds the shared `AlwaysOnTopLabel`.
+- `TrayBehavior` (pure) + settings `MinimizeToTray` / `CloseToTray` (defaults
+  true) and persisted once-only `TrayCloseNoticeShown`; first close-to-tray
+  balloon "TrafficLens is still running in the system tray."
+- `ApplicationExitCoordinator` — single idempotent `RequestApplicationExit()`
+  (latch → dispose tray+widget → `Application.Current.Shutdown()`); no
+  `Environment.Exit`/`Process.Kill`; collectors/history/DI disposed via the
+  container. `App.xaml` `ShutdownMode="OnExplicitShutdown"`.
+- `MainWindow` — `Closing` routed via `TrayBehavior` (Exit path calls the
+  coordinator; HideToTray cancels + hides + balloon), `StateChanged`
+  minimize→hidden when `MinimizeToTray`, `OpenRequested` restores the same
+  singleton window. Minimal `…` options popup with the two tray checkboxes in
+  `MainViewModel` (TL-013 owns the full settings page).
+- Localization en + fa-IR: `OpenTrafficLensLabel`, `ExitLabel`,
+  `MinimizeToTrayLabel`, `CloseToTrayLabel`, `TrayCloseNoticeBalloon`; tray
+  technical name stays LTR.
+- `scripts/tl011-verify.ps1` (final), `tl011-debug.ps1`, `tl011-shelldump.ps1`,
+  `tl011-uiaprobe.ps1`, `tl011-dblclk.ps1`, `tl011-keynav.ps1` (diagnostics).
+
+### Fixes
+- `CloseToTray=false` was closing the window without exiting (process stayed
+  alive under `OnExplicitShutdown`); the `MainWindow.Closing` exit branch now
+  calls `RequestApplicationExit()` (caught by real-Windows verification, see
+  ADR-019).
+
+### Tests
+- `TrayBehaviorTests` (10) — close-action resolution, minimize/close flags,
+  once-only notice, idempotent coordination; `ApplicationExitCoordinatorTests`
+  (4) — exit latching + disposal ordering with fakes. `Fakes.cs` gained
+  `FakeSettingsService`/`FakeTrayService`/`FakeFloatingWidgetService`;
+  FloatingWidgetViewModel acquires `AlwaysOnTopLabel` localization test;
+  localization resource keys extended.
+- Total 317 tests (App 84 / Network 206 / Infrastructure 27), Debug + Release
+  0 warnings / 0 errors.
+
 ## [0.0.13] — 2026-09-15 (TL-010 complete — floating widget)
 
 ### Added

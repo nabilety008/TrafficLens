@@ -8,6 +8,43 @@
 
 ## Backlog
 
+### TL-011 System Tray — **DONE**
+- [x] Single WinForms `NotifyIcon` via `<FrameworkReference Include=
+      "Microsoft.WindowsDesktop.App.WindowsForms" />` (no `UseWindowsForms`,
+      no global-using ambiguity)
+- [x] One icon created once; disposed only on real exit; tooltip `TrafficLens`;
+      runtime-drawn 32×32 icon (dark rounded square + accent chevrons, readable
+      16–32 px; `GetHicon`/`FromHandle`/`DestroyIcon`)
+- [x] Tray menu: Open TrafficLens / Show-Hide Floating Widget / Always on Top
+      (checkable) / separator / Exit; culture-change relabel in place (no icon
+      recreation); Always on Top reuses the widget pin state
+- [x] Double-click / Open restores the **same** singleton MainWindow (never a
+      second instance)
+- [x] Minimize-to-tray (`StateChanged` → Normal+Hide) and Close-to-tray
+      (`Closing` → HideToTray) with settings defaults true;
+      CloseToTray=false ⇒ X real graceful exit via the coordinator
+- [x] Single idempotent `ApplicationExitCoordinator.RequestApplicationExit()`
+      (latch → dispose tray+widget → `Shutdown()`); no `Environment.Exit`;
+      `ShutdownMode="OnExplicitShutdown"`; collectors/history/DI disposed by
+      the container
+- [x] First close-to-tray balloon once-ever, persisted `TrayCloseNoticeShown`
+- [x] Collectors keep running and history keeps accumulating while hidden
+- [x] Floating widget pin tooltip bound to `AlwaysOnTopLabel` (TL-010 polish)
+- [x] Dispatcher-safe marshaling; thread-safe tray usage
+- [x] Localization en + fa-IR for all tray strings (technical name stays LTR)
+- [x] 317 tests passing (10 `TrayBehaviorTests`, 4
+      `ApplicationExitCoordinatorTests`, localization keys, widget always-on-top
+      label); Debug+Release 0 warnings/0 errors
+- [x] Real Windows GUI verification (`scripts/tl011-verify.ps1`): tray icon
+      present/hidden-tray, minimize→hidden+alive+collectors running, history
+      accumulates while hidden, close→hidden+alive+notice once, singleton HWND,
+      CloseToTray=false→prompt clean exit+no ETW, 3 lifecycle cycles clean;
+      tray-click restore/menu Exit covered by unit tests + same handlers
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ARCHITECTURE, DECISIONS
+      ADR-019)
+- **Status: done**
+- **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
+
 ### TL-001 Project Bootstrap — **DONE**
 - [x] Inspect .NET environment (installed .NET 8 SDK 8.0.425)
 - [x] Create `TrafficLens.sln` and solution folder structure

@@ -230,8 +230,52 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Intentional scope boundary: the widget has **no tray behavior** (technique,
   minimize-to-tray, and startup-with-Windows belong to TL-011).
 
+## System tray layer (TL-011)
+
+- `ISystemTrayService` + `SystemTrayService` (App) — a single WinForms
+  `NotifyIcon` (`System.Windows.Forms` via a plain
+  `<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />`;
+  `UseWPF` stays on, `UseWindowsForms` is off, so no WinForms global usings pollute
+  the WPF codebase). One icon created once at startup, disposed only on real exit;
+  tooltip `TrafficLens`; no ghost. Exposes `OpenRequested` (double-click /
+  menu Open) and `ExitRequested` (menu Exit) events, `Show()` (startup), and
+  `ShowFirstCloseToTrayNotice()`.
+- Tray menu (in-place relabeled on culture change, never recreated): Open
+  TrafficLens / Show-Hide Floating Widget / Always on Top (checkable) /
+  separator / Exit. Always on Top flips the same widget pin state saved by the
+  widget's own pin button (single source of truth). The widget pin's
+  tooltip/accessibility text binds `AlwaysOnTopLabel` (TL-010 polish).
+- Runtime-drawn icon — 32×32 dark rounded square with accent chevrons
+  (`#4FC3F7` / `#26A69A` on `#1E1E2E`), readable at 16–32 px; `GetHicon()` +
+  `Icon.FromHandle`, `DestroyIcon` on dispose.
+- `TrayBehavior` (App, pure) — settings keys `MinimizeToTray` / `CloseToTray`
+  (defaults true) + `TrayCloseNoticeShown`; `ResolveCloseAction(isExitRequested,
+  settings)` → `Exit | HideToTray`; once-only notice decision.
+- `ApplicationExitCoordinator` (App) — single idempotent
+  `RequestApplicationExit()` pipeline: latch `IsExitRequested`, dispose tray +
+  widget, `Application.Current?.Shutdown()` (Dispatcher-safe). Collectors /
+  connection provider / history flush / file logger / DI are disposed by
+  container disposal. No `Environment.Exit` / `Process.Kill`.
+- `App.xaml`: `ShutdownMode="OnExplicitShutdown"` — tray-hide is a real
+  background run (no hidden main window keeps it alive incorrectly; a hidden
+  window alone does not keep the process up).
+- `MainWindow` (App): `Closing` routes through `TrayBehavior.ResolveCloseAction`
+  — Exit path calls the coordinator (real close), HideToTray path cancels +
+  `Hide()` + first-close balloon; `StateChanged` minimize→`Normal`+`Hide()` when
+  `MinimizeToTray`; `OpenRequested` re-shows and activates the **same** window
+  (singleton, never a second instance).
+- `MainViewModel` (App) — `MinimizeToTray`/`CloseToTray` settings-backed
+  properties with localized labels; header `…` options popup with the two
+  checkboxes (minimal surface; TL-013 owns the full settings page).
+- Localization — `OpenTrafficLensLabel`, `ExitLabel`, `MinimizeToTrayLabel`,
+  `CloseToTrayLabel`, `TrayCloseNoticeBalloon` in en + fa-IR; tray technical name
+  stays LTR.
+- Lifecycle: registered in `App.xaml.cs`; startup subscribes
+  `trayService.ExitRequested → coordinator.RequestApplicationExit()` then
+  `trayService.Show()`; widget restore runs via `IFloatingWidgetService`.
+
 ## Future Plans
 
-- System tray (TL-011) — tray icon with show/hide, minimize-to-tray, and exit.
+- Full settings page (TL-013) — currently just the minimal tray options popup.
 - Hourly view of the current day (raw minute samples are already retained 90 days).
 - See `docs/ROADMAP.md`.

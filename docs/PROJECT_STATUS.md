@@ -4,13 +4,14 @@ Updated: 2026-09-15
 
 ## Current Milestone
 
-M7 (floating widget) is **in progress**: TL-010 (compact always-on-top floating
-widget reusing the existing live aggregate rates) is **complete** and verified —
-show/hide from the main UI, always-on-top toggle, persisted position/topmost with
-multi-monitor-safe restoration, RTL + en/fa-IR, and clean shutdown with no
-residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
-(TL-005 dashboard + TL-006 live graph), M3, M4 (per-process traffic), M5, and M6
-(SQLite history) are complete.
+M7 (system tray) is **complete**: TL-010 (floating widget) and TL-011 (system
+tray) are both done and verified — one tray icon with Open / Show-Hide Widget /
+Always-on-Top / Exit, minimize-to-tray and close-to-tray (defaults true), a
+single idempotent exit coordinator feeding a clean graceful shutdown, a
+once-ever close-to-tray balloon, runtime-drawn localized tray menu, and the
+floating widget pin tooltip bound to the shared label. M1, M2, M3, M4
+(per-process traffic), M5, and M6 (SQLite history) are complete. M8 (settings /
+next milestone) is the scheduled follow-up.
 
 ## Task IDs
 
@@ -26,7 +27,8 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
 - TL-008 Active Connections — **DONE**
 - TL-009 SQLite History — **DONE**
 - TL-010 Floating Widget — **DONE**
-- TL-011 and later — not started
+- TL-011 System Tray — **DONE**
+- TL-012 and later — not started
 
 ## Completed
 
@@ -278,6 +280,36 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
   - Localization: `FloatingWidgetLabel`, `AlwaysOnTopLabel`,
     `ShowFloatingWidgetLabel`, `HideFloatingWidgetLabel` in en + fa-IR;
     Download/Upload/Total reuse existing keys.
+- TL-011 (system tray, M7):
+  - `SystemTrayService`/`ISystemTrayService` (App) — a single WinForms
+    `NotifyIcon` over a plain `<FrameworkReference
+    Include="Microsoft.WindowsDesktop.App.WindowsForms" />` (`UseWPF` kept, no
+    `UseWindowsForms` ⇒ no WinForms global usings / no CS0104). One icon created
+    once, disposed only on real exit; tooltip `TrafficLens`; no ghost; hidden
+    `WindowsForms10..._ad1` message window as the in-process proxy.
+  - Runtime-drawn 32×32 icon (dark rounded square + `#4FC3F7`/`#26A69A`
+    chevrons on `#1E1E2E`, readable 16–32 px; `GetHicon`+`FromHandle`,
+    `DestroyIcon` on dispose).
+  - Tray menu relabeled in place on culture change (never recreated): Open
+    TrafficLens / Show-Hide Floating Widget / Always on Top (checkable) /
+    separator / Exit. Always on Top drives the same widget pin state; the widget
+    pin tooltip/accessibility binds the shared `AlwaysOnTopLabel` (TL-010
+    polish).
+  - `TrayBehavior` (pure) — `MinimizeToTray`/`CloseToTray` (default true),
+    `TrayCloseNoticeShown`; `ResolveCloseAction` → Exit|HideToTray; once-only
+    close notice.
+  - `ApplicationExitCoordinator` — single idempotent `RequestApplicationExit()`
+    (latch → dispose tray+widget → `Shutdown()`, Dispatcher-safe); no
+    `Environment.Exit`/`Process.Kill`; collectors/history/DI disposed via
+    container. `App.xaml` `ShutdownMode="OnExplicitShutdown"`.
+  - `MainWindow`: `Closing` → `ResolveCloseAction` (Exit calls the coordinator;
+    HideToTray cancels+Hides+balloon), `StateChanged` minimize→Hidden,
+    `OpenRequested` restores the singleton window. `MainViewModel` exposes the
+    two tray settings + localized labels in a minimal `…` options popup (TL-013
+    owns the full settings page).
+  - Localization en + fa-IR: `OpenTrafficLensLabel`, `ExitLabel`,
+    `MinimizeToTrayLabel`, `CloseToTrayLabel`, `TrayCloseNoticeBalloon`; internal
+    tray technical name stays LTR.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -322,8 +354,8 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 302/302 passed (`TrafficLens.Network.Tests` 206,
-  `TrafficLens.App.Tests` 69, `TrafficLens.Infrastructure.Tests` 27).
+- **Automated tests:** 317/317 passed (`TrafficLens.Network.Tests` 206,
+  `TrafficLens.App.Tests` 84, `TrafficLens.Infrastructure.Tests` 27).
 - **TL-009 real Windows history verification** (`--history` mode, live host, throwaway
    temp DB — never the user's `%LOCALAPPDATA%` DB):
    - Pipeline ran end-to-end: live collector → accumulator → minute buckets →
@@ -354,6 +386,40 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
     (main + widget).
   - **fa-IR coexistence:** widget launches under fa-IR culture with correct
     titles; culture-set log line confirmed.
+- **TL-011 real Windows system-tray GUI verification** (Release build,
+  `scripts/tl011-verify.ps1`, `scripts/tl011-debug.ps1` +
+  `scripts/tl011-shelldump.ps1`/`tl011-uiaprobe.ps1`/`tl011-dblclk.ps1`/
+  `tl011-keynav.ps1` diagnostics):
+  - **Tray icon created:** WinForms NotifyIcon message window
+    (`WindowsForms10.Window.0.app.<hash>_r3_ad1`, app-owned) present at startup
+    and while hidden.
+  - **Minimize-to-tray:** `WM_SYSCOMMAND SC_MINIMIZE` → main hidden, process
+    alive, tray icon still present, network collector + history service running.
+  - **History accumulates while hidden:** with the app hidden, a live download
+    produced WAL/mtime activity in `data\trafficlens.db` (SQLite keeps a single
+    16 KB page; WAL write confirmed via db-wal growth / mtime change ~25 s).
+  - **Singleton restore model:** same main HWND survives minimize/hide (no
+    second instance).
+  - **Close-to-tray:** `WM_CLOSE` → main hidden, process alive,
+    `TrayCloseNoticeShown=True` persisted once; a second close leaves it True and
+    keeps the app alive.
+  - **CloseToTray=false → real exit:** fresh launch with the flag false →
+    `WM_CLOSE` exits promptly (<15 s) through the coordinator; no orphan ETW
+    session after exit.
+  - **3 lifecycle cycles:** launch → minimize → close-to-tray → teardown × 3 —
+    no ghost processes, no ETW orphans, tray icon recreated each run.
+  - **Honest coverage note:** tray double-click restore and the tray-menu Exit
+    cannot be synthesized against the Windows 11 XAML tray from this session
+    (no `SysPager`/`ToolbarWindow32` child, UI Automation finds no
+    "TrafficLens" tray element, Win+B tray keyboard nav unreachable); both are
+    unit-tested (`TrayBehavior`/`ApplicationExitCoordinator`) and wired through
+    the same `OpenRequested`/`ExitRequested` handlers verified here via
+    minimize/close and the `CloseToTray=false` pipeline.
+  - **Verification caught a real bug:** the `CloseToTray=false` X path merely
+    closed the window without calling the exit coordinator, leaving the process
+    alive under `OnExplicitShutdown`; fixed by calling
+    `RequestApplicationExit()` in the `MainWindow.Closing` exit branch (see
+    ADR-019).
 - **TL-008 real Windows verification** (`--connections` mode, non-elevated, live host):
   - **TrafficLens `--connections`**: 112 connections (78 TCP / 34 UDP, 99 IPv4 /
     13 IPv6), 26 established / 29 listening; `udpWithRemote = 0` and
@@ -460,10 +526,11 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
   formatter cases, metadata-provider tests, and the TL-008 connection parser /
   key / selection / endpoint-formatter suites).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 69 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 84 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
-  FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, and resource keys).
+  FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
+  TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests, and resource keys).
 - `tests/TrafficLens.Infrastructure.Tests` — xUnit, 27 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider).
@@ -507,6 +574,7 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
 
 ## Git Commit
 
+- TL-011 (system tray): `<commit hash>` — `feat: add system tray with minimize/close-to-tray, singleton restore, and coordinator-based exit (TL-011)`; docs `<docs hash>`.
 - TL-010 (floating widget): `f3dc2e9` — `feat: add always-on-top floating widget reusing live aggregate rates with persisted position/topmost (TL-010)`; docs `a527168`.
 - TL-009 (SQLite history): `861269c` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
 - TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
@@ -520,6 +588,7 @@ residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
 
 ## Next Recommended Task
 
-- TL-010 (floating widget) is complete and verified. Next scheduled item is
-  **TL-011 (system tray)** — tray icon with show/hide, minimize-to-tray, and exit,
-  the remaining M7 piece (the widget intentionally has no tray behavior).
+- TL-011 (system tray) is complete and verified, closing M7. Next scheduled item
+  is the **TL-012..TL-013 milestone (settings)** — the full Settings page
+  (language, start-with-Windows, tray options) that subsumes the minimal tray
+  options popup introduced in TL-011.
