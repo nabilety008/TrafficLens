@@ -91,7 +91,16 @@ public class LocalizationResourceTests
         "SortProtocolLabel",
         "SortStateLabel",
         "SortLocalLabel",
-        "SortRemoteLabel"
+        "SortRemoteLabel",
+        "HistoryLabel",
+        "HistoryDailyTrafficLabel",
+        "TodayLabel",
+        "YesterdayLabel",
+        "Last7DaysLabel",
+        "Last30DaysLabel",
+        "LifetimeLabel",
+        "HistoryNoDataLabel",
+        "HistoryUnavailableLabel"
     };
 
     [Fact]
@@ -125,5 +134,8 @@ public class LocalizationResourceTests
         Assert.NotEqual(
             service.GetString("ConnectedLabel", "en-US"),
             service.GetString("ConnectedLabel", "fa-IR"));
+        Assert.NotEqual(
+            service.GetString("HistoryLabel", "en-US"),
+            service.GetString("HistoryLabel", "fa-IR"));
     }
 }

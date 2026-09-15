@@ -4,10 +4,11 @@ Updated: 2026-09-15
 
 ## Current Milestone
 
-M5 (active connections) is **complete**: the IP Helper connection provider
-(TCP+UDP, IPv4+IPv6) and the Connections page are implemented, tested, and
-verified against native tooling. M1, M2 (TL-005 dashboard + TL-006 live graph),
-M3, and M4 (per-process traffic) are complete.
+M6 (SQLite history) is **complete**: traffic history for Today / Yesterday /
+Last 7 Days / Last 30 Days / Lifetime is persisted locally in SQLite, presented
+on a History page (summary cards + native bar chart), and verified against real
+traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
+(per-process traffic), and M5 (active connections) are complete.
 
 ## Task IDs
 
@@ -21,7 +22,8 @@ M3, and M4 (per-process traffic) are complete.
   Applications-list UI)
 - TL-007F Shutdown deadlock fix — **DONE**
 - TL-008 Active Connections — **DONE**
-- TL-009 and later — not started
+- TL-009 SQLite History — **DONE**
+- TL-010 and later — not started
 
 ## Completed
 
@@ -184,6 +186,63 @@ M3, and M4 (per-process traffic) are complete.
   - Localization: all Applications keys added to `Strings.resx` (en) and
     `Strings.fa-IR.resx` (fa, valid UTF-8).
 
+- TL-009 (SQLite history, M6):
+  - Core history domain (`TrafficLens.Core/History`), no WPF/OS dependencies:
+    - `HistoryRange` (Today/Yesterday/Last7Days/Last30Days/Lifetime),
+      `TrafficUsage` (immutable record struct: download/upload/total),
+      `DailyUsagePoint`, `HistorySnapshot` (immutable; `For(range)` derives
+      per-range totals; `Unavailable(lastError)`).
+    - `HistoryRangeCalculator` — half-open local-date ranges using
+      `TimeZoneInfo.ConvertTimeFromUtc` → `DateOnly`, so DST + local midnight are
+      correct; ranges verified by tests (Today `(today, today+1)`,
+      Last7Days `(today-6, today+1)`, Last30Days `(today-29, today+1)`).
+    - `TrafficHistoryAccumulator` — extends `NetworkCounterSample` DELTAS into
+      per-UTC-minute buckets; first observation per adapter is baseline-only;
+      non-negative deltas only; positive deltas from all eligible adapters summed
+      per minute; `DrainCompleted` (full 60 s buckets) vs `DrainAll` (includes the
+      open minute, duration clamped 1..60) for shutdown flush.
+    - Contracts `ITrafficHistoryRepository` + `ITrafficHistoryService` (cached
+      immutable `HistorySnapshot`; `HistoryChanged`; SQL never runs on the UI thread).
+  - Infrastructure (`TrafficLens.Infrastructure/History`):
+    - `SqliteTrafficHistoryRepository` — SQLite via `Microsoft.Data.Sqlite`;
+      schema v1 (`PRAGMA user_version`), tables `traffic_samples`
+      (`bucket_start_utc INTEGER PK, bucket_duration_seconds, download_bytes,
+      upload_bytes`) and `daily_usage` (`local_date TEXT PK, download_bytes,
+      upload_bytes`); `journal_mode=WAL`, `busy_timeout=5000`, `Pooling=false`
+      (deterministic handles; keeps tests from holding file locks); every append
+      is one transaction guarded by `INSERT OR IGNORE` + `changes()==1` before the
+      `daily_usage` upsert so an app restart can never duplicate history;
+      `daily_usage` kept forever, raw samples pruned older than 90 days on startup;
+      `QueryDailyAsync` / `QueryLifetimeAsync` / `PruneRawSamplesBeforeAsync`.
+    - `TrafficHistoryService` — subscribes the existing collector's
+      `CounterSampleReady` (never starts a second NIC polling loop), keeps an
+      adapter-kind map refreshed on `AdaptersChanged`, excludes tunnels by default
+      (same rules as the ADR-009/010 aggregate), flushes *completed* minute buckets
+      every 30 s in a background loop, re-baselines on resets/reconnects/reboots so
+      measurements are never fabricated, and flushes everything on stop (graceful
+      shutdown preserves at most the current open minute).
+    - `HistoryServiceCollectionExtensions.AddHistoryServices(dbPath)`.
+  - `AppPaths` — `DataDirectory = Root\data`, `DatabaseFile`,
+    `EnsureDirectories` creates the `data` folder.
+  - App History page:
+    - `HistoryViewModel` — Five-range buttons (Today/Yesterday/Last 7 Days/Last 30
+      Days/Lifetime) bound via `SelectRangeCommand`; Download/Upload/Total cards
+      and a localized "No history yet" overlay when `Lifetime.TotalBytes == 0`;
+      unavailable-banner when storage failed (`HistoryUnavailableLabel` +
+      `LastError`), all from the cached immutable snapshot via `HistoryChanged`.
+    - `HistoryView` (XAML + code-behind DI) hosting a native
+      `HistoryBarChartControl` (`FrameworkElement`, `OnRender`, no chart library):
+      bars always oldest-left → newest-right regardless of `FlowDirection`;
+      Today/Yesterday render a single bar, 7 days → 7 bars, 30 days/Lifetime →
+      30 daily bars; tooltips show `date → DataSizeFormatter` totals.
+    - `MainViewModel.ShowHistoryCommand` + localized nav label; `MainWindow`
+      History host alongside Dashboard/Applications/Connections;
+      `App.xaml.cs` registers the ViewModel/View and starts the history service
+      (fire-and-forget with error logging) after the network collector.
+  - Localization: `HistoryLabel`, `HistoryDailyTrafficLabel`, `TodayLabel`,
+    `YesterdayLabel`, `Last7DaysLabel`, `Last30DaysLabel`, `LifetimeLabel`,
+    `HistoryNoDataLabel`, `HistoryUnavailableLabel` added to `Strings.resx` (en)
+    and `Strings.fa-IR.resx`; download/upload/total label reuse.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -228,7 +287,21 @@ M3, and M4 (per-process traffic) are complete.
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 251/251 passed (`TrafficLens.Network.Tests` 206, `TrafficLens.App.Tests` 45).
+- **Automated tests:** 284/284 passed (`TrafficLens.Network.Tests` 206,
+  `TrafficLens.App.Tests` 51, `TrafficLens.Infrastructure.Tests` 27).
+- **TL-009 real Windows history verification** (`--history` mode, live host, throwaway
+  temp DB — never the user's `%LOCALAPPDATA%` DB):
+  - Pipeline ran end-to-end: live collector → accumulator → minute buckets →
+    SQLite; a real 20 MB `speed.cloudflare.com` download was recorded as
+    **Today = 20,182,568 B down / 79,655 B up** (20 MB requested + realistic
+    counter-delta overhead), matching the observed peak rate of ~5.78 MB/s.
+  - Yesterday / 7d / 30d / Lifetime consistent; `daily_usage` series spans
+    exactly 30 local days (2026-08-17 → 2026-09-15) with today's row populated.
+  - **Restart idempotency proven:** a second service instance started against the
+    same database over a fresh collector reported the identical Lifetime
+    (`unchanged: true`) — the `INSERT OR IGNORE` + `changes()==1` guard prevents
+    double-counting across restarts/crashes.
+  - DB footprint after two sessions + 20 MB of traffic: **16,384 bytes**.
 - **TL-008 real Windows verification** (`--connections` mode, non-elevated, live host):
   - **TrafficLens `--connections`**: 112 connections (78 TCP / 34 UDP, 99 IPv4 /
     13 IPv6), 26 established / 29 listening; `udpWithRemote = 0` and
@@ -335,14 +408,17 @@ M3, and M4 (per-process traffic) are complete.
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
   formatter cases, metadata-provider tests, and the TL-008 connection parser /
   key / selection / endpoint-formatter suites).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 45 tests, all passing
-  (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, and the TL-008
-  Connections-ViewModel tests).
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 51 tests, all passing
+  (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
+  Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, and resource keys).
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 27 tests, all passing (TL-009:
+  HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
+  over throwaway temp databases, TrafficHistoryService with fake collector/provider).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
-  `-- --process` (per-process, elevated or non-elevated), or
+  `-- --process` (per-process, elevated or non-elevated),
   `-- --connections` (active connections, non-elevated; set `TL_VERIFY_PORT` for a
-  fixed listener port).
+  fixed listener port), or `-- --history` (TL-009 history, throwaway DB + live traffic).
 
 ## Known Issues / Not Started
 
@@ -350,8 +426,15 @@ M3, and M4 (per-process traffic) are complete.
   Running until stopped explicitly (`logman stop "TrafficLensProcessTrace" -ets`);
   graceful close does not leak the session.
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
-  by default (`includeTunnels: true` to include on VPN-only hosts).
-- Graph history is in-memory only (5.5 min); persistent SQLite history is TL-009.
+  by default (`includeTunnels: true` to include on VPN-only hosts). Because the
+  system history follows that same policy, a **VPN-only host records ~zero history**
+  (tunnel bytes are never attributed to the system totals). Documented in
+  `docs/NETWORK_COLLECTION.md` + ADR-009/017.
+- History chart shows daily bars for 7/30/Lifetime; an hourly-or-finer view for the
+  current day is a documented future refinement (raw minute samples are retained
+  90 days, so it only needs a query + range).
+- History records system/global totals only; per-process and per-connection history
+  are out of scope (TL-007/TL-008 are live-only).
 - Active-connection state is live-only (no history) and report raw IP endpoints; no
   reverse DNS in TL-008 (deferred).
 - Range buttons do not show an explicit "selected" highlight; the selected range is
@@ -371,6 +454,7 @@ M3, and M4 (per-process traffic) are complete.
 
 ## Git Commit
 
+- TL-009 (SQLite history): `91549e7` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
 - TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
 - TL-007F (shutdown deadlock fix): `e09111e` — `fix: prevent shutdown deadlock by not capturing the SynchronizationContext in collector StopAsync (TL-007F)`; docs `f425dca`.
 - TL-007 (per-process traffic, Applications-list UI): `27ca92d` — `feat: add per-process Applications view with sort, search, icons, and permission UX (TL-007)`; docs `b1059c6`.
@@ -382,7 +466,7 @@ M3, and M4 (per-process traffic) are complete.
 
 ## Next Recommended Task
 
-- TL-008 (active connections) is complete and verified. Next scheduled milestone is
-  **TL-009 (SQLite history)**: aggregated sampling schema and repositories for
-  Today / Yesterday / 7d / 30d / Lifetime views. TL-008 deliberately keeps
-  connections live-only (no history) and does not persist them.
+- TL-009 (SQLite history) is complete and verified. Next scheduled milestone is
+  **TL-010 (floating widget)** — a compact always-on-top widget reusing the
+  existing live rates and, once TL-009's aggregates are mature enough, today's
+  usage totals.

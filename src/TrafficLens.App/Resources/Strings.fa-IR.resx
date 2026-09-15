@@ -282,4 +282,31 @@
   <data name="SortRemoteLabel" xml:space="preserve">
     <value>آدرس مقصد</value>
   </data>
+  <data name="HistoryLabel" xml:space="preserve">
+    <value>تاریخچه</value>
+  </data>
+  <data name="HistoryDailyTrafficLabel" xml:space="preserve">
+    <value>ترافیک روزانه</value>
+  </data>
+  <data name="TodayLabel" xml:space="preserve">
+    <value>امروز</value>
+  </data>
+  <data name="YesterdayLabel" xml:space="preserve">
+    <value>دیروز</value>
+  </data>
+  <data name="Last7DaysLabel" xml:space="preserve">
+    <value>۷ روز گذشته</value>
+  </data>
+  <data name="Last30DaysLabel" xml:space="preserve">
+    <value>۳۰ روز گذشته</value>
+  </data>
+  <data name="LifetimeLabel" xml:space="preserve">
+    <value>کل مدت</value>
+  </data>
+  <data name="HistoryNoDataLabel" xml:space="preserve">
+    <value>هنوز تاریخچه‌ای وجود ندارد</value>
+  </data>
+  <data name="HistoryUnavailableLabel" xml:space="preserve">
+    <value>تاریخچه در دسترس نیست</value>
+  </data>
 </root>

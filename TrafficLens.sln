@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.Network.Verific
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.App.Tests", "tests\TrafficLens.App.Tests\TrafficLens.App.Tests.csproj", "{178C6814-90EB-4A5E-9E0A-399D3AE8B0AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficLens.Infrastructure.Tests", "tests\TrafficLens.Infrastructure.Tests\TrafficLens.Infrastructure.Tests.csproj", "{AE139D48-6CB8-4920-9057-A82276D00CA4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,10 @@ Global
 		{178C6814-90EB-4A5E-9E0A-399D3AE8B0AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{178C6814-90EB-4A5E-9E0A-399D3AE8B0AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{178C6814-90EB-4A5E-9E0A-399D3AE8B0AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE139D48-6CB8-4920-9057-A82276D00CA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE139D48-6CB8-4920-9057-A82276D00CA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE139D48-6CB8-4920-9057-A82276D00CA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE139D48-6CB8-4920-9057-A82276D00CA4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{93D9D99E-5B1A-4433-87DF-ACF38FCF8934} = {FD819DB4-5934-4510-AD83-BA42CF3B020E}
@@ -67,5 +73,6 @@ Global
 		{84E207C1-65AD-4756-88E4-4CD021E32BE1} = {04E2953F-2BBA-4380-BAAB-21B5B3268C96}
 		{7C98B8F7-54FA-413A-A50F-1EFA727DFF2F} = {04E2953F-2BBA-4380-BAAB-21B5B3268C96}
 		{178C6814-90EB-4A5E-9E0A-399D3AE8B0AF} = {04E2953F-2BBA-4380-BAAB-21B5B3268C96}
+		{AE139D48-6CB8-4920-9057-A82276D00CA4} = {04E2953F-2BBA-4380-BAAB-21B5B3268C96}
 	EndGlobalSection
 EndGlobal

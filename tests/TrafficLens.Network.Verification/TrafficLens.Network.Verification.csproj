@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\TrafficLens.Network\TrafficLens.Network.csproj" />
     <ProjectReference Include="..\..\src\TrafficLens.Core\TrafficLens.Core.csproj" />
+    <ProjectReference Include="..\..\src\TrafficLens.Infrastructure\TrafficLens.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

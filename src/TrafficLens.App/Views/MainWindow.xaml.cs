@@ -14,13 +14,15 @@ public partial class MainWindow : Window
         MainViewModel viewModel,
         ILocalizationService localization,
         ApplicationsView applicationsView,
-        ConnectionsView connectionsView)
+        ConnectionsView connectionsView,
+        HistoryView historyView)
     {
         _localization = localization;
         InitializeComponent();
         DataContext = viewModel;
         ApplicationsHost.Content = applicationsView;
         ConnectionsHost.Content = connectionsView;
+        HistoryHost.Content = historyView;
 
         _localization.CultureChanged += OnCultureChanged;
         UpdateFlowDirection();

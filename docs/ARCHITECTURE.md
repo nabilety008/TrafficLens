@@ -39,7 +39,7 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Consumes Core contracts only.
 
 ### TrafficLens.Infrastructure
-- SQLite persistence (upcoming), JSON settings, structured file logging.
+- SQLite persistence (TL-009 history), JSON settings, structured file logging.
 - Depends only on Core.
 
 ## Dependency Injection
@@ -86,6 +86,41 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
   timeline stays oldest-left → newest-right under fa-IR.
 - Range selection is a `SelectGraphRangeCommand` on the dashboard (CommandParameter
   30/60/300); selection state re-slices the buffer and re-renders in place.
+
+## History layer (TL-009)
+
+- `TrafficLens.Core/History` holds the no-OS domain:
+  - `HistoryRangeCalculator` — half-open local-date ranges
+    (`ToLocalDateRange`, `LocalDateOf`) over `TimeZoneInfo`, and
+    `BuildDailySeries`/`SumDaily` helpers; DST + local-midnight correct.
+  - `TrafficHistoryAccumulator` — turns the collector's `NetworkCounterSample`
+    DELTAS into per-UTC-minute buckets: first observation per adapter is a
+    baseline, only non-negative deltas count, resets/reconnects/reboots
+    re-baseline (never fabricate usage). `DrainCompleted` emits full minutes;
+    `DrainAll` also emits the open minute (clamped 1..60 s) for shutdown flush.
+  - `TrafficUsage`, `DailyUsagePoint`, `HistorySnapshot` (immutable, cached) and
+    the contracts `ITrafficHistoryRepository` / `ITrafficHistoryService`.
+- `TrafficLens.Infrastructure/History` owns persistence and the pipeline:
+  - `SqliteTrafficHistoryRepository` (Microsoft.Data.Sqlite) — schema v1 tables
+    `traffic_samples` + `daily_usage`, WAL, `busy_timeout`, `Pooling=false`;
+    single-transaction appends using `INSERT OR IGNORE` + `changes()==1` so
+    restarts/crashes cannot duplicate totals; `daily_usage` kept forever; raw
+    samples pruned after 90 days on startup.
+  - `TrafficHistoryService` — subscribes the existing
+    `INetworkTrafficCollector.CounterSampleReady` (it **never starts its own
+    NIC polling loop**), excludes tunnels by default (ADR-009/010 policy; on a
+    VPN-only host history honestly records ~0), flushes completed minutes on the
+    background loop every 30 s, drains + flushes on `StopAsync`, and publishes a
+    cached immutable `HistorySnapshot` (`HistoryChanged`). SQL runs only on
+    service threads; the UI never queries the DB.
+  - `HistoryServiceCollectionExtensions.AddHistoryServices(dbPath)` — DI.
+- Data flow: collector counters → accumulator (live) → repository (SQLite) →
+  `HistorySnapshot` (cached) → `HistoryViewModel` (dispatcher) →
+  `HistoryView` + `HistoryBarChartControl` (native `FrameworkElement`,
+  oldest-left → newest-right even under RTL).
+- App: `HistoryViewModel` (five ranges, summary cards, no-data/unavailable
+  states) and the History host wired in `MainViewModel`/`MainWindow`;
+  `App.xaml.cs` starts the service after the network collector.
 
 ## Logging
 
@@ -159,6 +194,6 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 
 ## Future Plans
 
-- History: aggregated SQLite samples; retention policies.
-- Tray + floating widget.
+- Floating widget + system tray (TL-010/TL-011).
+- Hourly view of the current day (raw minute samples are already retained 90 days).
 - See `docs/ROADMAP.md`.

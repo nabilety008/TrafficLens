@@ -12,43 +12,33 @@ public sealed class MainViewModel : ViewModelBase
     private string _applicationsNavLabel = string.Empty;
     private string _dashboardNavLabel = string.Empty;
     private string _connectionsNavLabel = string.Empty;
+    private string _historyNavLabel = string.Empty;
     private bool _isDashboardVisible = true;
     private bool _isApplicationsVisible;
     private bool _isConnectionsVisible;
+    private bool _isHistoryVisible;
 
     public MainViewModel(
         ILocalizationService localization,
         DashboardViewModel dashboard,
         ApplicationsViewModel applications,
-        ConnectionsViewModel connections)
+        ConnectionsViewModel connections,
+        HistoryViewModel history)
     {
         _localization = localization;
         Dashboard = dashboard;
         Applications = applications;
         Connections = connections;
+        History = history;
         _localization.CultureChanged += (_, _) => RefreshLocalizedStrings();
         RefreshLocalizedStrings();
 
         SwitchToEnglishCommand = new RelayCommand(() => _localization.SetCulture("en-US"));
         SwitchToPersianCommand = new RelayCommand(() => _localization.SetCulture("fa-IR"));
-        ShowDashboardCommand = new RelayCommand(() =>
-        {
-            IsDashboardVisible = true;
-            IsApplicationsVisible = false;
-            IsConnectionsVisible = false;
-        });
-        ShowApplicationsCommand = new RelayCommand(() =>
-        {
-            IsDashboardVisible = false;
-            IsApplicationsVisible = true;
-            IsConnectionsVisible = false;
-        });
-        ShowConnectionsCommand = new RelayCommand(() =>
-        {
-            IsDashboardVisible = false;
-            IsApplicationsVisible = false;
-            IsConnectionsVisible = true;
-        });
+        ShowDashboardCommand = new RelayCommand(() => SelectPage(Page.Dashboard));
+        ShowApplicationsCommand = new RelayCommand(() => SelectPage(Page.Applications));
+        ShowConnectionsCommand = new RelayCommand(() => SelectPage(Page.Connections));
+        ShowHistoryCommand = new RelayCommand(() => SelectPage(Page.History));
     }
 
     public DashboardViewModel Dashboard { get; }
@@ -57,10 +47,18 @@ public sealed class MainViewModel : ViewModelBase
 
     public ConnectionsViewModel Connections { get; }
 
+    public HistoryViewModel History { get; }
+
     public string ConnectionsNavLabel
     {
         get => _connectionsNavLabel;
         private set => SetProperty(ref _connectionsNavLabel, value);
+    }
+
+    public string HistoryNavLabel
+    {
+        get => _historyNavLabel;
+        private set => SetProperty(ref _historyNavLabel, value);
     }
 
     public string ApplicationsNavLabel
@@ -79,6 +77,12 @@ public sealed class MainViewModel : ViewModelBase
     {
         get => _isConnectionsVisible;
         private set => SetProperty(ref _isConnectionsVisible, value);
+    }
+
+    public bool IsHistoryVisible
+    {
+        get => _isHistoryVisible;
+        private set => SetProperty(ref _isHistoryVisible, value);
     }
 
     public bool IsDashboardVisible
@@ -115,6 +119,16 @@ public sealed class MainViewModel : ViewModelBase
 
     public ICommand ShowConnectionsCommand { get; }
 
+    public ICommand ShowHistoryCommand { get; }
+
+    private void SelectPage(Page page)
+    {
+        IsDashboardVisible = page == Page.Dashboard;
+        IsApplicationsVisible = page == Page.Applications;
+        IsConnectionsVisible = page == Page.Connections;
+        IsHistoryVisible = page == Page.History;
+    }
+
     private void RefreshLocalizedStrings()
     {
         WindowTitle = _localization["WindowTitle"];
@@ -122,5 +136,14 @@ public sealed class MainViewModel : ViewModelBase
         ApplicationsNavLabel = _localization["ApplicationsLabel"];
         DashboardNavLabel = _localization["DashboardLabel"];
         ConnectionsNavLabel = _localization["ConnectionsLabel"];
+        HistoryNavLabel = _localization["HistoryLabel"];
+    }
+
+    private enum Page
+    {
+        Dashboard,
+        Applications,
+        Connections,
+        History
     }
 }

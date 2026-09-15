@@ -7,6 +7,7 @@ using TrafficLens.App.ViewModels;
 using TrafficLens.App.Views;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
+using TrafficLens.Core.History;
 using TrafficLens.Infrastructure.Logging;
 using TrafficLens.Infrastructure.Services;
 using TrafficLens.Network;
@@ -72,6 +73,17 @@ public partial class App : Application
         {
             logger.LogError(ex, "Failed to start connection provider");
         }
+
+        var history = _serviceProvider.GetRequiredService<ITrafficHistoryService>();
+        try
+        {
+            _ = history.StartAsync(CancellationToken.None);
+            logger.LogInformation("Traffic history service started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start traffic history service");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -102,12 +114,15 @@ public partial class App : Application
         services.AddFileLogging(AppPaths.LogsDirectory);
 
         services.AddNetworkServices();
+        services.AddHistoryServices(AppPaths.DatabaseFile);
         services.AddSingleton<ProcessIconResolver>();
         services.AddSingleton<ApplicationsViewModel>();
         services.AddSingleton<ApplicationsView>();
         services.AddSingleton<ConnectionsViewModel>();
         services.AddSingleton<ConnectionsView>();
         services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<HistoryViewModel>();
+        services.AddSingleton<HistoryView>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
     }

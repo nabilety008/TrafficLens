@@ -339,3 +339,51 @@ Reasoning:
   dispatcher-marshalled consumer) makes the behavior testable without a live table
   or the UI.
 
+## ADR-017: Durable aggregated history — minute buckets + daily rollup, restart-idempotent appends
+
+**Status:** Accepted (TL-009)
+
+Traffic history is persisted locally in **SQLite** at
+`%LOCALAPPDATA%\TrafficLens\data\trafficlens.db` as two tables: 60-second
+system buckets in `traffic_samples` (UTC start-time primary key, WAL,
+`busy_timeout`, `Pooling=false`) and a per-local-date rollup in `daily_usage`
+(kept forever). Usage is derived **only from the collector's cumulative-counter
+DELTAS** (`CounterSampleReady`) via `TrafficHistoryAccumulator` — first
+observation per adapter is a baseline, non-negative deltas only, resets /
+reconnects / reboots re-baseline — so values are never fabricated. Tunnels are
+excluded by default, the same policy as the live aggregate (ADR-009/010); on a
+VPN-only host history honestly records ~zero system usage rather than
+double-counting transport bytes behind the VPN.
+
+Restart/crash safety is structural:
+
+- Each flush appends minute buckets in one transaction with
+  `INSERT OR IGNORE` and only rolls the `daily_usage` totals when
+  `changes() == 1` (the bucket did not already exist). Re-flushing after a
+  restart is a no-op, so history can **never be double-counted**.
+- Graceful shutdown drains the accumulator and flushes the open minute (duration
+  clamped 1..60 s) before the repository is disposed. A hard kill loses at most
+  the current unflushed minute (up to the 30 s flush interval); nothing is
+  invented to fill it.
+- Writes are serialized through a semaphore gate; the UI consumes only a cached
+  immutable `HistorySnapshot` (`HistoryChanged`), so SQL never runs on the WPF
+  thread and per-second live updates are unaffected.
+
+Retention: raw `traffic_samples` are pruned on startup past 90 days; `daily_usage`
+is permanent (a few KB/year). Estimated steady-state footprint ≈ 8 MB with the
+90-day prune (see `docs/DATABASE.md`).
+
+Reasoning:
+- Persisting only 60 s aggregated system buckets (not samples/packets) keeps the
+  DB tiny and honest; the existing BackgroundService-free design means the service
+  rides the collector's events instead of adding a second NIC polling loop, so the
+  live dashboard and history never disagree about the underlying counters.
+- The `INSERT OR IGNORE` + `changes()==1` guard costs nothing and removes the whole
+  class of duplicate-history bugs without app-level locking or startup compaction.
+- Local-date rollup rows make Today/Yesterday/7d/30d/Lifetime reads O(range rows)
+  and remain valid across timezone/DST boundaries (`TimeZoneInfo` bucketing in
+  `HistoryRangeCalculator`).
+- The history chart mirrors the dashboard's no-double-count honesty policy
+  (ADR-009/010), and exports the aggregation policy in a form future milestones
+  (TL-013 settings, TL-014 CSV) can reuse.
+

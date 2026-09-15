@@ -2,6 +2,70 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.12] — 2026-09-15 (TL-009 complete — SQLite history)
+
+### Added
+- Core history domain (`TrafficLens.Core/History`, no WPF/OS dependencies):
+  - `HistoryRange` (Today / Yesterday / Last 7 Days / Last 30 Days / Lifetime),
+    `TrafficUsage`, `DailyUsagePoint`, and immutable `HistorySnapshot`
+    (`For(range)` derives per-range totals; `Unavailable(lastError)`).
+  - `HistoryRangeCalculator` — half-open local-date ranges via
+    `TimeZoneInfo.ConvertTimeFromUtc` → `DateOnly` (DST / local-midnight correct;
+    Last7Days `(today-6, today+1)`, Last30Days `(today-29, today+1)`).
+  - `TrafficHistoryAccumulator` — counter-sample DELTAS → per-UTC-minute buckets;
+    first observation per adapter is baseline-only; non-negative deltas only;
+    `DrainCompleted` (full minutes) vs `DrainAll` (open minute clamped 1..60).
+  - Contracts `ITrafficHistoryRepository` + `ITrafficHistoryService`.
+- Infrastructure (`TrafficLens.Infrastructure/History`):
+  - `SqliteTrafficHistoryRepository` — schema v1 (`PRAGMA user_version`), WAL,
+    `busy_timeout`, `Pooling=false`; tables `traffic_samples` +
+    `daily_usage`; appends are single transactions guarded by
+    `INSERT OR IGNORE` + `changes()==1` so **restarts/crashes can never
+    duplicate history**; `daily_usage` kept forever, raw samples pruned after
+    90 days on startup.
+  - `TrafficHistoryService` — rides the existing `CounterSampleReady` events
+    (never a second NIC polling loop), tunnel-excluding like the ADR-009/010
+    aggregate, re-baselines on resets/reconnects/reboots (nothing fabricated),
+    30 s background flush of completed minutes, drains + flushes on stop, and
+    exposes a cached immutable `HistorySnapshot` (SQL never on the UI thread).
+  - `HistoryServiceCollectionExtensions.AddHistoryServices(dbPath)`.
+- `AppPaths` — DB at `%LOCALAPPDATA%\TrafficLens\data\trafficlens.db`;
+  `EnsureDirectories` creates the `data` folder.
+- App History page:
+  - `HistoryViewModel` — five-range selector button row, Download/Upload/Total
+    summary cards, "No history yet" overlay when Lifetime is zero, storage
+    failure banner (`HistoryUnavailableLabel` + `LastError`).
+  - `HistoryView` + native `HistoryBarChartControl` (`FrameworkElement`,
+    `OnRender`, no chart library) — bars always oldest-left → newest-right under
+    RTL; Today/Yesterday = 1 bar, 7d = 7 bars, 30d/Lifetime = 30 daily bars;
+    tooltips show date → `DataSizeFormatter` totals.
+  - `MainViewModel.ShowHistoryCommand` + localized nav label; `MainWindow`
+    History host (Dashboard / Applications / Connections / History);
+    `App.xaml.cs` registers the ViewModel/View and starts the history service.
+- Localization: `HistoryLabel`, `HistoryDailyTrafficLabel`, `TodayLabel`,
+  `YesterdayLabel`, `Last7DaysLabel`, `Last30DaysLabel`, `LifetimeLabel`,
+  `HistoryNoDataLabel`, `HistoryUnavailableLabel` added to `Strings.resx` (en)
+  and `Strings.fa-IR.resx`.
+- Tests: new `TrafficLens.Infrastructure.Tests` project (27 tests: range
+  calculator, accumulator, SQLite repository incl. restart-idempotent append,
+  service) added to the solution; `HistoryViewModelTests` (6) and localization
+  resource-key tests in `TrafficLens.App.Tests`.
+- Verification: `--history` mode added to `TrafficLens.Network.Verification`
+  (real collector + throwaway DB + real downloads + restart idempotency check).
+- ADR-017 (durable aggregated history; minute buckets + daily rollup; restart
+  idempotency; 90-day raw retention).
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **284/284 passing** (206 Network + 51 App + 27 Infrastructure).
+- Real Windows verification (`--history`, live host, temp DB): a real 20 MB
+  `speed.cloudflare.com` download recorded as Today = 20,182,568 B down /
+  79,655 B up (peak ~5.78 MB/s observed); 30-day daily series correct; a second
+  service instance over the same DB reported the identical Lifetime
+  (`unchanged: true`) — restart cannot double-count. DB = 16,384 bytes after the
+  runtime; `daily_usage` aggregates keep steady-state bounded even as raw minute
+  samples archive.
+
 ## [0.0.11] — 2026-09-15 (TL-008 complete — active connections)
 
 ### Added

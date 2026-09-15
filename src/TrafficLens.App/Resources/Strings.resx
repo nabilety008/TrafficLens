@@ -282,4 +282,31 @@
   <data name="SortRemoteLabel" xml:space="preserve">
     <value>Remote endpoint</value>
   </data>
+  <data name="HistoryLabel" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="HistoryDailyTrafficLabel" xml:space="preserve">
+    <value>Daily Traffic</value>
+  </data>
+  <data name="TodayLabel" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="YesterdayLabel" xml:space="preserve">
+    <value>Yesterday</value>
+  </data>
+  <data name="Last7DaysLabel" xml:space="preserve">
+    <value>Last 7 Days</value>
+  </data>
+  <data name="Last30DaysLabel" xml:space="preserve">
+    <value>Last 30 Days</value>
+  </data>
+  <data name="LifetimeLabel" xml:space="preserve">
+    <value>Lifetime</value>
+  </data>
+  <data name="HistoryNoDataLabel" xml:space="preserve">
+    <value>No history yet</value>
+  </data>
+  <data name="HistoryUnavailableLabel" xml:space="preserve">
+    <value>History unavailable</value>
+  </data>
 </root>

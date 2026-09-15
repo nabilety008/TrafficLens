@@ -238,9 +238,44 @@
 - **Commit:** `c29adf4` (code + tests; see `docs/PROJECT_STATUS.md`)
 
 ### TL-009 SQLite History
-- [ ] Aggregated sampling schema and repositories
-- [ ] Today / Yesterday / 7d / 30d / Lifetime views
-- **Status: not started**
+- [x] Core history domain (`TrafficLens.Core/History`): `HistoryRange`,
+      `TrafficUsage`, `DailyUsagePoint`, `HistorySnapshot` (immutable, `.For(range)`),
+      `TrafficHistoryBucket`, `HistoryRangeCalculator` (half-open local-date ranges;
+      DST/local-midnight correct via `TimeZoneInfo`), `TrafficHistoryAccumulator`
+      (baseline-only first observation, non-negative deltas, per-UTC-minute buckets,
+      `DrainCompleted`/`DrainAll`), `ITrafficHistoryRepository`, `ITrafficHistoryService`
+- [x] Infrastructure persistence (`TrafficLens.Infrastructure/History`):
+      `SqliteTrafficHistoryRepository` (schema v1 via `PRAGMA user_version`; tables
+      `traffic_samples` + `daily_usage`; WAL + busy_timeout; `Pooling=false`;
+      semaphore-gated writes; `INSERT OR IGNORE` + `changes()==1` → restart can never
+      duplicate history; `daily_usage` upsert; 90-day raw prune on startup),
+      `TrafficHistoryService` (rides existing `CounterSampleReady` — never a second
+      poll loop; adapter-kind map refreshed on `AdaptersChanged`; tunnel exclusion by
+      default mirrors ADR-009/010; 30 s flush loop; `StopAsync` drains + flushes;
+      cached immutable `HistorySnapshot` so SQL never runs on the UI thread),
+      `HistoryServiceCollectionExtensions.AddHistoryServices(dbPath)`
+- [x] `AppPaths` — database under `%LOCALAPPDATA%\TrafficLens\data\trafficlens.db`;
+      `EnsureDirectories` creates the `data` folder
+- [x] App History page: `HistoryViewModel` (five ranges, summary cards, banner when
+      unavailable), `HistoryView`, native `HistoryBarChartControl` (FrameworkElement,
+      always oldest-left → newest-right under RTL; Today/Yesterday = 1 bar, 7d = 7 bars,
+      30d/Lifetime = 30 bars), `MainViewModel.ShowHistoryCommand` + nav label,
+      `MainWindow` History host, DI + start in `App.xaml.cs`
+- [x] Localization: en + fa-IR keys (HistoryLabel, HistoryDailyTrafficLabel,
+      TodayLabel, YesterdayLabel, Last7DaysLabel, Last30DaysLabel, LifetimeLabel,
+      HistoryNoDataLabel, HistoryUnavailableLabel); reused download/upload/total labels
+- [x] Tests: `TrafficLens.Infrastructure.Tests` (new project, added to solution) —
+      range calculator, accumulator, SQLite repository (temp DBs, idempotent append,
+      daily/lifetime queries, prune, reopen/schema), service (delta→flush→shutdown,
+      restart no-duplication, tunnel exclusion) — 27 tests
+- [x] App tests: `HistoryViewModelTests` (6) + localization resource keys (en + fa)
+- [x] Real Windows verification (`--history`): live collector + real DB; 20 MB curl
+      download recorded as ~20.18 MB Today with peak 5.78 MB/s; second service
+      instance against the same DB → Lifetime unchanged (restart idempotency)
+- [x] Docs: `DATABASE.md` finalized, `ARCHITECTURE.md`, `PROJECT_STATUS.md`,
+      `CHANGELOG.md`, ADR-017
+- **Status: done**
+- **Commit:** `91549e7` (see `docs/PROJECT_STATUS.md`)
 
 ### TL-010 Floating Widget
 - [ ] Compact always-on-top widget
@@ -280,7 +315,7 @@
 | M3 | Network interfaces | TL-004 | Done |
 | M4 | Per-process traffic | TL-007 | Done |
 | M5 | Active connections | TL-008 | Done |
-| M6 | SQLite history | TL-009 | Not started |
+| M6 | SQLite history | TL-009 | Done |
 | M7 | Tray and widget | TL-010, TL-011 | Not started |
 | M8 | Alerts and settings | TL-012, TL-013 | Not started |
 | M9 | Stability, performance, tests, packaging | TL-015 | Not started |

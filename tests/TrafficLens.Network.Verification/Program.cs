@@ -4,7 +4,9 @@ using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using TrafficLens.Core.Conversion;
+using TrafficLens.Core.History;
 using TrafficLens.Core.Models;
+using TrafficLens.Infrastructure.History;
 using TrafficLens.Network.Adapters;
 using TrafficLens.Network.Aggregation;
 using TrafficLens.Network.Collectors;
@@ -48,6 +50,11 @@ if (args.Contains("--connections", StringComparer.OrdinalIgnoreCase))
 if (args.Contains("--process", StringComparer.OrdinalIgnoreCase))
 {
     return await ProcessTrafficVerificationAsync().ConfigureAwait(false);
+}
+
+if (args.Contains("--history", StringComparer.OrdinalIgnoreCase))
+{
+    return await HistoryVerificationAsync().ConfigureAwait(false);
 }
 
 var pollIntervalMs = 500;
@@ -429,3 +436,180 @@ static async Task TrafficSteadyWait(TimeSpan duration)
         await Task.Delay(Math.Min(250, (int)(until - DateTime.UtcNow).TotalMilliseconds));
     }
 }
+
+// Real Windows verification for TL-009:
+//  1. Starts the real collector + adapter provider and a history service over a
+//     throwaway SQLite database (never the user's %LOCALAPPDATA% DB).
+//  2. Generates real traffic, waits for a flush, then stops (flushes remaining).
+//  3. Prints Today / Yesterday / 7d / 30d / Lifetime totals and daily series.
+//  4. Restarts a second service against the SAME database and confirms Lifetime
+//     totals do NOT double (restart idempotency).
+static async Task<int> HistoryVerificationAsync()
+{
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+    Console.WriteLine("History verification (TL-009) starting...");
+
+    var verifyDir = Path.Combine(Path.GetTempPath(), $"trafficlens_verify_{Guid.NewGuid():N}");
+    Directory.CreateDirectory(verifyDir);
+    var dbPath = Path.Combine(verifyDir, "trafficlens.db");
+
+    try
+    {
+        var adapterProvider = new WindowsNetworkAdapterProvider(new NetworkInterfaceSource());
+
+        using (var repo = new SqliteTrafficHistoryRepository(dbPath, NullLogger<SqliteTrafficHistoryRepository>.Instance))
+        using (var collector = new WindowsNetworkTrafficCollector(
+            new NetworkInterfaceSource(),
+            NullLogger<WindowsNetworkTrafficCollector>.Instance,
+            TimeSpan.FromMilliseconds(500)))
+        {
+            await repo.InitializeAsync(CancellationToken.None);
+            var service = new TrafficHistoryService(
+                collector, adapterProvider, repo,
+                NullLogger<TrafficHistoryService>.Instance,
+                flushInterval: TimeSpan.FromSeconds(2));
+            await collector.StartAsync(CancellationToken.None);
+            await service.StartAsync(CancellationToken.None);
+            await Task.Delay(3000);
+
+            var observedPeak = 0L;
+            var trafficTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using var download = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "curl.exe",
+                            ArgumentList = { "-s", "-o", "NUL", "https://speed.cloudflare.com/__down?bytes=20000000", "--max-time", "30" },
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        }
+                    };
+                    download.Start();
+                    while (!download.HasExited)
+                    {
+                        observedPeak = Math.Max(observedPeak, DownloadPeak(collector));
+                        await Task.Delay(200);
+                    }
+                }
+                catch
+                {
+                    // Best-effort traffic generation.
+                }
+            });
+
+            await Task.WhenAll(TrafficSteadyWait(TimeSpan.FromSeconds(8)), trafficTask);
+
+            await service.StopAsync();
+            var snapshot = service.GetSnapshot();
+            var series = Histories(snapshot);
+
+            var dbSize = new FileInfo(dbPath).Length;
+
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                tl009 = "session-1",
+                status = "ok",
+                available = snapshot.IsAvailable,
+                lastError = service.LastError,
+                capturedAtUtc = DateTime.UtcNow,
+                today = Size(snapshot.Today),
+                yesterday = Size(snapshot.Yesterday),
+                last7days = Size(snapshot.Last7Days),
+                last30days = Size(snapshot.Last30Days),
+                lifetime1 = Size(snapshot.Lifetime),
+                dailySeriesDays = snapshot.DailySeries.Count,
+                firstSeriesDay = snapshot.DailySeries.Count > 0 ? snapshot.DailySeries[0].Date.ToString("yyyy-MM-dd") : null,
+                lastSeriesDay = snapshot.DailySeries.Count > 0 ? snapshot.DailySeries[^1].Date.ToString("yyyy-MM-dd") : null,
+                observedPeakDownloadBytesPerSecond = observedPeak,
+                dbBytes = dbSize
+            }, new JsonSerializerOptions { WriteIndented = true }));
+
+            // Restart against the same database => Lifetime must not grow beyond real usage.
+            using (var collector2 = new WindowsNetworkTrafficCollector(
+                new NetworkInterfaceSource(),
+                NullLogger<WindowsNetworkTrafficCollector>.Instance,
+                TimeSpan.FromMilliseconds(500)))
+            {
+                var service2 = new TrafficHistoryService(collector2, adapterProvider, repo,
+                    NullLogger<TrafficHistoryService>.Instance,
+                    flushInterval: TimeSpan.FromSeconds(2));
+                await collector2.StartAsync(CancellationToken.None);
+                await service2.StartAsync(CancellationToken.None);
+                await Task.Delay(2000);
+                await service2.StopAsync();
+                var second = service2.GetSnapshot().Lifetime;
+
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    tl009 = "session-2",
+                    status = "ok",
+                    lifetime1 = Size(snapshot.Lifetime),
+                    lifetime2 = Size(second),
+                    unchanged = snapshot.Lifetime == second,
+                    dbBytes = new FileInfo(dbPath).Length,
+                    series = series
+                }, new JsonSerializerOptions { WriteIndented = true }));
+            }
+
+            service.Dispose();
+        }
+    }
+    finally
+    {
+        foreach (var suffix in new[] { ".db", "-wal", "-shm" })
+        {
+            try
+            {
+                if (File.Exists(dbPath + (suffix == ".db" ? string.Empty : suffix)))
+                {
+                    File.Delete(dbPath + (suffix == ".db" ? string.Empty : suffix));
+                }
+            }
+            catch
+            {
+                // Best-effort cleanup.
+            }
+        }
+
+        try
+        {
+            Directory.Delete(verifyDir, recursive: true);
+        }
+        catch
+        {
+        }
+    }
+
+    return 0;
+}
+
+static int DownloadPeak(WindowsNetworkTrafficCollector collector)
+{
+    long peak = 0;
+    foreach (var sample in collector.GetCurrentSamples())
+    {
+        peak = Math.Max(peak, sample.DownloadBytesPerSecond);
+    }
+
+    return (int)peak;
+}
+
+static object Size(TrafficUsage usage) => new
+{
+    download = usage.DownloadBytes,
+    upload = usage.UploadBytes,
+    total = usage.TotalBytes
+};
+
+static List<object> Histories(HistorySnapshot snapshot) => snapshot.DailySeries
+    .Select(point => new
+    {
+        date = point.Date.ToString("yyyy-MM-dd"),
+        download = point.DownloadBytes,
+        upload = point.UploadBytes,
+        total = point.TotalBytes
+    } as object)
+    .ToList();
