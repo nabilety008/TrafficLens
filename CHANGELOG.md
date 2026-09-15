@@ -2,6 +2,47 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.13] — 2026-09-15 (TL-010 complete — floating widget)
+
+### Added
+- `FloatingWidgetViewModel` (App) — rides the existing live rate pipeline
+  (`SpeedSampleReady`/`NetworkChanged`/`AdaptersChanged`; no second poll loop or
+  timer), computes the ADR-009/010 aggregate via `NetworkTrafficAggregator`,
+  formats Download/Upload/Total through `DataRateFormatter`, localized
+  title + labels, `TogglePinCommand`/`CloseWidgetCommand`, dispatcher-marshalled
+  updates, IDisposable (same pattern as `DashboardViewModel`).
+- `FloatingWidgetWindow` (App) — 280×110 frameless always-on-top widget
+  (`WindowStyle=None`, `ResizeMode=NoResize`, `ShowInTaskbar=False`), dark theme
+  from shared `DarkTheme.xaml`, drag by empty area, pin toggle (📌/📍) + hide (✕)
+  buttons, rate values forced LTR under RTL.
+- `FloatingWidgetService` (App, singleton) — single widget instance;
+  `Show`/`Hide`/`Toggle`/`RestoreIfEnabled`; repeat show activates (no
+  duplicates); widget close hides only; `Dispose` really closes the window on
+  shutdown (never keeps the app alive).
+- `WidgetPositionHelper.Clamp` (App) — pure multi-monitor position recovery:
+  union of monitor work areas, negative virtual-screen coords preserved
+  (secondary monitor left of primary), off-screen/disconnected-monitor clamping;
+  real areas from `SystemParameters.VirtualScreen*`.
+- Settings via existing `ISettingsService` (`settings.json`):
+  `FloatingWidgetEnabled`, `FloatingWidgetAlwaysOnTop` (default on),
+  `FloatingWidgetLeft`, `FloatingWidgetTop`.
+- Main UI: header toggle button with `Show`/`Hide Floating Widget` labels,
+  `MainViewModel.ToggleFloatingWidgetCommand` + `FloatingWidgetToggleLabel`;
+  `MainWindow.Closing` hides the widget so normal shutdown is unaffected
+  (ADR-015/TL-007F); `App.xaml.cs` registers the service and calls
+  `RestoreIfEnabled()` at startup.
+- Localization: `FloatingWidgetLabel`, `AlwaysOnTopLabel`,
+  `ShowFloatingWidgetLabel`, `HideFloatingWidgetLabel` in en + fa-IR.
+
+### Tests
+- `FloatingWidgetViewModelTests` (8) — aggregate→VM mapping, tunnel/down-adapter
+  exclusion, rate formatting, culture re-format + localized labels, pin icon,
+  dispose. `WidgetPositionHelperTests` (10) — in-bounds, off-screen right/bottom,
+  negative coords, secondary-monitor-left (kept vs clamped), multi-monitor union,
+  empty areas, oversized window. Localization resource keys extended.
+- Total 302 tests (App 69 / Network 206 / Infrastructure 27), Debug + Release
+  0 warnings / 0 errors.
+
 ## [0.0.12] — 2026-09-15 (TL-009 complete — SQLite history)
 
 ### Added

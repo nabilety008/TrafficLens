@@ -192,8 +192,46 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Non-elevated by design; TCP/UDP only (no ICMP); endpoints/privacy and state
   semantics are recorded in `docs/NETWORK_COLLECTION.md` and ADR-016.
 
+## Floating widget layer (TL-010)
+
+- `FloatingWidgetViewModel` (App) — a thin event-driven ViewModel over the
+  existing live pipeline. It subscribes `SpeedSampleReady`/
+  `NetworkChanged`/`AdaptersChanged` (same events as the dashboard) and **never
+  starts its own poll loop, timer, SQLite query, or process metadata call**.
+  Rates come from the existing ADR-009/010 aggregate
+  (`NetworkTrafficAggregator.AggregateRates`), formatted through
+  `DataRateFormatter` (technical units stay LTR under RTL). Exposes localized
+  title/labels, Download/Upload/Total strings, `TogglePinCommand` (raises
+  `PinStateChanged`) and `CloseWidgetCommand` (raises `CloseRequested`).
+- `FloatingWidgetWindow` (App) — 280×110 frameless window
+  (`WindowStyle=None`, `ResizeMode=NoResize`, `ShowInTaskbar=False`), dark theme
+  from the shared `DarkTheme.xaml` brushes, drag by empty area (`DragMove`,
+  ignoring clicks on buttons), pin toggle + hide buttons bound to commands, rate
+  values forced `FlowDirection=LeftToRight`.
+- `FloatingWidgetService` (App, singleton) — owns the single widget instance:
+  `Show`/`Hide`/`Toggle`/`RestoreIfEnabled`. Re-show only activates the existing
+  window (never duplicates). Closing the widget window is cancelled → hide only;
+  `Dispose` detaches the cancel handler and really closes the window so the app
+  shuts down normally (`OnLastWindowClose`) without `Environment.Exit` or a
+  hidden window keeping the process alive. `MainWindow.Closing` calls
+  `Hide()` (persists position) before normal shutdown proceeds (ADR-015).
+- `WidgetPositionHelper.Clamp` (App) — pure, unit-testable multi-monitor position
+  recovery: clamps the window rectangle into the union of the monitor work areas,
+  preserving legitimate negative virtual-screen coordinates (secondary monitor
+  left of primary) and recovering from off-screen / monitor-disconnected
+  positions. Real work areas come from `SystemParameters.VirtualScreen*`.
+- Settings — persisted through the existing `ISettingsService`
+  (single `settings.json`, no second settings file):
+  `FloatingWidgetEnabled` (startup restore), `FloatingWidgetAlwaysOnTop`
+  (default on), `FloatingWidgetLeft`, `FloatingWidgetTop`.
+- Lifecycle: registered as a singleton in `App.xaml.cs`; `RestoreIfEnabled()`
+  runs after the collectors start; main-window close hides it; DI disposal closes
+  it for real.
+- Intentional scope boundary: the widget has **no tray behavior** (technique,
+  minimize-to-tray, and startup-with-Windows belong to TL-011).
+
 ## Future Plans
 
-- Floating widget + system tray (TL-010/TL-011).
+- System tray (TL-011) — tray icon with show/hide, minimize-to-tray, and exit.
 - Hourly view of the current day (raw minute samples are already retained 90 days).
 - See `docs/ROADMAP.md`.

@@ -4,11 +4,13 @@ Updated: 2026-09-15
 
 ## Current Milestone
 
-M6 (SQLite history) is **complete**: traffic history for Today / Yesterday /
-Last 7 Days / Last 30 Days / Lifetime is persisted locally in SQLite, presented
-on a History page (summary cards + native bar chart), and verified against real
-traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
-(per-process traffic), and M5 (active connections) are complete.
+M7 (floating widget) is **in progress**: TL-010 (compact always-on-top floating
+widget reusing the existing live aggregate rates) is **complete** and verified —
+show/hide from the main UI, always-on-top toggle, persisted position/topmost with
+multi-monitor-safe restoration, RTL + en/fa-IR, and clean shutdown with no
+residual process/window. TL-011 (system tray) is the remaining M7 item. M1, M2
+(TL-005 dashboard + TL-006 live graph), M3, M4 (per-process traffic), M5, and M6
+(SQLite history) are complete.
 
 ## Task IDs
 
@@ -23,7 +25,8 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
 - TL-007F Shutdown deadlock fix — **DONE**
 - TL-008 Active Connections — **DONE**
 - TL-009 SQLite History — **DONE**
-- TL-010 and later — not started
+- TL-010 Floating Widget — **DONE**
+- TL-011 and later — not started
 
 ## Completed
 
@@ -243,6 +246,38 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
     `YesterdayLabel`, `Last7DaysLabel`, `Last30DaysLabel`, `LifetimeLabel`,
     `HistoryNoDataLabel`, `HistoryUnavailableLabel` added to `Strings.resx` (en)
     and `Strings.fa-IR.resx`; download/upload/total label reuse.
+- TL-010 (floating widget, M7):
+  - `FloatingWidgetViewModel` — thin event-driven VM over the existing rate
+    pipeline (`SpeedSampleReady`/`NetworkChanged`/`AdaptersChanged`, no own poll
+    loop or timer; ADR-009/010 aggregate via `NetworkTrafficAggregator`), formats
+    Download/Upload/Total via `DataRateFormatter` (units stay LTR under RTL),
+    localized title/labels, `TogglePinCommand` + `CloseWidgetCommand`,
+    dispatcher-marshalled updates, IDisposable (mirrors `DashboardViewModel`).
+  - `FloatingWidgetWindow` — 280×110 frameless (`WindowStyle=None`,
+    `ResizeMode=NoResize`), `ShowInTaskbar=False`, dark theme from the shared
+    `DarkTheme.xaml` brushes, drag by empty area (`DragMove`), pin toggle + hide
+    buttons bound to commands, values forced LTR; no second taskbar app.
+  - `FloatingWidgetService` (singleton) — owns the single widget instance;
+    `Show`/`Hide`/`Toggle`/`RestoreIfEnabled`; repeat show only activates (no
+    duplicates); widget close is hide-only (`Closing` cancelled); `Dispose`
+    detaches the cancel handler and really closes the window so shutdown is never
+    pinned open.
+  - `WidgetPositionHelper.Clamp` — pure multi-monitor-position recovery: union of
+    monitor work areas, negative virtual-screen coordinates preserved (secondary
+    monitor left of primary), off-screen/disconnected-monitor clamping, oversized
+    window folded to top-left; real areas from `SystemParameters.VirtualScreen*`.
+  - Settings via the existing `ISettingsService` (single `settings.json`):
+    `FloatingWidgetEnabled` (startup restore), `FloatingWidgetAlwaysOnTop`
+    (default on), `FloatingWidgetLeft`/`FloatingWidgetTop`.
+  - Main UI: header toggle button (`Show`/`Hide Floating Widget` exchange on
+    `IsVisibleChanged`), `MainViewModel.ToggleFloatingWidgetCommand` +
+    `FloatingWidgetToggleLabel`, `MainWindow.Closing` hides the widget then normal
+    shutdown proceeds (ADR-015/TL-007F — no `Environment.Exit`, no hidden window
+    keeping the process alive); started via `App.xaml.cs`
+    (`RestoreIfEnabled` after services start).
+  - Localization: `FloatingWidgetLabel`, `AlwaysOnTopLabel`,
+    `ShowFloatingWidgetLabel`, `HideFloatingWidgetLabel` in en + fa-IR;
+    Download/Upload/Total reuse existing keys.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -287,21 +322,38 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 284/284 passed (`TrafficLens.Network.Tests` 206,
-  `TrafficLens.App.Tests` 51, `TrafficLens.Infrastructure.Tests` 27).
+- **Automated tests:** 302/302 passed (`TrafficLens.Network.Tests` 206,
+  `TrafficLens.App.Tests` 69, `TrafficLens.Infrastructure.Tests` 27).
 - **TL-009 real Windows history verification** (`--history` mode, live host, throwaway
-  temp DB — never the user's `%LOCALAPPDATA%` DB):
-  - Pipeline ran end-to-end: live collector → accumulator → minute buckets →
-    SQLite; a real 20 MB `speed.cloudflare.com` download was recorded as
-    **Today = 20,182,568 B down / 79,655 B up** (20 MB requested + realistic
-    counter-delta overhead), matching the observed peak rate of ~5.78 MB/s.
-  - Yesterday / 7d / 30d / Lifetime consistent; `daily_usage` series spans
-    exactly 30 local days (2026-08-17 → 2026-09-15) with today's row populated.
-  - **Restart idempotency proven:** a second service instance started against the
-    same database over a fresh collector reported the identical Lifetime
-    (`unchanged: true`) — the `INSERT OR IGNORE` + `changes()==1` guard prevents
-    double-counting across restarts/crashes.
-  - DB footprint after two sessions + 20 MB of traffic: **16,384 bytes**.
+   temp DB — never the user's `%LOCALAPPDATA%` DB):
+   - Pipeline ran end-to-end: live collector → accumulator → minute buckets →
+     SQLite; a real 20 MB `speed.cloudflare.com` download was recorded as
+     **Today = 20,182,568 B down / 79,655 B up** (20 MB requested + realistic
+     counter-delta overhead), matching the observed peak rate of ~5.78 MB/s.
+   - Yesterday / 7d / 30d / Lifetime consistent; `daily_usage` series spans
+     exactly 30 local days (2026-08-17 → 2026-09-15) with today's row populated.
+   - **Restart idempotency proven:** a second service instance started against the
+     same database over a fresh collector reported the identical Lifetime
+     (`unchanged: true`) — the `INSERT OR IGNORE` + `changes()==1` guard prevents
+     double-counting across restarts/crashes.
+   - DB footprint after two sessions + 20 MB of traffic: **16,384 bytes**.
+- **TL-010 real Windows floating-widget verification** (Release build, Win32
+  `EnumWindows`/`PostMessage`/`SetWindowPos` scripting, 3 launch-close cycles):
+  - **Startup restore:** widget window appeared at launch when
+    `FloatingWidgetEnabled=true` (3/3 cycles).
+  - **Move + position persistence:** `SetWindowPos` moved the widget to
+    (400, 300); after hiding the widget and restarting, the saved
+    `FloatingWidgetLeft`/`FloatingWidgetTop` matched the moved position.
+  - **Widget close = hide only:** WM_CLOSE to the widget hides only the widget
+    window; the main window remains visible and responsive.
+  - **Main window close exits cleanly:** WM_CLOSE to the main window exits the
+    process promptly within 15 s (all 3 cycles); no shutdown hang.
+  - **No orphan ETW sessions:** `logman query -ets` confirmed no TrafficLens
+    sessions remain after each cycle.
+  - **Restart restore:** relaunched with `enabled=true` → 2 windows appeared
+    (main + widget).
+  - **fa-IR coexistence:** widget launches under fa-IR culture with correct
+    titles; culture-set log line confirmed.
 - **TL-008 real Windows verification** (`--connections` mode, non-elevated, live host):
   - **TrafficLens `--connections`**: 112 connections (78 TCP / 34 UDP, 99 IPv4 /
     13 IPv6), 26 established / 29 listening; `udpWithRemote = 0` and
@@ -408,9 +460,10 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
   formatter cases, metadata-provider tests, and the TL-008 connection parser /
   key / selection / endpoint-formatter suites).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 51 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 69 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
-  Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, and resource keys).
+  Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
+  FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, and resource keys).
 - `tests/TrafficLens.Infrastructure.Tests` — xUnit, 27 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider).
@@ -454,6 +507,7 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
 
 ## Git Commit
 
+- TL-010 (floating widget): `f3dc2e9` — `feat: add always-on-top floating widget reusing live aggregate rates with persisted position/topmost (TL-010)`; docs `<docs-commit>` (`docs: record TL-010 floating widget`).
 - TL-009 (SQLite history): `861269c` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
 - TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
 - TL-007F (shutdown deadlock fix): `e09111e` — `fix: prevent shutdown deadlock by not capturing the SynchronizationContext in collector StopAsync (TL-007F)`; docs `f425dca`.
@@ -466,7 +520,6 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
 
 ## Next Recommended Task
 
-- TL-009 (SQLite history) is complete and verified. Next scheduled milestone is
-  **TL-010 (floating widget)** — a compact always-on-top widget reusing the
-  existing live rates and, once TL-009's aggregates are mature enough, today's
-  usage totals.
+- TL-010 (floating widget) is complete and verified. Next scheduled item is
+  **TL-011 (system tray)** — tray icon with show/hide, minimize-to-tray, and exit,
+  the remaining M7 piece (the widget intentionally has no tray behavior).

@@ -387,3 +387,49 @@ Reasoning:
   (ADR-009/010), and exports the aggregation policy in a form future milestones
   (TL-013 settings, TL-014 CSV) can reuse.
 
+## ADR-018: Floating widget is a zero-cost window over the existing live pipeline, closable-only
+
+**Status:** Accepted (TL-010)
+
+A compact always-on-top floating widget is implemented as a **frameless
+secondary WPF window** (`FloatingWidgetWindow`, 280×110, `ShowInTaskbar=False`,
+`ResizeMode=NoResize`) driven by a thin ViewModel (`FloatingWidgetViewModel`)
+that subscribes to the exact same collector/provider events as the dashboard
+(`SpeedSampleReady`, `NetworkChanged`, `AdaptersChanged`) and reads the
+ADR-009/010 aggregate via `NetworkTrafficAggregator.AggregateRates`. It starts
+**no poll loop, timer, SQLite query, or process-metadata call** of its own —
+while it is hidden it costs nothing but the subscriptions' bookkeeping.
+
+Widget state is persisted through the existing `ISettingsService` (one
+`settings.json`; no second settings file): `FloatingWidgetEnabled` (startup
+restore if it was visible at last graceful shutdown), `FloatingWidgetAlwaysOnTop`
+(default on), `FloatingWidgetLeft`/`FloatingWidgetTop`. Position restoration
+clamps the window rectangle into the union of the monitor work areas
+(`SystemParameters.VirtualScreen*`) via `WidgetPositionHelper.Clamp`, so
+negative multi-monitor coordinates survive and off-screen /
+monitor-disconnected positions are pulled back, never lost or mis-trusted.
+
+Lifecycle rules:
+- **Single instance.** One `FloatingWidgetService` owns the window; repeat
+  `Show()` only activates the existing window, never duplicates.
+- **Widget close is hide-only.** The widget's `Closing` is cancelled and turned
+  into `Hide()`; pressing ✕ never exits the application.
+- **Main-window close still fully exits.** `MainWindow.Closing` calls
+  `Hide()` (persisting position), then normal `OnLastWindowClose` shutdown
+  proceeds and DI disposal calls `FloatingWidgetService.Dispose()`, which
+  detaches the cancel handler and really closes the widget. There is no
+  `Environment.Exit`, no new foreground thread, and no hidden window that keeps
+  the process alive (consistent with ADR-015 / TL-007F). Closing the widget
+  never requires or disposes the main window.
+
+Reasoning:
+- Reusing the dashboard's live event stream guarantees the widget and dashboard
+  never disagree, and keeps the widget "free" at runtime (ADR-011 already
+  established the event-driven thin-VM pattern).
+- Only `FloatingWidgetEnabled` (ever) plus simplistic but safe position clamping
+  avoids surprising restarts while keeping the widget cheap to reason about.
+- The closable-only lifecycle deliberately reserves tray behavior
+  (minimize-to-tray, background persistence, startup-with-Windows startup
+  semantics) for **TL-011**; the widget is presentational and must not grow into
+  a second app shell.
+

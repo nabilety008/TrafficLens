@@ -278,8 +278,55 @@
 - **Commit:** `861269c` (see `docs/PROJECT_STATUS.md`)
 
 ### TL-010 Floating Widget
-- [ ] Compact always-on-top widget
-- **Status: not started**
+- [x] `FloatingWidgetViewModel` — subscribes to the existing `SpeedSampleReady`/
+      `NetworkChanged`/`AdaptersChanged` events (never its own poll loop or timer),
+      computes the ADR-009/010 aggregate via `NetworkTrafficAggregator.AggregateRates`,
+      formats Download/Upload/Total through `DataRateFormatter` (LTR units), localized
+      labels (FloatingWidgetLabel, DownloadLabel, UploadLabel, TotalRateLabel),
+      `TogglePinCommand` (raises `PinStateChanged`) + `CloseWidgetCommand` (raises
+      `CloseRequested`), UI-thread marshalling like the dashboard, IDisposable
+- [x] `FloatingWidgetWindow` (280×110, `WindowStyle=None`, `ResizeMode=NoResize`,
+      `ShowInTaskbar=False`, `Topmost` from settings) — dark theme via existing
+      DarkTheme.xaml brushes, drag by empty area (`DragMove`, ignores clicks on
+      buttons), pin toggle button + hide (✕) button bound to commands, values forced
+      `FlowDirection=LeftToRight` under RTL; only necessary code-behind is drag
+- [x] `FloatingWidgetService` (singleton) — owns the single widget instance:
+      `Show`/`Hide`/`Toggle`/`RestoreIfEnabled`, idempotent re-show (activates, never
+      duplicates), widget-close = hide only (`Closing` cancelled), position
+      persisted as `FloatingWidgetLeft`/`FloatingWidgetTop`, always-on-top persisted
+      as `FloatingWidgetAlwaysOnTop` (default on), startup visibility persisted as
+      `FloatingWidgetEnabled`, `Dispose` removes the cancel-handler and closes the
+      window for real (shutdown cannot be pinned open)
+- [x] `WidgetPositionHelper.Clamp` — pure multi-monitor clamping: union of monitor
+      work areas, negative virtual-screen coordinates preserved (secondary monitor
+      left of primary), off-screen / monitor-disconnected recovery, window larger
+      than work area collapses to top-left; real areas from
+      `SystemParameters.VirtualScreen*`
+- [x] Main UI: toggle button in the `MainWindow` header
+      (`Show Floating Widget` / `Hide Floating Widget` exchange based on
+      `IsVisibleChanged`), `MainViewModel.ToggleFloatingWidgetCommand` +
+      `FloatingWidgetToggleLabel`, `MainWindow.Closing` → `Hide()` the widget +
+      dispose viewmodel; `App.xaml.cs` registers the service + `RestoreIfEnabled()`
+      on startup
+- [x] Shutdown safety (ADR-015/TL-007F): widget is a secondary window; main-window
+      close hides it, then `OnLastWindowClose` shuts the app down normally — no
+      `Environment.Exit`, no hidden window holding the process, no new foreground
+      thread; no orphan ETW sessions
+- [x] Localization: en + fa-IR keys (FloatingWidgetLabel, AlwaysOnTopLabel,
+      ShowFloatingWidgetLabel, HideFloatingWidgetLabel); Download/Upload/Total reused
+      (`DownloadLabel`/`UploadLabel`/`TotalRateLabel`)
+- [x] Tests: `FloatingWidgetViewModelTests` (aggregate→VM mapping, tunnel/down
+      exclusion, formatting, culture re-format + labels, pin icon, dispose) +
+      `WidgetPositionHelperTests` (inside/off-screen right&bottom/negative
+      coords/secondary-monitor-left/multi-monitor union/empty/larger-than-work-area)
+      + localization resource keys — 18 new (App 51 → 69; total 284 → 302)
+- [x] Build Debug + Release: 0 warnings / 0 errors
+- [x] Real Windows GUI verification: show/hide, live rate changes, dashboard
+      compatibility, drag, restart → position restored, topmost toggles + persists,
+      repeat show no duplicate, main close → widget gone → process exits, no orphan
+      ETW session; en + fa-IR render
+- **Status: done**
+- **Commit:** (see `docs/PROJECT_STATUS.md`)
 
 ### TL-011 System Tray
 - [ ] Tray icon, show/hide, minimize to tray, exit
@@ -316,7 +363,7 @@
 | M4 | Per-process traffic | TL-007 | Done |
 | M5 | Active connections | TL-008 | Done |
 | M6 | SQLite history | TL-009 | Done |
-| M7 | Tray and widget | TL-010, TL-011 | Not started |
+| M7 | Tray and widget | TL-010, TL-011 | In progress (TL-010 done; TL-011 owns tray) |
 | M8 | Alerts and settings | TL-012, TL-013 | Not started |
 | M9 | Stability, performance, tests, packaging | TL-015 | Not started |
 | M10 | Full Persian localization | TL-016 | Not started |
