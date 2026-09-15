@@ -99,4 +99,79 @@
   <data name="GraphUploadSeriesLabel" xml:space="preserve">
     <value>Upload</value>
   </data>
+  <data name="AdminPermissionRequiredLabel" xml:space="preserve">
+    <value>Administrator permission is required to see per-process traffic.</value>
+  </data>
+  <data name="ApplicationsLabel" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="CurrentSpeedLabel" xml:space="preserve">
+    <value>Current Speed</value>
+  </data>
+  <data name="ExitedLabel" xml:space="preserve">
+    <value>Exited</value>
+  </data>
+  <data name="MonitoringFailedLabel" xml:space="preserve">
+    <value>Monitoring failed</value>
+  </data>
+  <data name="MonitoringStoppedLabel" xml:space="preserve">
+    <value>Monitoring stopped</value>
+  </data>
+  <data name="NoActiveTrafficLabel" xml:space="preserve">
+    <value>No active traffic</value>
+  </data>
+  <data name="PidLabel" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="ProcessLabel" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="RestartAsAdministratorLabel" xml:space="preserve">
+    <value>Restart as Administrator</value>
+  </data>
+  <data name="RunningLabel" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search processes</value>
+  </data>
+  <data name="SortByLabel" xml:space="preserve">
+    <value>Sort by</value>
+  </data>
+  <data name="SortDownloadedLabel" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
+  <data name="SortDownloadRateLabel" xml:space="preserve">
+    <value>Download rate</value>
+  </data>
+  <data name="SortNameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="SortTotalRateLabel" xml:space="preserve">
+    <value>Total rate</value>
+  </data>
+  <data name="SortUploadedLabel" xml:space="preserve">
+    <value>Uploaded</value>
+  </data>
+  <data name="SortUploadRateLabel" xml:space="preserve">
+    <value>Upload rate</value>
+  </data>
+  <data name="StartMonitoringLabel" xml:space="preserve">
+    <value>Start Monitoring</value>
+  </data>
+  <data name="StatusStartingLabel" xml:space="preserve">
+    <value>Starting...</value>
+  </data>
+  <data name="TopConsumerNowLabel" xml:space="preserve">
+    <value>Top Consumer Now</value>
+  </data>
+  <data name="TopDownloadLabel" xml:space="preserve">
+    <value>Top Download</value>
+  </data>
+  <data name="TopUploadLabel" xml:space="preserve">
+    <value>Top Upload</value>
+  </data>
+  <data name="TotalTransferredLabel" xml:space="preserve">
+    <value>Total Transferred</value>
+  </data>
 </root>

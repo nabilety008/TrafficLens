@@ -99,4 +99,79 @@
   <data name="GraphUploadSeriesLabel" xml:space="preserve">
     <value>آپلود</value>
   </data>
+  <data name="AdminPermissionRequiredLabel" xml:space="preserve">
+    <value>برای مشاهده ترافیک هر فرآیند، مجوز مدیر مورد نیاز است.</value>
+  </data>
+  <data name="ApplicationsLabel" xml:space="preserve">
+    <value>برنامه‌ها</value>
+  </data>
+  <data name="CurrentSpeedLabel" xml:space="preserve">
+    <value>سرعت فعلی</value>
+  </data>
+  <data name="ExitedLabel" xml:space="preserve">
+    <value>خارج شده</value>
+  </data>
+  <data name="MonitoringFailedLabel" xml:space="preserve">
+    <value>پایش با خطا مواجه شد</value>
+  </data>
+  <data name="MonitoringStoppedLabel" xml:space="preserve">
+    <value>پایش متوقف شد</value>
+  </data>
+  <data name="NoActiveTrafficLabel" xml:space="preserve">
+    <value>ترافیک فعالی وجود ندارد</value>
+  </data>
+  <data name="PidLabel" xml:space="preserve">
+    <value>شناسه فرآیند</value>
+  </data>
+  <data name="ProcessLabel" xml:space="preserve">
+    <value>فرآیند</value>
+  </data>
+  <data name="RestartAsAdministratorLabel" xml:space="preserve">
+    <value>راه‌اندازی مجدد به عنوان مدیر</value>
+  </data>
+  <data name="RunningLabel" xml:space="preserve">
+    <value>در حال اجرا</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>جستجوی فرآیندها</value>
+  </data>
+  <data name="SortByLabel" xml:space="preserve">
+    <value>مرتب‌سازی بر اساس</value>
+  </data>
+  <data name="SortDownloadedLabel" xml:space="preserve">
+    <value>دانلود شده</value>
+  </data>
+  <data name="SortDownloadRateLabel" xml:space="preserve">
+    <value>نرخ دانلود</value>
+  </data>
+  <data name="SortNameLabel" xml:space="preserve">
+    <value>نام</value>
+  </data>
+  <data name="SortTotalRateLabel" xml:space="preserve">
+    <value>نرخ کل</value>
+  </data>
+  <data name="SortUploadedLabel" xml:space="preserve">
+    <value>آپلود شده</value>
+  </data>
+  <data name="SortUploadRateLabel" xml:space="preserve">
+    <value>نرخ آپلود</value>
+  </data>
+  <data name="StartMonitoringLabel" xml:space="preserve">
+    <value>شروع پایش</value>
+  </data>
+  <data name="StatusStartingLabel" xml:space="preserve">
+    <value>در حال شروع...</value>
+  </data>
+  <data name="TopConsumerNowLabel" xml:space="preserve">
+    <value>بیشترین مصرف‌کننده در حال حاضر</value>
+  </data>
+  <data name="TopDownloadLabel" xml:space="preserve">
+    <value>بیشترین دانلود</value>
+  </data>
+  <data name="TopUploadLabel" xml:space="preserve">
+    <value>بیشترین آپلود</value>
+  </data>
+  <data name="TotalTransferredLabel" xml:space="preserve">
+    <value>مجموع انتقال داده</value>
+  </data>
 </root>

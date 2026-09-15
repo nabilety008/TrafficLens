@@ -71,3 +71,54 @@ internal sealed class FakeAdapterProvider : INetworkAdapterProvider
         AdaptersChanged?.Invoke(this, EventArgs.Empty);
     }
 }
+
+internal sealed class FakeProcessCollector : IProcessTrafficCollector
+{
+    private readonly List<ProcessTrafficSample> _samples = new();
+
+    public ProcessTrafficCollectorStatus Status { get; private set; } = ProcessTrafficCollectorStatus.Running;
+
+    public string? LastError { get; private set; }
+
+    public int StartCalls { get; private set; }
+
+    public event EventHandler<IReadOnlyList<ProcessTrafficSample>>? SamplesReady;
+
+    public event EventHandler? StatusChanged;
+
+    public IReadOnlyList<ProcessTrafficSample> GetCurrentSamples() => _samples;
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        StartCalls++;
+        SetStatusInternal(ProcessTrafficCollectorStatus.Running, null);
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync()
+    {
+        SetStatusInternal(ProcessTrafficCollectorStatus.Stopped, null);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+    }
+
+    public void SetStatus(ProcessTrafficCollectorStatus status, string? error = null) =>
+        SetStatusInternal(status, error);
+
+    public void PublishSamples(params ProcessTrafficSample[] samples)
+    {
+        _samples.Clear();
+        _samples.AddRange(samples);
+        SamplesReady?.Invoke(this, samples.ToArray());
+    }
+
+    private void SetStatusInternal(ProcessTrafficCollectorStatus status, string? error)
+    {
+        Status = status;
+        LastError = error;
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+}

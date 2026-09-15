@@ -30,7 +30,32 @@ public class LocalizationResourceTests
         "GraphLast5MinutesLabel",
         "GraphNowLabel",
         "GraphDownloadSeriesLabel",
-        "GraphUploadSeriesLabel"
+        "GraphUploadSeriesLabel",
+        "ApplicationsLabel",
+        "TopConsumerNowLabel",
+        "TopDownloadLabel",
+        "TopUploadLabel",
+        "PidLabel",
+        "TotalTransferredLabel",
+        "SearchPlaceholder",
+        "SortByLabel",
+        "NoActiveTrafficLabel",
+        "StatusStartingLabel",
+        "MonitoringStoppedLabel",
+        "MonitoringFailedLabel",
+        "AdminPermissionRequiredLabel",
+        "RunningLabel",
+        "ExitedLabel",
+        "RestartAsAdministratorLabel",
+        "StartMonitoringLabel",
+        "CurrentSpeedLabel",
+        "ProcessLabel",
+        "SortTotalRateLabel",
+        "SortDownloadRateLabel",
+        "SortUploadRateLabel",
+        "SortDownloadedLabel",
+        "SortUploadedLabel",
+        "SortNameLabel"
     };
 
     [Fact]

@@ -1,0 +1,284 @@
+<UserControl x:Class="TrafficLens.App.Views.ApplicationsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding ApplicationsLabel}"
+                   FontSize="12" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   Margin="0,14,0,10" />
+
+        <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Padding="12,10" Margin="0,0,0,12"
+                Visibility="{Binding IsStatusBannerVisible, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding StatusDetailText}" FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"
+                           Margin="0,4,0,0"
+                           Visibility="{Binding HasStatusDetail, Converter={StaticResource BoolToVis}}" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                            Visibility="{Binding IsPermissionDenied, Converter={StaticResource BoolToVis}}">
+                    <Button Content="{Binding RestartAsAdministratorLabel}"
+                            Command="{Binding RestartAsAdministratorCommand}"
+                            Background="{StaticResource SurfaceBrush}"
+                            Foreground="{StaticResource TextBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            Padding="12,6" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                            Visibility="{Binding IsStartMonitoringVisible, Converter={StaticResource BoolToVis}}">
+                    <Button Content="{Binding StartMonitoringLabel}"
+                            Command="{Binding StartMonitoringCommand}"
+                            Background="{StaticResource SurfaceBrush}"
+                            Foreground="{StaticResource TextBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            Padding="12,6" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Grid.ColumnSpan="3" Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14,12"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsIdle, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding NoActiveTrafficText}"
+                           Foreground="{StaticResource TextMutedBrush}" />
+            </Border>
+
+            <Border Grid.Column="0" Margin="0,0,6,12"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1" Padding="14,12"
+                    Visibility="{Binding HasActiveTraffic, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding TopConsumerNowLabel}" FontSize="12"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding TopConsumerName}" FontSize="18" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
+                        <TextBlock Text="↓" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                        <TextBlock Text="{Binding TopConsumerDownloadRateText}" Margin="4,0,12,0" />
+                        <TextBlock Text="↑" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentAltBrush}" />
+                        <TextBlock Text="{Binding TopConsumerUploadRateText}" Margin="4,0,12,0" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight" Margin="0,2,0,0">
+                        <TextBlock Text="{Binding TotalLabel}" FontSize="11"
+                                   Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Text="{Binding TopConsumerTotalRateText}" FontSize="11"
+                                   Foreground="{StaticResource TextMutedBrush}" Margin="4,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Margin="6,0,6,12"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1" Padding="14,12"
+                    Visibility="{Binding HasActiveTraffic, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding TopDownloadLabel}" FontSize="12"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding TopDownloadName}" FontSize="15" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
+                        <TextBlock Text="↓" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                        <TextBlock Text="{Binding TopDownloadRateText}" Margin="4,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Margin="0,0,0,12"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1" Padding="14,12"
+                    Visibility="{Binding HasActiveTraffic, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding TopUploadLabel}" FontSize="12"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding TopUploadName}" FontSize="15" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
+                        <TextBlock Text="↑" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentAltBrush}" />
+                        <TextBlock Text="{Binding TopUploadRateText}" Margin="4,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="{Binding SortByLabel}" FontSize="12"
+                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding SortOptions}"
+                      SelectedValuePath="Key" DisplayMemberPath="Label"
+                      SelectedValue="{Binding SortKey}"
+                      Background="{StaticResource SurfaceBrush}"
+                      Foreground="{StaticResource TextBrush}"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      MinWidth="180" Margin="6,0,16,0" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding SearchPlaceholder}" FontSize="12"
+                           Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                           Margin="0,0,6,0" />
+                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Background="{StaticResource SurfaceBrush}"
+                         Foreground="{StaticResource TextBrush}"
+                         BorderBrush="{StaticResource BorderBrush}"
+                         MinWidth="200" Padding="6,4" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1,1,1,0" Padding="8,8,8,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26" />
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="1" Text="{Binding ProcessLabel}"
+                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Grid.Column="2" Text="{Binding PidLabel}"
+                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Grid.Column="3" Text="{Binding ProcessStateLabel}"
+                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Grid.Column="4" Grid.ColumnSpan="3" Text="{Binding CurrentSpeedLabel}"
+                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                        <TextBlock Grid.Column="7" Grid.ColumnSpan="3" Text="{Binding TotalTransferredLabel}"
+                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    </Grid>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Processes}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource SurfaceBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1" Padding="8,6,8,6" Margin="0,0,0,6"
+                                    AutomationProperties.Name="{Binding Name}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26" />
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Image Grid.Column="0" Source="{Binding Icon}"
+                                           Width="16" Height="16" VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Column="2" Text="{Binding PidText}" FlowDirection="LeftToRight"
+                                               FontSize="12" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Column="3" Text="{Binding StateText}"
+                                               FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="↓" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentBrush}" />
+                                        <TextBlock Text="{Binding DownloadRateText}" FontSize="12"
+                                                   Margin="3,0,0,0" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="5" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="↑" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentAltBrush}" />
+                                        <TextBlock Text="{Binding UploadRateText}" FontSize="12"
+                                                   Margin="3,0,0,0" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="6" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TotalRateText}" FontSize="12"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="7" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="↓" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentBrush}" />
+                                        <TextBlock Text="{Binding DownloadText}" FontSize="12"
+                                                   Margin="3,0,0,0" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="8" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="↑" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentAltBrush}" />
+                                        <TextBlock Text="{Binding UploadText}" FontSize="12"
+                                                   Margin="3,0,0,0" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="9" Orientation="Horizontal" FlowDirection="LeftToRight"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TotalText}" FontSize="12"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

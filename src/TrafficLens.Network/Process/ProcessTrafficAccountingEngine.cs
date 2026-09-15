@@ -202,7 +202,8 @@ public sealed class ProcessTrafficAccountingEngine
                 counter.SentBytes,
                 counter.DownloadRate,
                 counter.UploadRate,
-                nowUtc));
+                nowUtc,
+                counter.Running));
         }
 
         samples.Sort(static (a, b) => b.TotalBytes.CompareTo(a.TotalBytes));
@@ -273,6 +274,11 @@ public sealed class ProcessTrafficAccountingEngine
     {
         if (!result.ProcessExists)
         {
+            if (counter.Metadata is not null)
+            {
+                counter.Running = false;
+            }
+
             counter.MetadataNextCheckUtcTicks = nowWallTicks + _unresolvedRetryTicks;
             return;
         }
@@ -285,10 +291,13 @@ public sealed class ProcessTrafficAccountingEngine
             // stop attributing to it from now on. Future events are re-keyed
             // once the new instance's start time is learned.
             StopAttributionTo(id);
+            counter.Running = false;
 
             counter.MetadataNextCheckUtcTicks = nowWallTicks + _revalidationTicks;
             return;
         }
+
+        counter.Running = true;
 
         var actualStart = metadata.ActualStartTimeUtcTicks;
         if (!id.HasStartTime && actualStart != 0)
@@ -346,6 +355,7 @@ public sealed class ProcessTrafficAccountingEngine
                 existing.Metadata = metadata;
             }
 
+            existing.Running = true;
             _counters.Remove(from);
         }
         else
@@ -399,6 +409,7 @@ public sealed class ProcessTrafficAccountingEngine
         public long MetadataNextCheckUtcTicks;
         public double DownloadRate;
         public double UploadRate;
+        public bool? Running;
         public readonly List<(long Ticks, long Received, long Sent)> RateWindow = new();
 
         public void Amend(NetworkTransferEvent transfer)

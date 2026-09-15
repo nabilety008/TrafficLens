@@ -312,4 +312,72 @@ public sealed class ProcessTrafficAccountingEngineTests
         var snap = engine.Snapshot(500, TicksPerSecond, new DateTime(WallMs(510)));
         Assert.Equal(600d, snap[0].DownloadBytesPerSecond, 2);
     }
+
+    [Fact]
+    public void Snapshot_ResolvedMetadata_ReportsRunning()
+    {
+        var provider = new FakeMetadataProvider { Resolver = id => new(true, Meta("app", startTicks: 1_000)) };
+        var engine = NewEngine(provider);
+        engine.Record(new NetworkTransferEvent(1, TransferDirection.Receive, 50, NetworkProtocolKind.Tcp, IpVersionKind.IPv4, WallMs(0)));
+
+        var sample = Assert.Single(engine.Snapshot(0, TicksPerSecond, new DateTime(WallMs(10))));
+        Assert.True(sample.IsRunning);
+    }
+
+    [Fact]
+    public void Snapshot_ProcessExitsAfterResolution_ReportsExitedAfterRetryWindow()
+    {
+        var provider = new FakeMetadataProvider { Resolver = id => new(true, Meta("app", startTicks: 1_000)) };
+        var engine = NewEngine(provider, revalidationSeconds: 0);
+        engine.Record(new NetworkTransferEvent(1, TransferDirection.Receive, 50, NetworkProtocolKind.Tcp, IpVersionKind.IPv4, WallMs(0)));
+        Assert.True(Assert.Single(engine.Snapshot(0, TicksPerSecond, new DateTime(WallMs(10)))).IsRunning);
+
+        provider.Resolver = _ => new(false, null);
+        var exited = Assert.Single(engine.Snapshot(1_000, TicksPerSecond, new DateTime(WallMs(1_100))));
+        Assert.False(exited.IsRunning);
+        Assert.Equal(50, exited.DownloadBytes);
+    }
+
+    [Fact]
+    public void Snapshot_PidReuseStopsRunningFlagForOldInstance()
+    {
+        var startS1 = 10_000;
+        var startS2 = 90_000;
+        var provider = new FakeMetadataProvider { Resolver = id => new(true, Meta("proc", startS1)) };
+        var engine = NewEngine(provider, revalidationSeconds: 0);
+        engine.Record(new NetworkTransferEvent(7, TransferDirection.Receive, 100, NetworkProtocolKind.Tcp, IpVersionKind.IPv4, WallMs(0)));
+        Assert.True(Assert.Single(engine.Snapshot(0, TicksPerSecond, new DateTime(WallMs(10)))).IsRunning);
+
+        provider.Resolver = id =>
+        {
+            if (id.HasStartTime && id.StartTimeUtcTicks == startS1)
+            {
+                return new(true, null);
+            }
+
+            return new(true, Meta("proc", startS2));
+        };
+
+        engine.Snapshot(1_100, TicksPerSecond, new DateTime(WallMs(1_200)));
+        engine.Record(new NetworkTransferEvent(7, TransferDirection.Receive, 200, NetworkProtocolKind.Tcp, IpVersionKind.IPv4, WallMs(1_300)));
+        var snap3 = engine.Snapshot(1_400, TicksPerSecond, new DateTime(WallMs(1_500)));
+
+        var previous = Assert.Single(snap3, s => s.ProcessStartTimeUtcTicks == startS1);
+        Assert.False(previous.IsRunning);
+        var current = Assert.Single(snap3, s => s.ProcessStartTimeUtcTicks == startS2);
+        Assert.True(current.IsRunning);
+        Assert.Equal(100, previous.DownloadBytes);
+        Assert.Equal(200, current.DownloadBytes);
+    }
+
+    [Fact]
+    public void Snapshot_UnknownPidWithoutMetadata_KeepsRunningNull()
+    {
+        var provider = new FakeMetadataProvider { Resolver = _ => new(false, null) };
+        var engine = NewEngine(provider);
+        engine.Record(new NetworkTransferEvent(5, TransferDirection.Receive, 50, NetworkProtocolKind.Tcp, IpVersionKind.IPv4, WallMs(0)));
+
+        var sample = Assert.Single(engine.Snapshot(0, TicksPerSecond, new DateTime(WallMs(10))));
+        Assert.Null(sample.IsRunning);
+    }
 }

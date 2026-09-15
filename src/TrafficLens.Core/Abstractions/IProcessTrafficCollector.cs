@@ -8,6 +8,8 @@ public interface IProcessTrafficCollector : IDisposable
 
     string? LastError { get; }
 
+    event EventHandler? StatusChanged;
+
     event EventHandler<IReadOnlyList<ProcessTrafficSample>>? SamplesReady;
 
     IReadOnlyList<ProcessTrafficSample> GetCurrentSamples();

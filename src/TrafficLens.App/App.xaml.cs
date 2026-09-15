@@ -50,6 +50,17 @@ public partial class App : Application
         {
             logger.LogError(ex, "Failed to start network traffic collector");
         }
+
+        var processCollector = _serviceProvider.GetRequiredService<IProcessTrafficCollector>();
+        try
+        {
+            _ = processCollector.StartAsync(CancellationToken.None);
+            logger.LogInformation("Process traffic collector started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start process traffic collector");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -80,6 +91,9 @@ public partial class App : Application
         services.AddFileLogging(AppPaths.LogsDirectory);
 
         services.AddNetworkServices();
+        services.AddSingleton<ProcessIconResolver>();
+        services.AddSingleton<ApplicationsViewModel>();
+        services.AddSingleton<ApplicationsView>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

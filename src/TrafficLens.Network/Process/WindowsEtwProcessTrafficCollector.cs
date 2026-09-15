@@ -62,6 +62,8 @@ public sealed class WindowsEtwProcessTrafficCollector : IProcessTrafficCollector
 
     public event EventHandler<IReadOnlyList<ProcessTrafficSample>>? SamplesReady;
 
+    public event EventHandler? StatusChanged;
+
     public IReadOnlyList<ProcessTrafficSample> GetCurrentSamples()
     {
         lock (_sync)
@@ -87,6 +89,7 @@ public sealed class WindowsEtwProcessTrafficCollector : IProcessTrafficCollector
             lifetime = _lifetimeTask = Task.Run(() => StartCore(_cts.Token));
         }
 
+        StatusChanged?.Invoke(this, EventArgs.Empty);
         _logger.LogInformation("Process traffic collector starting (ETW kernel network session)");
 
         // StartCore runs for the collector's lifetime (session consume loop +
@@ -138,6 +141,7 @@ public sealed class WindowsEtwProcessTrafficCollector : IProcessTrafficCollector
             Status = ProcessTrafficCollectorStatus.Stopped;
         }
 
+        StatusChanged?.Invoke(this, EventArgs.Empty);
         _logger.LogInformation("Process traffic collector stopped");
     }
 
@@ -173,12 +177,19 @@ public sealed class WindowsEtwProcessTrafficCollector : IProcessTrafficCollector
             var nowTicks = System.Diagnostics.Stopwatch.GetTimestamp();
             _engine.Snapshot(nowTicks, System.Diagnostics.Stopwatch.Frequency, DateTime.UtcNow);
 
+            var becameRunning = false;
             lock (_sync)
             {
                 if (Status == ProcessTrafficCollectorStatus.Starting)
                 {
                     Status = ProcessTrafficCollectorStatus.Running;
+                    becameRunning = true;
                 }
+            }
+
+            if (becameRunning)
+            {
+                StatusChanged?.Invoke(this, EventArgs.Empty);
             }
 
             _logger.LogInformation("Process traffic collector running (elevated ETW kernel network session)");
@@ -214,6 +225,8 @@ public sealed class WindowsEtwProcessTrafficCollector : IProcessTrafficCollector
             {
             }
         }
+
+        StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void RunSnapshotLoop(CancellationToken cancellationToken)

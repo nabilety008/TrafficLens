@@ -19,7 +19,8 @@ public sealed record ProcessTrafficSample(
     long UploadBytes,
     double DownloadBytesPerSecond,
     double UploadBytesPerSecond,
-    DateTime Timestamp)
+    DateTime Timestamp,
+    bool? IsRunning = null)
 {
     public long TotalBytes => DownloadBytes + UploadBytes;
 

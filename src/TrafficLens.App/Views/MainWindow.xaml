@@ -4,14 +4,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:TrafficLens.App.ViewModels"
+        xmlns:views="clr-namespace:TrafficLens.App.Views"
         xmlns:controls="clr-namespace:TrafficLens.App.Controls"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}"
         Width="900" Height="560"
         WindowStartupLocation="CenterScreen"
         MinWidth="640" MinHeight="420">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -47,7 +52,27 @@
             </Grid>
         </Border>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1" Padding="20,8">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{Binding DashboardNavLabel}"
+                        Command="{Binding ShowDashboardCommand}"
+                        Background="{StaticResource SurfaceBrush}"
+                        Foreground="{StaticResource TextBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        Padding="14,6" Margin="0,0,8,0" />
+                <Button Content="{Binding ApplicationsNavLabel}"
+                        Command="{Binding ShowApplicationsCommand}"
+                        Background="{StaticResource SurfaceBrush}"
+                        Foreground="{StaticResource TextBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        Padding="14,6" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsDashboardVisible, Converter={StaticResource BoolToVis}}">
             <StackPanel Margin="20,14,20,8">
 
                 <TextBlock Text="{Binding Dashboard.DashboardLabel}"
@@ -238,7 +263,10 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StatusBar Grid.Row="2" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextMutedBrush}">
+        <ContentControl x:Name="ApplicationsHost" Grid.Row="2"
+                                 Visibility="{Binding IsApplicationsVisible, Converter={StaticResource BoolToVis}}" />
+
+        <StatusBar Grid.Row="3" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextMutedBrush}">
             <TextBlock Text="{Binding StatusMessage}" FontSize="11" />
         </StatusBar>
     </Grid>
