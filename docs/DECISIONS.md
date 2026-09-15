@@ -263,3 +263,33 @@ Reasoning:
   flicker, zero-safe — with an explicit, testable rule instead of ad-hoc logic.
 - Timeline always draws oldest-left → newest-right (control forces LTR) so the
   graph remains readable under fa-IR RTL layouts.
+
+## ADR-015: Collector StopAsync never captures the caller's SynchronizationContext
+
+**Status:** Accepted (TL-007F)
+
+`WindowsNetworkTrafficCollector.Dispose` runs `StopAsync().GetAwaiter().GetResult()`
+and is invoked on the WPF dispatcher thread during `App.OnExit` → service-provider
+disposal. If any awaited continuation inside `StopAsync` captures the ambient
+`SynchronizationContext`, that continuation is posted back to the dispatcher
+queue, which is blocked in `GetResult()` — the collector completes its loop but
+`StopAsync` never resumes, `Dispose` never returns, and the process lingers
+forever after a graceful window close (TL-007F).
+
+Rule: every awaited continuation in a collector's `StopAsync`/`Dispose` path must
+use `ConfigureAwait(false)` so shutdown is deterministic and independent of the
+thread/context the collector is stopped from. The debugger proof: a live
+non-elevated repro + `dotnet-dump` showed the sole foreground thread (main)
+stuck in `WindowsNetworkTrafficCollector.Dispose` → `InternalWaitCore` →
+`SpinThenBlockingWait` while `StopAsync` sat in `RunLoopAsync`'s completed task
+wait; the regression test `Dispose_FromNonPumpingSyncContext_DoesNotDeadlock`
+(thread with a non-pumping `SynchronizationContext`) reproduces the hang without
+the fix and passes with it.
+
+Reasoning:
+- Deterministic cancellation/disposal over forced termination (`Environment.Exit`,
+  `taskkill /F`) — the process exit is guaranteed by ordinary async/await
+  semantics, no app-level kill is introduced.
+- Affects both collectors (`WindowsEtwProcessTrafficCollector` already used
+  `await lifetime.ConfigureAwait(false)`; `WindowsNetworkTrafficCollector` now
+  does the same for its loop await).

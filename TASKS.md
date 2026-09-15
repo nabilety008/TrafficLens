@@ -166,6 +166,30 @@
 - **Status: done (backend + Applications UI)**
 - **Commit:** `8f080fb` (code + tests; see `docs/PROJECT_STATUS.md`)
 
+### TL-007F Shutdown deadlock fix (lingering process after graceful close)
+- [x] Root cause (live repro + `dotnet-dump`, non-elevated): `App.OnExit` → DI
+      disposes `WindowsNetworkTrafficCollector` via `StopAsync().GetAwaiter().GetResult()`
+      on the WPF dispatcher thread; `await loop;` captured the
+      `DispatcherSynchronizationContext`, so the continuation was posted to the
+      blocked dispatcher → `StopAsync` never resumed, `App.OnExit` never returned,
+      process lingered (no window, low CPU, one foreground thread)
+- [x] Fix: `await loop.ConfigureAwait(false)` — deterministic shutdown from any
+      thread/context; no `Environment.Exit`, no forced kill (ADR-015)
+- [x] Regression test `Dispose_FromNonPumpingSyncContext_DoesNotDeadlock`
+      (non-pumping `SynchronizationContext` + 5 s deadline) — fails (timeout)
+      pre-fix, passes post-fix
+- [x] Build Debug + Release: 0 warnings / 0 errors; tests **193/193** (163 Network
+      + 30 App)
+- [x] Real Windows GUI verification (Release):
+      - Non-elevated: 3× launch → graceful close, each exits promptly; no residual
+        process; no ETW session; log ends `TrafficLens exiting` → `Process traffic
+        collector stopped` → `Network traffic collector stopped` (previously
+        missing line)
+      - Elevated: ETW session `TrafficLensProcessTrace` Running + ~20 MB download →
+        graceful close → process exits, session gone from `logman query -ets`
+- **Status: done**
+- **Commit:** `4134403` (code + tests; docs see `docs/PROJECT_STATUS.md`)
+
 ### TL-008 Active Connections
 - [ ] `IConnectionProvider`, TCP-first connections view
 - **Status: not started**

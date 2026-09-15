@@ -278,12 +278,6 @@ dashboard + TL-006 live graph), and M3 are complete.
 
 ## Known Issues / Not Started
 
-- **Process lingers after window Close**: after a graceful `CloseMainWindow`
-  (WM_CLOSE), "TrafficLens exiting" + collector-stop are logged and the ETW
-  session closes correctly, but the `TrafficLens.App` process can remain alive
-  (no window handle, low CPU) for an extended period. Reproduced in both
-  elevated and non-elevated runs. Under investigation for the next milestone —
-  graceful ETW/session shutdown itself is verified clean.
 - A hard process kill (`taskkill /F`) leaves the kernel ETW real-time session
   Running until stopped explicitly (`logman stop "TrafficLensProcessTrace" -ets`);
   graceful close does not leak the session.
@@ -294,8 +288,21 @@ dashboard + TL-006 live graph), and M3 are complete.
 - Range buttons do not show an explicit "selected" highlight; the selected range is
   visually implied by the plotted window. (Future polish.)
 
+## Resolved
+
+- **Lingering `TrafficLens.App` after graceful window Close (TL-007F).** Root
+  cause: `WindowsNetworkTrafficCollector` disposes on the WPF dispatcher thread via
+  `StopAsync().GetAwaiter().GetResult()`; `await loop;` without
+  `ConfigureAwait(false)` captured the `DispatcherSynchronizationContext`, re-posting
+  the continuation to a dispatcher blocked in `GetResult()` → `StopAsync` never
+  resumed and `App.OnExit` never returned. Fixed with `await
+  loop.ConfigureAwait(false)` (ADR-015); verified 3× non-elevated launch→close +
+  elevated ETW-running→close, all exiting promptly with the previously-missing
+  `Network traffic collector stopped` now logged and no orphaned session/process.
+
 ## Git Commit
 
+- TL-007F (shutdown deadlock fix): `4134403` — `fix: prevent shutdown deadlock by not capturing the SynchronizationContext in collector StopAsync (TL-007F)`; docs `c06c91a`.
 - TL-007 (per-process traffic, Applications-list UI): `27ca92d` — `feat: add per-process Applications view with sort, search, icons, and permission UX (TL-007)`; docs `b1059c6`.
 - TL-007 (per-process traffic collector): `8f080fb` — `feat: add per-process traffic collector via real-time ETW kernel network events (TL-007)`; docs `6f5dc49`.
 - TL-005 (dashboard): `bb6deef` — `feat: add live dashboard view with adaptive rate formatting (TL-005)`
@@ -305,7 +312,7 @@ dashboard + TL-006 live graph), and M3 are complete.
 
 ## Next Recommended Task
 
-- Mark TL-007 done (backend + Applications UI both verified). Next scheduled
-  milestone is **TL-008 (active connections)**; the collector work that may be
-  reused for connection→process mapping is already done. Before starting TL-008,
-  investigate the lingering-process-after-close known issue above.
+- TL-007F (lingering-process shutdown fix) is complete and verified. Next
+  scheduled milestone is **TL-008 (active connections)**; the connection→process
+  mapping can reuse the same `WindowsProcessMetadataProvider` identities from
+  TL-007.

@@ -2,6 +2,36 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.10] — 2026-09-15 (TL-007F complete — shutdown deadlock fix)
+
+### Fixed
+- **Lingering `TrafficLens.App` after a graceful window close (TL-007F).** Root
+  cause (proven via live repro + `dotnet-dump`): `WindowsNetworkTrafficCollector`
+  is disposed on the WPF dispatcher thread during `App.OnExit` →
+  `StopAsync().GetAwaiter().GetResult()`; `StopAsync`'s `await loop;` captured the
+  `DispatcherSynchronizationContext`, so the continuation was posted to a
+  dispatcher blocked in `GetResult()` — `StopAsync` never resumed, `Dispose`
+  never returned, and the process stayed alive (no window, low CPU, single
+  foreground thread). Fix: `await loop.ConfigureAwait(false)` so shutdown is
+  deterministic from any thread/context (ADR-015); no `Environment.Exit`, no
+  forced kill.
+- Regression test `Dispose_FromNonPumpingSyncContext_DoesNotDeadlock` added
+  (non-pumping `SynchronizationContext` + 5 s deadline) — fails (timeout) on the
+  pre-fix code, passes with the fix.
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **193/193 passing** (163 Network + 30 App).
+- Real Windows GUI (Release), after the fix:
+  - **Non-elevated:** 3 consecutive launch → graceful close cycles; every cycle the
+    process exited promptly (no residual process), no ETW session; log ends with
+    `TrafficLens exiting` → `Process traffic collector stopped` → `Network traffic
+    collector stopped` (this last line was the previously-missing/blocked one).
+  - **Elevated:** ETW session `TrafficLensProcessTrace` Running → ~20 MB download
+    while monitoring → graceful close → process exited, session gone from
+    `logman query -ets`, clean shutdown log.
+- The lingering-process known issue from 0.0.9 is resolved.
+
 ## [0.0.9] — 2026-09-15 (TL-007 complete — Applications-list UI)
 
 ### Added
