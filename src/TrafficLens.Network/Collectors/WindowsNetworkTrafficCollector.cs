@@ -85,7 +85,7 @@ public sealed class WindowsNetworkTrafficCollector : INetworkTrafficCollector
         {
             try
             {
-                await loop;
+                await loop.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

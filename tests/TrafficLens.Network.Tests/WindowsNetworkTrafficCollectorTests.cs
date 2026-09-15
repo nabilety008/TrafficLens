@@ -216,4 +216,44 @@ public sealed class WindowsNetworkTrafficCollectorTests
             await collector.StopAsync();
         }
     }
+
+    [Fact]
+    public async Task Dispose_FromNonPumpingSyncContext_DoesNotDeadlock()
+    {
+        // The app disposes the collector during Application.OnExit on the WPF
+        // dispatcher. StopAsync must never post its continuation back to a
+        // SynchronizationContext that is not pumping, or the blocking
+        // GetAwaiter().GetResult() in Dispose deadlocks and the process never
+        // exits (TL-007F). A context whose Post() never runs its callback
+        // reproduces that shutdown shape.
+        var source = new FakeSource { Adapters = [Snap("eth0", 1, 2)] };
+        using var collector = new WindowsNetworkTrafficCollector(
+            source, NullLogger<WindowsNetworkTrafficCollector>.Instance, TimeSpan.FromMilliseconds(30));
+
+        await Task.Run(() =>
+        {
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(new NonPumpingSynchronizationContext());
+            try
+            {
+                _ = collector.StartAsync(CancellationToken.None);
+                Thread.Sleep(30);
+                collector.Dispose();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }).WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    private sealed class NonPumpingSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback callback, object? state)
+        {
+            // Never invoke: simulates a blocked WPF dispatcher during shutdown.
+        }
+
+        public override void Send(SendOrPostCallback callback, object? state) => callback(state);
+    }
 }
