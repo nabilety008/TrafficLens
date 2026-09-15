@@ -30,6 +30,7 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
     private string _downloadLabel = string.Empty;
     private string _uploadLabel = string.Empty;
     private string _totalLabel = string.Empty;
+    private string _alwaysOnTopLabel = string.Empty;
     private string _downloadText = "0 B/s";
     private string _uploadText = "0 B/s";
     private string _totalText = "0 B/s";
@@ -70,6 +71,12 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
     {
         get => _widgetTitleLabel;
         private set => SetProperty(ref _widgetTitleLabel, value);
+    }
+
+    public string AlwaysOnTopLabel
+    {
+        get => _alwaysOnTopLabel;
+        private set => SetProperty(ref _alwaysOnTopLabel, value);
     }
 
     public string DownloadLabel
@@ -168,6 +175,7 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
         DownloadLabel = _localization["DownloadLabel"];
         UploadLabel = _localization["UploadLabel"];
         TotalLabel = _localization["TotalRateLabel"];
+        AlwaysOnTopLabel = _localization["AlwaysOnTopLabel"];
     }
 
     private void ReloadAdapters() => _adapters = _adapterProvider.GetAdapters();

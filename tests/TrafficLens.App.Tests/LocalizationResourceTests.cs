@@ -104,7 +104,12 @@ public class LocalizationResourceTests
         "FloatingWidgetLabel",
         "AlwaysOnTopLabel",
         "ShowFloatingWidgetLabel",
-        "HideFloatingWidgetLabel"
+        "HideFloatingWidgetLabel",
+        "OpenTrafficLensLabel",
+        "ExitLabel",
+        "MinimizeToTrayLabel",
+        "CloseToTrayLabel",
+        "TrayCloseNoticeBalloon"
     };
 
     [Fact]

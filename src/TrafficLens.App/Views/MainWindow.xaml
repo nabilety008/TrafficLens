@@ -54,6 +54,30 @@
                             Foreground="{StaticResource TextBrush}"
                             BorderBrush="{StaticResource BorderBrush}"
                             Margin="3,0" Padding="10,4" />
+                    <ToggleButton x:Name="OptionsToggleButton"
+                                  Content="&#8943;"
+                                  Background="{StaticResource SurfaceAltBrush}"
+                                  Foreground="{StaticResource TextBrush}"
+                                  BorderBrush="{StaticResource BorderBrush}"
+                                  Margin="3,0" Padding="10,4" />
+                    <Popup PlacementTarget="{Binding ElementName=OptionsToggleButton}"
+                           Placement="Bottom"
+                           AllowsTransparency="True"
+                           StaysOpen="True"
+                           IsOpen="{Binding IsChecked, ElementName=OptionsToggleButton, Mode=TwoWay}">
+                        <Border Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1" Padding="12,8">
+                            <StackPanel>
+                                <CheckBox Content="{Binding MinimizeToTrayLabel}"
+                                          IsChecked="{Binding MinimizeToTray}"
+                                          Margin="0,2" />
+                                <CheckBox Content="{Binding CloseToTrayLabel}"
+                                          IsChecked="{Binding CloseToTray}"
+                                          Margin="0,2" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </StackPanel>
             </Grid>
         </Border>

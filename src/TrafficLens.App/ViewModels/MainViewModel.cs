@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using TrafficLens.App.Commands;
 using TrafficLens.App.Services;
+using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 
 namespace TrafficLens.App.ViewModels;
@@ -8,7 +9,8 @@ namespace TrafficLens.App.ViewModels;
 public sealed class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly ILocalizationService _localization;
-    private readonly FloatingWidgetService _floatingWidgetService;
+    private readonly ISettingsService _settings;
+    private readonly IFloatingWidgetService _floatingWidgetService;
     private string _windowTitle = "TrafficLens";
     private string _statusMessage = string.Empty;
     private string _applicationsNavLabel = string.Empty;
@@ -16,6 +18,10 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private string _connectionsNavLabel = string.Empty;
     private string _historyNavLabel = string.Empty;
     private string _floatingWidgetToggleLabel = string.Empty;
+    private string _minimizeToTrayLabel = string.Empty;
+    private string _closeToTrayLabel = string.Empty;
+    private bool _minimizeToTray;
+    private bool _closeToTray;
     private bool _isDashboardVisible = true;
     private bool _isApplicationsVisible;
     private bool _isConnectionsVisible;
@@ -23,18 +29,24 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public MainViewModel(
         ILocalizationService localization,
+        ISettingsService settings,
         DashboardViewModel dashboard,
         ApplicationsViewModel applications,
         ConnectionsViewModel connections,
         HistoryViewModel history,
-        FloatingWidgetService floatingWidgetService)
+        IFloatingWidgetService floatingWidgetService)
     {
         _localization = localization;
+        _settings = settings;
         Dashboard = dashboard;
         Applications = applications;
         Connections = connections;
         History = history;
         _floatingWidgetService = floatingWidgetService;
+
+        _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
+        _closeToTray = TrayBehavior.GetCloseToTray(_settings);
+
         _localization.CultureChanged += OnCultureChanged;
         _floatingWidgetService.IsVisibleChanged += OnIsVisibleChanged;
         RefreshLocalizedStrings();
@@ -80,6 +92,44 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     {
         get => _dashboardNavLabel;
         private set => SetProperty(ref _dashboardNavLabel, value);
+    }
+
+    public string MinimizeToTrayLabel
+    {
+        get => _minimizeToTrayLabel;
+        private set => SetProperty(ref _minimizeToTrayLabel, value);
+    }
+
+    public string CloseToTrayLabel
+    {
+        get => _closeToTrayLabel;
+        private set => SetProperty(ref _closeToTrayLabel, value);
+    }
+
+    public bool MinimizeToTray
+    {
+        get => _minimizeToTray;
+        set
+        {
+            if (SetProperty(ref _minimizeToTray, value))
+            {
+                _settings.Set(TrayBehavior.MinimizeToTrayKey, value.ToString());
+                _settings.Save();
+            }
+        }
+    }
+
+    public bool CloseToTray
+    {
+        get => _closeToTray;
+        set
+        {
+            if (SetProperty(ref _closeToTray, value))
+            {
+                _settings.Set(TrayBehavior.CloseToTrayKey, value.ToString());
+                _settings.Save();
+            }
+        }
     }
 
     public bool IsConnectionsVisible
@@ -158,6 +208,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         DashboardNavLabel = _localization["DashboardLabel"];
         ConnectionsNavLabel = _localization["ConnectionsLabel"];
         HistoryNavLabel = _localization["HistoryLabel"];
+        MinimizeToTrayLabel = _localization["MinimizeToTrayLabel"];
+        CloseToTrayLabel = _localization["CloseToTrayLabel"];
         RefreshFloatingWidgetToggleLabel();
     }
 

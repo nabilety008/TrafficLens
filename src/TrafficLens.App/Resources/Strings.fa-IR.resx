@@ -321,4 +321,19 @@
   <data name="HideFloatingWidgetLabel" xml:space="preserve">
     <value>مخفی کردن ابزارک شناور</value>
   </data>
+  <data name="OpenTrafficLensLabel" xml:space="preserve">
+    <value>باز کردن ترافیک‌لنز</value>
+  </data>
+  <data name="ExitLabel" xml:space="preserve">
+    <value>خروج</value>
+  </data>
+  <data name="MinimizeToTrayLabel" xml:space="preserve">
+    <value>کوچک‌کردن به سینی سیستم</value>
+  </data>
+  <data name="CloseToTrayLabel" xml:space="preserve">
+    <value>بستن به سینی سیستم</value>
+  </data>
+  <data name="TrayCloseNoticeBalloon" xml:space="preserve">
+    <value>ترافیک‌لنز همچنان در سینی سیستم در حال اجرا است.</value>
+  </data>
 </root>

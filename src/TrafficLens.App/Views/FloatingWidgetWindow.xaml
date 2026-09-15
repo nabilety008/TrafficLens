@@ -29,6 +29,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Command="{Binding TogglePinCommand}"
                             Content="{Binding PinIcon}"
+                            ToolTip="{Binding AlwaysOnTopLabel}"
                             FontSize="11" Padding="4,1"
                             Background="Transparent" BorderBrush="Transparent"
                             Foreground="{StaticResource TextBrush}"

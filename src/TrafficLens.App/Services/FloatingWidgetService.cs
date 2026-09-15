@@ -16,7 +16,7 @@ namespace TrafficLens.App.Services;
 /// while closing the main window (and app exit) disposes it via
 /// <see cref="Dispose"/>.
 /// </summary>
-public sealed class FloatingWidgetService : IDisposable
+public sealed class FloatingWidgetService : IFloatingWidgetService
 {
     private readonly ISettingsService _settings;
     private readonly IServiceProvider _services;
@@ -37,6 +37,10 @@ public sealed class FloatingWidgetService : IDisposable
     }
 
     public event EventHandler? IsVisibleChanged;
+
+    public event EventHandler<bool>? AlwaysOnTopChanged;
+
+    public bool IsAlwaysOnTop => GetAlwaysOnTop();
 
     public bool IsVisible
     {
@@ -62,8 +66,7 @@ public sealed class FloatingWidgetService : IDisposable
         }
 
         RestorePosition();
-        _window.Topmost = GetAlwaysOnTop();
-        _viewModel!.IsPinned = GetAlwaysOnTop();
+        ApplyAlwaysOnTop(GetAlwaysOnTop(), notify: false);
         _window.Show();
         _window.Activate();
         IsVisible = true;
@@ -100,6 +103,28 @@ public sealed class FloatingWidgetService : IDisposable
         if (GetEnabled())
         {
             Show();
+        }
+    }
+
+    public void ToggleAlwaysOnTop()
+    {
+        ApplyAlwaysOnTop(!GetAlwaysOnTop(), notify: true);
+    }
+
+    private void ApplyAlwaysOnTop(bool alwaysOnTop, bool notify)
+    {
+        if (_window is not null)
+        {
+            _window.Topmost = alwaysOnTop;
+            _viewModel!.IsPinned = alwaysOnTop;
+        }
+
+        _settings.Set(FloatingWidgetSettings.AlwaysOnTopKey, alwaysOnTop.ToString());
+        _settings.Save();
+
+        if (notify)
+        {
+            AlwaysOnTopChanged?.Invoke(this, alwaysOnTop);
         }
     }
 
@@ -156,16 +181,8 @@ public sealed class FloatingWidgetService : IDisposable
 
     private void OnCloseRequested(object? sender, EventArgs e) => Hide();
 
-    private void OnPinStateChanged(object? sender, bool isPinned)
-    {
-        if (_window is not null)
-        {
-            _window.Topmost = isPinned;
-        }
-
-        _settings.Set(FloatingWidgetSettings.AlwaysOnTopKey, isPinned.ToString());
-        _settings.Save();
-    }
+    private void OnPinStateChanged(object? sender, bool isPinned) =>
+        ApplyAlwaysOnTop(isPinned, notify: true);
 
     private void RestorePosition()
     {

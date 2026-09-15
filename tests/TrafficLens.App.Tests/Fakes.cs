@@ -1,3 +1,4 @@
+using TrafficLens.App.Services;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Models;
 
@@ -155,5 +156,108 @@ internal sealed class FakeConnectionProvider : IConnectionProvider
     {
         LastError = error;
         ConnectionsChanged?.Invoke(this, GetCurrentConnections());
+    }
+}
+internal sealed class FakeSettingsService : ISettingsService
+{
+    private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
+
+    public string Language { get; set; } = "en-US";
+
+    public int SaveCalls { get; private set; }
+
+    public string Get(string key, string defaultValue) =>
+        _values.TryGetValue(key, out var value) ? value : defaultValue;
+
+    public void Set(string key, string value) => _values[key] = value;
+
+    public void Save() => SaveCalls++;
+}
+
+internal sealed class FakeTrayService : ISystemTrayService
+{
+    public int ShowCalls { get; private set; }
+
+    public int DisposeCalls { get; private set; }
+
+    public int NoticeCalls { get; private set; }
+
+    public event EventHandler? OpenRequested;
+
+    public event EventHandler? ExitRequested;
+
+    public void Show() => ShowCalls++;
+
+    public void ShowFirstCloseToTrayNotice() => NoticeCalls++;
+
+    public void Dispose() => DisposeCalls++;
+
+    public void RaiseOpen() => OpenRequested?.Invoke(this, EventArgs.Empty);
+
+    public void RaiseExit() => ExitRequested?.Invoke(this, EventArgs.Empty);
+}
+
+internal sealed class FakeFloatingWidgetService : IFloatingWidgetService
+{
+    public bool IsVisible { get; private set; }
+
+    public bool IsAlwaysOnTop { get; private set; } = true;
+
+    public int ShowCalls { get; private set; }
+
+    public int HideCalls { get; private set; }
+
+    public int ToggleCalls { get; private set; }
+
+    public int ToggleAlwaysOnTopCalls { get; private set; }
+
+    public int RestoreCalls { get; private set; }
+
+    public int DisposeCalls { get; private set; }
+
+    public event EventHandler? IsVisibleChanged;
+
+    public event EventHandler<bool>? AlwaysOnTopChanged;
+
+    public void Show()
+    {
+        ShowCalls++;
+        SetVisible(true);
+    }
+
+    public void Hide()
+    {
+        HideCalls++;
+        SetVisible(false);
+    }
+
+    public void Toggle()
+    {
+        ToggleCalls++;
+        if (IsVisible)
+        {
+            Hide();
+        }
+        else
+        {
+            Show();
+        }
+    }
+
+    public void ToggleAlwaysOnTop()
+    {
+        ToggleAlwaysOnTopCalls++;
+        IsAlwaysOnTop = !IsAlwaysOnTop;
+        AlwaysOnTopChanged?.Invoke(this, IsAlwaysOnTop);
+    }
+
+    public void RestoreIfEnabled() => RestoreCalls++;
+
+    public void Dispose() => DisposeCalls++;
+
+    private void SetVisible(bool visible)
+    {
+        IsVisible = visible;
+        IsVisibleChanged?.Invoke(this, EventArgs.Empty);
     }
 }

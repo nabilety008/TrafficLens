@@ -85,8 +85,13 @@ public partial class App : Application
             logger.LogError(ex, "Failed to start traffic history service");
         }
 
-        var widgetService = _serviceProvider.GetRequiredService<FloatingWidgetService>();
+        var widgetService = _serviceProvider.GetRequiredService<IFloatingWidgetService>();
         widgetService.RestoreIfEnabled();
+
+        var exitCoordinator = _serviceProvider.GetRequiredService<ApplicationExitCoordinator>();
+        var trayService = _serviceProvider.GetRequiredService<ISystemTrayService>();
+        trayService.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
+        trayService.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -128,6 +133,8 @@ public partial class App : Application
         services.AddSingleton<HistoryView>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
-        services.AddSingleton<FloatingWidgetService>();
+        services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
+        services.AddSingleton<ISystemTrayService, SystemTrayService>();
+        services.AddSingleton<ApplicationExitCoordinator>();
     }
 }

@@ -321,4 +321,19 @@
   <data name="HideFloatingWidgetLabel" xml:space="preserve">
     <value>Hide Floating Widget</value>
   </data>
+  <data name="OpenTrafficLensLabel" xml:space="preserve">
+    <value>Open TrafficLens</value>
+  </data>
+  <data name="ExitLabel" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="MinimizeToTrayLabel" xml:space="preserve">
+    <value>Minimize to system tray</value>
+  </data>
+  <data name="CloseToTrayLabel" xml:space="preserve">
+    <value>Close to system tray</value>
+  </data>
+  <data name="TrayCloseNoticeBalloon" xml:space="preserve">
+    <value>TrafficLens is still running in the system tray.</value>
+  </data>
 </root>
