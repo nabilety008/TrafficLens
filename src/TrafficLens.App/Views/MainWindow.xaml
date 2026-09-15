@@ -36,6 +36,12 @@
                            VerticalAlignment="Center" />
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="{Binding FloatingWidgetToggleLabel}"
+                            Command="{Binding ToggleFloatingWidgetCommand}"
+                            Background="{StaticResource SurfaceAltBrush}"
+                            Foreground="{StaticResource TextBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            Margin="3,0" Padding="10,4" />
                     <Button Content="English"
                             Command="{Binding SwitchToEnglishCommand}"
                             Background="{StaticResource SurfaceAltBrush}"

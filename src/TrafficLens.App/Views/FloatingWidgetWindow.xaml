@@ -1,0 +1,85 @@
+<Window x:Class="TrafficLens.App.Views.FloatingWidgetWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="{Binding WidgetTitleLabel}"
+        Width="280" Height="110"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        ResizeMode="NoResize">
+    <Border Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1"
+            MouseLeftButtonDown="OnDrag">
+        <Grid Margin="10,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock Text="{Binding WidgetTitleLabel}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Command="{Binding TogglePinCommand}"
+                            Content="{Binding PinIcon}"
+                            FontSize="11" Padding="4,1"
+                            Background="Transparent" BorderBrush="Transparent"
+                            Foreground="{StaticResource TextBrush}"
+                            Cursor="Hand" />
+                    <Button Command="{Binding CloseWidgetCommand}"
+                            Content="&#10005;"
+                            FontSize="11" Padding="4,1"
+                            Background="Transparent" BorderBrush="Transparent"
+                            Foreground="{StaticResource TextBrush}"
+                            Cursor="Hand" Margin="6,0,0,0" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Row="1" FlowDirection="LeftToRight">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                    <TextBlock Text="&#8595;" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding DownloadLabel}"
+                               FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding DownloadText}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                    <TextBlock Text="&#8593;" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentAltBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding UploadLabel}"
+                               FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding UploadText}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentAltBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#8693;" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding TotalLabel}"
+                               FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding TotalText}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

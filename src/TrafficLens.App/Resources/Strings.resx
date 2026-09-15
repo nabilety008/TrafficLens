@@ -309,4 +309,16 @@
   <data name="HistoryUnavailableLabel" xml:space="preserve">
     <value>History unavailable</value>
   </data>
+  <data name="FloatingWidgetLabel" xml:space="preserve">
+    <value>Floating Widget</value>
+  </data>
+  <data name="AlwaysOnTopLabel" xml:space="preserve">
+    <value>Always on Top</value>
+  </data>
+  <data name="ShowFloatingWidgetLabel" xml:space="preserve">
+    <value>Show Floating Widget</value>
+  </data>
+  <data name="HideFloatingWidgetLabel" xml:space="preserve">
+    <value>Hide Floating Widget</value>
+  </data>
 </root>

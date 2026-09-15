@@ -1,18 +1,21 @@
 using System.Windows.Input;
 using TrafficLens.App.Commands;
+using TrafficLens.App.Services;
 using TrafficLens.Core.Localization;
 
 namespace TrafficLens.App.ViewModels;
 
-public sealed class MainViewModel : ViewModelBase
+public sealed class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly ILocalizationService _localization;
+    private readonly FloatingWidgetService _floatingWidgetService;
     private string _windowTitle = "TrafficLens";
     private string _statusMessage = string.Empty;
     private string _applicationsNavLabel = string.Empty;
     private string _dashboardNavLabel = string.Empty;
     private string _connectionsNavLabel = string.Empty;
     private string _historyNavLabel = string.Empty;
+    private string _floatingWidgetToggleLabel = string.Empty;
     private bool _isDashboardVisible = true;
     private bool _isApplicationsVisible;
     private bool _isConnectionsVisible;
@@ -23,14 +26,17 @@ public sealed class MainViewModel : ViewModelBase
         DashboardViewModel dashboard,
         ApplicationsViewModel applications,
         ConnectionsViewModel connections,
-        HistoryViewModel history)
+        HistoryViewModel history,
+        FloatingWidgetService floatingWidgetService)
     {
         _localization = localization;
         Dashboard = dashboard;
         Applications = applications;
         Connections = connections;
         History = history;
-        _localization.CultureChanged += (_, _) => RefreshLocalizedStrings();
+        _floatingWidgetService = floatingWidgetService;
+        _localization.CultureChanged += OnCultureChanged;
+        _floatingWidgetService.IsVisibleChanged += OnIsVisibleChanged;
         RefreshLocalizedStrings();
 
         SwitchToEnglishCommand = new RelayCommand(() => _localization.SetCulture("en-US"));
@@ -39,7 +45,10 @@ public sealed class MainViewModel : ViewModelBase
         ShowApplicationsCommand = new RelayCommand(() => SelectPage(Page.Applications));
         ShowConnectionsCommand = new RelayCommand(() => SelectPage(Page.Connections));
         ShowHistoryCommand = new RelayCommand(() => SelectPage(Page.History));
+        ToggleFloatingWidgetCommand = new RelayCommand(() => _floatingWidgetService.Toggle());
     }
+
+    public void Dispose() => _floatingWidgetService.IsVisibleChanged -= OnIsVisibleChanged;
 
     public DashboardViewModel Dashboard { get; }
 
@@ -121,6 +130,14 @@ public sealed class MainViewModel : ViewModelBase
 
     public ICommand ShowHistoryCommand { get; }
 
+    public ICommand ToggleFloatingWidgetCommand { get; }
+
+    public string FloatingWidgetToggleLabel
+    {
+        get => _floatingWidgetToggleLabel;
+        private set => SetProperty(ref _floatingWidgetToggleLabel, value);
+    }
+
     private void SelectPage(Page page)
     {
         IsDashboardVisible = page == Page.Dashboard;
@@ -128,6 +145,10 @@ public sealed class MainViewModel : ViewModelBase
         IsConnectionsVisible = page == Page.Connections;
         IsHistoryVisible = page == Page.History;
     }
+
+    private void OnCultureChanged(object? sender, EventArgs e) => RefreshLocalizedStrings();
+
+    private void OnIsVisibleChanged(object? sender, EventArgs e) => RefreshFloatingWidgetToggleLabel();
 
     private void RefreshLocalizedStrings()
     {
@@ -137,7 +158,13 @@ public sealed class MainViewModel : ViewModelBase
         DashboardNavLabel = _localization["DashboardLabel"];
         ConnectionsNavLabel = _localization["ConnectionsLabel"];
         HistoryNavLabel = _localization["HistoryLabel"];
+        RefreshFloatingWidgetToggleLabel();
     }
+
+    private void RefreshFloatingWidgetToggleLabel() =>
+        FloatingWidgetToggleLabel = _floatingWidgetService.IsVisible
+            ? _localization["HideFloatingWidgetLabel"]
+            : _localization["ShowFloatingWidgetLabel"];
 
     private enum Page
     {

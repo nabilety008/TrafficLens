@@ -309,4 +309,16 @@
   <data name="HistoryUnavailableLabel" xml:space="preserve">
     <value>تاریخچه در دسترس نیست</value>
   </data>
+  <data name="FloatingWidgetLabel" xml:space="preserve">
+    <value>ابزارک شناور</value>
+  </data>
+  <data name="AlwaysOnTopLabel" xml:space="preserve">
+    <value>همیشه بالا</value>
+  </data>
+  <data name="ShowFloatingWidgetLabel" xml:space="preserve">
+    <value>نمایش ابزارک شناور</value>
+  </data>
+  <data name="HideFloatingWidgetLabel" xml:space="preserve">
+    <value>مخفی کردن ابزارک شناور</value>
+  </data>
 </root>

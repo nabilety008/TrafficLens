@@ -84,6 +84,9 @@ public partial class App : Application
         {
             logger.LogError(ex, "Failed to start traffic history service");
         }
+
+        var widgetService = _serviceProvider.GetRequiredService<FloatingWidgetService>();
+        widgetService.RestoreIfEnabled();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -125,5 +128,6 @@ public partial class App : Application
         services.AddSingleton<HistoryView>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
+        services.AddSingleton<FloatingWidgetService>();
     }
 }

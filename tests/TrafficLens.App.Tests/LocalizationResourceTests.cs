@@ -100,7 +100,11 @@ public class LocalizationResourceTests
         "Last30DaysLabel",
         "LifetimeLabel",
         "HistoryNoDataLabel",
-        "HistoryUnavailableLabel"
+        "HistoryUnavailableLabel",
+        "FloatingWidgetLabel",
+        "AlwaysOnTopLabel",
+        "ShowFloatingWidgetLabel",
+        "HideFloatingWidgetLabel"
     };
 
     [Fact]
