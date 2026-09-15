@@ -1,12 +1,13 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-14
+Updated: 2026-09-15
 
 ## Current Milestone
 
-M4 (per-process traffic) is in progress: the `IProcessTrafficCollector` backend is
-implemented and verified; the Applications-list UI is the remaining part of the
-task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
+M4 (per-process traffic) is **complete**: the `IProcessTrafficCollector` backend
+was implemented and verified earlier, and the Applications-list UI milestone
+(TL-007 UI) is now implemented, tested, and GUI-verified. M1, M2 (TL-005
+dashboard + TL-006 live graph), and M3 are complete.
 
 ## Task IDs
 
@@ -16,8 +17,8 @@ task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
 - TL-004 Network Adapter Detection — **DONE** (audit + gap fix)
 - TL-005 Dashboard — **DONE**
 - TL-006 Live Traffic Graph — **DONE**
-- TL-007 Per-Process Traffic — **IN PROGRESS** (collector + engine + verification
-  done; Applications-list UI pending)
+- TL-007 Per-Process Traffic — **DONE** (collector + engine + verification +
+  Applications-list UI)
 - TL-008 and later — not started
 
 ## Completed
@@ -150,10 +151,55 @@ task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
   - Real-time kernel provider requires elevation; detail + rationale in
     `docs/NETWORK_COLLECTION.md` (TL-007 section) and ADR-013.
 
+- TL-007 (per-process traffic, Applications-list UI milestone — M4 UI):
+  - `ProcessSampleSelection`/`ProcessSortKey` (Core) — pure sample filtering and
+    seven sort keys (total/download/upload rate, downloaded/uploaded/total bytes,
+    name) with deterministic tie-breaking (name, start time, PID); presentation
+    concern, never mutates collector state.
+  - `DataSizeFormatter` (Core) — binary unit totals (B/KB/MB/GB, culture-aware,
+    negatives clamped); totals are technical notation, matching ADR-011.
+  - `ApplicationsViewModel` + `ProcessRowViewModel` (App) — consumes
+    `IProcessTrafficCollector.SamplesReady` once per second, keeps
+    per-instance rows keyed by `ProcessInstanceId` (same PID + different start
+    time = distinct rows), updates rows in place (no flicker/re-add), exposes
+    top-consumer (now/download/upload) cards, sort + search (name substring
+    case-insensitive + PID prefix), localized status text, and per-row state from
+    the sample's `IsRunning` flag (`Running`/`Exited`/unknown).
+  - Privilege UX: non-elevated hosts show a permission banner with
+    `StartMonitoringCommand`, `Failed`/`Stopped` show monitoring controls; the
+    only elevation path is an explicit `Restart-as-Administrator` command
+    (`Process.Start` `runas` + shutdown) — **the app never auto-elevates**
+    (ADR-014).
+  - `ProcessIconResolver` (App) — shell32 `SHGetFileInfo` P/Invoke
+    (`SHGFI_ICON | SHGFI_LARGEICON`) + `Imaging.CreateBitmapSourceFromHIcon` +
+    `DestroyIcon`, frozen fallback, bounded FIFO cache (128) with max 8
+    extractions per refresh — icons resolved on the UI thread only; no
+    `System.Drawing` dependency.
+  - `MainWindow` — Dashboard / Applications navigation buttons (nav row), content
+    hosted in a `ContentControl` switched by `MainViewModel.ShowDashboardCommand`
+    / `ShowApplicationsCommand`; `IProcessTrafficCollector` started at startup in
+    `App.xaml.cs` (network collector + process collector).
+  - Localization: all Applications keys added to `Strings.resx` (en) and
+    `Strings.fa-IR.resx` (fa, valid UTF-8).
+
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 147/147 passed (`TrafficLens.Network.Tests` 133, `TrafficLens.App.Tests` 14).
+- **Automated tests:** 192/192 passed (`TrafficLens.Network.Tests` 162, `TrafficLens.App.Tests` 30).
+- **TL-007 Applications UI real Windows GUI verification** (Release build, live
+  network traffic, elevated + non-elevated runs):
+  - Elevated run (app pid 5048): ETW session `TrafficLensProcessTrace` reported
+    **Running** with buffers written; app survived ~20 MB/s-scale transfers
+    (curl + PowerShell WebClient artifacts ≈ 14.1 MB, 16.6 MB, 20 MB); log shows
+    `Process traffic collector running (elevated ETW kernel network session)`;
+    graceful `CloseMainWindow` → `TrafficLens exiting` → `Process traffic
+    collector stopped` → ETW session gone from `logman query -ets` (no orphan
+    kernel session after graceful shutdown).
+  - Non-elevated run (pid 7812): app started, network (dashboard) collector ran,
+    process collector logged `cannot start: permission denied (Enabling the ETW
+    kernel network provider requires an elevated (Administrator) process.)` →
+    `PermissionDenied` banner path — no crash, no auto-UAC, and no ETW session
+    created (`logman`: "Data Collector Set was not found").
 - **TL-007 per-process real verification** (elevated verification console, live
   traffic against `https://speed.cloudflare.com/__down`, `--process` mode):
   - Collector turned `Running` (elevated) and attributed real traffic to the two
@@ -221,27 +267,38 @@ task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 133 tests, all passing (incl. 18
-  per-process accounting-engine and metadata-provider tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 14 tests, all passing
-  (incl. 6 dashboard-graph tests).
+- `tests/TrafficLens.Network.Tests` — xUnit, 162 tests, all passing (incl. 22
+  per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
+  formatter cases, and metadata-provider tests).
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 30 tests, all passing
+  (incl. 6 dashboard-graph tests + 16 Applications-ViewModel tests).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter) or
   `-- --process` (per-process, elevated or non-elevated).
 
 ## Known Issues / Not Started
 
+- **Process lingers after window Close**: after a graceful `CloseMainWindow`
+  (WM_CLOSE), "TrafficLens exiting" + collector-stop are logged and the ETW
+  session closes correctly, but the `TrafficLens.App` process can remain alive
+  (no window handle, low CPU) for an extended period. Reproduced in both
+  elevated and non-elevated runs. Under investigation for the next milestone —
+  graceful ETW/session shutdown itself is verified clean.
+- A hard process kill (`taskkill /F`) leaves the kernel ETW real-time session
+  Running until stopped explicitly (`logman stop "TrafficLensProcessTrace" -ets`);
+  graceful close does not leak the session.
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
   by default (`includeTunnels: true` to include on VPN-only hosts).
 - Graph history is in-memory only (5.5 min); persistent SQLite history is TL-009.
-- Per-process Applications-list UI (icons, sort, process details page) is deferred
-  to a follow-up UI task; the TL-007 collector/backend is complete.
 - Active connections are TL-008.
 - Range buttons do not show an explicit "selected" highlight; the selected range is
   visually implied by the plotted window. (Future polish.)
 
 ## Git Commit
 
+- TL-007 (per-process traffic, Applications-list UI): see `8f080fb` for the
+  collector backend commit; the current UI milestone commit is listed in the
+  final report block for this session.
 - TL-007 (per-process traffic collector): `8f080fb` — `feat: add per-process traffic collector via real-time ETW kernel network events (TL-007)`; docs `6f5dc49`.
 - TL-005 (dashboard): `bb6deef` — `feat: add live dashboard view with adaptive rate formatting (TL-005)`
 - `2bf03c9` — `fix: classify OpenVPN TAP/DCO (type 53) and virtual nics correctly via driver descriptions (TL-004)`
@@ -250,7 +307,7 @@ task. M1, M3, and M2 (TL-005 dashboard + TL-006 live graph) are complete.
 
 ## Next Recommended Task
 
-- Finish TL-007's remaining UI: Applications-list view (icons, sort, totals) over
-  the completed `IProcessTrafficCollector`/`GetProtocolTotals` backend. After that,
-  TL-008 (active connections) is the next scheduled milestone; the collector work
-  that may be reused for connection→process mapping is already done.
+- Mark TL-007 done (backend + Applications UI both verified). Next scheduled
+  milestone is **TL-008 (active connections)**; the collector work that may be
+  reused for connection→process mapping is already done. Before starting TL-008,
+  investigate the lingering-process-after-close known issue above.

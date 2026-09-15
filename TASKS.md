@@ -141,9 +141,29 @@
       elevated live run with curl.exe + powershell.exe → two distinguishable apps,
       two curl instances as distinct buckets, bounded (11 samples, ~2.6 MB growth),
       clean stop; protocol totals invariant `Total = Tcp + Udp = IPv4 + IPv6`
-- [ ] Applications list UI (icons, sort) — deferred to a follow-up UI task
-      (minimum-UI scope per TL-007 spec)
-- **Status: core collector done (TL-007); UI portion pending**
+- [x] Applications list UI (M4 UI milestone):
+  - [x] `ApplicationsViewModel` + `ProcessRowViewModel` — per-instance rows keyed
+        by `ProcessInstanceId` (same PID + new start time = distinct row), in-place
+        update (no re-add/flicker), top-consumer cards (now/download/upload),
+        localized process status (`Running`/`Exited`/unknown)
+  - [x] Sort (7 keys via `ProcessSampleSelection`/`ProcessSortKey`, Core, pure) +
+        search (name case-insensitive substring + PID prefix); never mutates
+        collector state
+  - [x] Permission UX: `PermissionDenied`/`Failed`/`Stopped` banners + monitoring
+        actions; explicit Restart-as-Administrator only — no auto-elevation (ADR-014)
+  - [x] `ProcessIconResolver` — shell32 `SHGetFileInfo` P/Invoke, frozen fallback,
+        bounded FIFO cache, UI-thread only (no System.Drawing)
+  - [x] `MainWindow` Dashboard/Applications navigation + `ContentControl` host;
+        process collector started at startup (App.xaml.cs)
+  - [x] `DataSizeFormatter` (Core binary totals, culture-aware, negatives clamped)
+  - [x] Localization: en + fa-IR for all Applications keys
+  - [x] Tests: 11 selection/sort + 12 formatter cases (Network) + 16
+        ApplicationsViewModel (App) — 45 new tests
+  - [x] Real Windows GUI verification: elevated live run (ETW Running, ~20 MB/s
+        survived, session closed cleanly on graceful close) and non-elevated run
+        (PermissionDenied banner path, no session, no auto-UAC); 192/192 tests;
+        0 warnings/errors Debug + Release
+- **Status: done (backend + Applications UI)**
 - **Commit:** `8f080fb` (code + tests; see `docs/PROJECT_STATUS.md`)
 
 ### TL-008 Active Connections
@@ -189,9 +209,9 @@
 |---|---|---|---|
 | M0 | Project bootstrap, docs, localization foundation | TL-001 | Done |
 | M1 | Global network monitoring | TL-002, TL-003 | Done |
-| M2 | Dashboard and live graph | TL-005, TL-006 | In progress |
+| M2 | Dashboard and live graph | TL-005, TL-006 | Done |
 | M3 | Network interfaces | TL-004 | Done |
-| M4 | Per-process traffic | TL-007 | In progress (collector done, UI pending) |
+| M4 | Per-process traffic | TL-007 | Done |
 | M5 | Active connections | TL-008 | Not started |
 | M6 | SQLite history | TL-009 | Not started |
 | M7 | Tray and widget | TL-010, TL-011 | Not started |

@@ -170,6 +170,27 @@ Reasoning:
   buffers); connection state (no network / disconnect / reconnect) is surfaced
   via `HasConnection` and localized status text, never exceptions.
 
+## ADR-014: No automatic elevation; explicit Restart-as-Administrator only
+
+**Status:** Accepted (TL-007, M4 UI)
+
+Per-process ETW collection requires an elevated process (ADR-013), but the app
+never elevates itself. On a non-elevated launch the process collector reports
+`Status = PermissionDenied` + `LastError`, the Applications view shows an honest
+status banner with a "Restart as Administrator" action, and the only elevation
+path is that explicit user-invoked command: `Process.Start` with the `runas`
+verb targeting a fresh instance, followed by `Application.Current.Shutdown()`
+for the current instance. Any `Stopped`/`Failed` collector state is rendered as
+`Start Monitoring` on the page (the UI re-invokes the collector, never UAC).
+
+Reasoning:
+- Auto-elevation on startup would trigger an unexpected UAC prompt and violate
+  the "no automatic elevation" requirement (ADR-013).
+- Banners + explicit actions keep failure modes visible and actionable without
+  hiding the loss of per-process visibility.
+- Restarting via `runas` is a shell decision on the user's machine; the app only
+  launches the same executable and exits (no command-line flags needed).
+
 ## ADR-013: Per-process traffic via elevated real-time ETW kernel network events
 
 **Status:** Accepted (TL-007)

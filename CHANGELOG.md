@@ -2,6 +2,61 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.9] — 2026-09-15 (TL-007 complete — Applications-list UI)
+
+### Added
+- Core selection/formatting (presentation, no collector mutation):
+  - `ProcessSampleSelection` + `ProcessSortKey` — filtering + seven sort keys
+    (total/download/upload rate, downloaded/uploaded/total bytes, name) with
+    deterministic tie-breaking (name, start time, PID); top-consumer helpers.
+  - `DataSizeFormatter` — binary-unit byte totals (B/KB/MB/GB), culture-aware
+    decimal separator, negatives clamped to 0 B (ADR-011 technical notation).
+- App Applications page:
+  - `ApplicationsViewModel` + `ProcessRowViewModel` — per-instance rows keyed by
+    `ProcessInstanceId` (reused PID with a new start time = distinct row), in-place
+    updates (no re-add/flicker), top-consumer cards, sort + search (name
+    case-insensitive substring + PID prefix), localized status text for
+    `Running`/`Exited`/unknown.
+  - `ApplicationSortOption` + per-row state from the sample's `IsRunning` flag
+    (supported by the engine's `Running-until-exit` revalidation semantics).
+  - `ProcessIconResolver` — shell32 `SHGetFileInfo` P/Invoke
+    (`SHGFI_ICON | SHGFI_LARGEICON`) + `CreateBitmapSourceFromHIcon` +
+    `DestroyIcon`, frozen fallback, bounded FIFO cache (128), max 8 extractions
+    per refresh; UI-thread only; no `System.Drawing` dependency.
+  - `ApplicationsView` (XAML + code-behind DI): status banner (permission-deny +
+    start-monitoring actions), top-consumer cards, sort ComboBox + search box,
+    list header + `ItemsControl` rows (icon, name, PID, status, rates, totals).
+- Navigation: `MainWindow` Dashboard / Applications nav buttons + `ContentControl`
+  host switched by `MainViewModel.ShowDashboardCommand`/`ShowApplicationsCommand`.
+- Startup: `App.xaml.cs` registers `ProcessIconResolver`, `ApplicationsViewModel`,
+  `ApplicationsView`; starts `IProcessTrafficCollector` after the network
+  collector (fire-and-forget with try/catch).
+- Localization: Applications keys added to `Strings.resx` (en) and
+  `Strings.fa-IR.resx` (fa, valid UTF-8) — per-process labels, sort/search,
+  status texts, permission banner, and explicit Restart-as-Administrator action.
+- Tests: 45 new (`ProcessSampleSelectionTests` 11, `DataSizeFormatterTests` 12
+  cases, 4 new engine liveness tests — resolved-runs, exit-after-revalidation,
+  PID-reuse, unknown-PID; `ApplicationsViewModelTests` 16; localized resource
+  keys extended).
+- ADR-014 (no automatic elevation; explicit restart-as-administrator).
+
+### Verified
+- Build Debug + Release: **0 warnings, 0 errors**.
+- Tests: **192/192 passing** (162 Network + 30 App).
+- Real Windows GUI (Release):
+  - Elevated: ETW session `TrafficLensProcessTrace` Running with buffers; app
+    survived ~20 MB/s-scale transfers; graceful `CloseMainWindow` →
+    "TrafficLens exiting" → "Process traffic collector stopped" → ETW session
+    closed cleanly (no orphan).
+  - Non-elevated: permission-denied path logged; app usable; dashboard works; no
+    ETW session; no crash; no auto-UAC.
+
+### Known Issue
+- After a graceful window close the `TrafficLens.App` process can linger (no
+  window handle, low CPU) even though shutdown logs and the ETW session shutdown
+  are clean. Reproduced elevated and non-elevated; investigation queued for the
+  next milestone.
+
 ## [0.0.8] — 2026-09-14 (TL-007 Per-Process Traffic — collector milestone)
 
 ### Added

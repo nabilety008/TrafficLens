@@ -55,9 +55,12 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Every ViewModel derives from `ViewModelBase` (`INotifyPropertyChanged`).
 - Commands use `RelayCommand`.
 - Data flows: collector -> service -> ViewModel -> View binding.
-- `MainViewModel` is window chrome (title, status, language switch); the
-  dashboard itself is `DashboardViewModel` exposed as `MainViewModel.Dashboard`
-  (`{Binding Dashboard.*}` from XAML).
+- `MainViewModel` is window chrome (title, status, language switch) plus
+  top-level navigation; the two content sections are injected ViewModels —
+  `DashboardViewModel` (`MainViewModel.Dashboard`) and
+  `ApplicationsViewModel` (`MainViewModel.Applications`), switched by
+  `ShowDashboardCommand` / `ShowApplicationsCommand` and hosted in a
+  `MainWindow` `ContentControl`.
 - `DashboardViewModel` consumes `INetworkTrafficCollector` and
   `INetworkAdapterProvider` through DI, reacts to `SpeedSampleReady` and the
   adapter-changed events, and marshals every update to the WPF Dispatcher with
