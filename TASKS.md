@@ -191,8 +191,51 @@
 - **Commit:** `e09111e` (code + tests; docs `f425dca`)
 
 ### TL-008 Active Connections
-- [ ] `IConnectionProvider`, TCP-first connections view
-- **Status: not started**
+- [x] Core: extended `ConnectionInfo` (nullable remote endpoint, `ConnectionAddressFamily`,
+      process start-time identity, executable path, icon availability, timestamp),
+      `ConnectionKey` (protocol + family + local + remote + pid), `ConnectionProtocol`/
+      `ConnectionState`/`ConnectionAddressFamily` enums, `EndpointFormatter`
+      (LTR, culture-safe; unspecified/absent peer rendered empty — ADR-016)
+- [x] `IConnectionProvider` extended (`ConnectionsChanged`, `LastError`,
+      `GetCurrentConnections`, `GetActiveConnectionsAsync(ct)`, `StartAsync`,
+      `StopAsync`, `IDisposable`)
+- [x] Native collection `NativeConnectionTableReader` — `GetExtendedTcpTable`
+      (`TCP_TABLE_OWNER_PID_ALL`) + `GetExtendedUdpTable` (`UDP_TABLE_OWNER_PID`),
+      IPv4 + IPv6, 4-byte little-endian entry-count header, per-row layouts (TCPv4 24 B,
+      TCPv6 56 B, UDPv4 12 B, UDPv6 28 B), network→host port byte order, 64 KB initial
+      buffer grown on `ERROR_INSUFFICIENT_BUFFER`; partial-table failure tolerated
+- [x] `ConnectionTableParser` — pure static parsers over the native buffers (unit-tested
+      with synthetic payloads, no live table needed)
+- [x] `WindowsConnectionProvider` — ~1 s off-UI poll loop; partial-table failure is a
+      warning (successful tables kept); total failure keeps the last good snapshot + sets
+      `LastError`; any success clears `LastError`; `StopAsync` uses `ConfigureAwait(false)`
+      (ADR-015)
+- [x] `ConnectionProcessResolver` — bounded cache (TTL 3 s, capacity 512, FIFO eviction,
+      negative caching) over `IProcessMetadataProvider`, keyed by full `ProcessInstanceId`;
+      never throws
+- [x] Filter/search/sort (Core, pure, non-mutating): `ConnectionFilter`
+      (All/Established/Listening/Tcp/Udp/Ipv4/Ipv6), `ConnectionFiltering`,
+      `ConnectionSort` (Default/Process/ProcessId/Protocol/State/Local/Remote) with
+      deterministic tie-breaks; UDP remotes are never fabricated, LISTEN is not outbound
+- [x] App: `ConnectionsViewModel` + `ConnectionRowViewModel` — dispatcher-marshalled
+      `ConnectionsChanged`, in-place row updates (rebuild only when the key sequence
+      changes), icon budget per refresh, error banner, empty state, Filter + FamilyFilter
+      + Sort + search
+- [x] `ConnectionsView` (XAML + code-behind DI); `MainWindow` Dashboard/Connections
+      navigation; `App.xaml.cs` registers the VM/View and starts `IConnectionProvider`
+- [x] Localization: en + fa-IR keys (column headers, filters, sort, TCP states, empty/
+      error, unknown process); endpoints stay LTR under RTL
+- [x] Tests: `ConnectionTableParserTests`, `ConnectionKeyTests`, `ConnectionSelectionTests`,
+      `EndpointFormatterTests` (Network) + `ConnectionsViewModelTests` (App)
+- [x] Real verification (`--connections`): 112 connections (78 TCP / 34 UDP, 99 IPv4 /
+      13 IPv6), in-process listener observed as `Listen`, curl download attributed
+      `Established` with correct PID/name/remote; cross-checked vs `netstat -ano`
+      (TCP state histogram + UDP count match the MIB source — `Get-NetTCPConnection`'s
+      `Bound` rows are cmdlet-synthesized, not in the owner-PID table)
+- [x] GUI smoke: `Connection provider started (IP Helper tables, poll interval 00:00:01)`,
+      no exceptions, clean teardown (no orphan ETW session / leftover process)
+- **Status: done**
+- **Commit:** `c29adf4` (code + tests; see `docs/PROJECT_STATUS.md`)
 
 ### TL-009 SQLite History
 - [ ] Aggregated sampling schema and repositories
@@ -236,7 +279,7 @@
 | M2 | Dashboard and live graph | TL-005, TL-006 | Done |
 | M3 | Network interfaces | TL-004 | Done |
 | M4 | Per-process traffic | TL-007 | Done |
-| M5 | Active connections | TL-008 | Not started |
+| M5 | Active connections | TL-008 | Done |
 | M6 | SQLite history | TL-009 | Not started |
 | M7 | Tray and widget | TL-010, TL-011 | Not started |
 | M8 | Alerts and settings | TL-012, TL-013 | Not started |

@@ -56,11 +56,12 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
 - Commands use `RelayCommand`.
 - Data flows: collector -> service -> ViewModel -> View binding.
 - `MainViewModel` is window chrome (title, status, language switch) plus
-  top-level navigation; the two content sections are injected ViewModels —
-  `DashboardViewModel` (`MainViewModel.Dashboard`) and
-  `ApplicationsViewModel` (`MainViewModel.Applications`), switched by
-  `ShowDashboardCommand` / `ShowApplicationsCommand` and hosted in a
-  `MainWindow` `ContentControl`.
+  top-level navigation; the content sections are injected ViewModels —
+  `DashboardViewModel` (`MainViewModel.Dashboard`),
+  `ApplicationsViewModel` (`MainViewModel.Applications`), and
+  `ConnectionsViewModel` (`MainViewModel.Connections`), switched by
+  `ShowDashboardCommand` / `ShowApplicationsCommand` / `ShowConnectionsCommand`
+  and hosted in a `MainWindow` `ContentControl`.
 - `DashboardViewModel` consumes `INetworkTrafficCollector` and
   `INetworkAdapterProvider` through DI, reacts to `SpeedSampleReady` and the
   adapter-changed events, and marshals every update to the WPF Dispatcher with
@@ -131,10 +132,33 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
   the Network layer; the App layer (once the Applications page exists) will consume
   only the Core abstraction.
 
+## Active connections layer (TL-008)
+
+- `TrafficLens.Core` defines the connection contracts and pure presentation logic:
+  `IConnectionProvider` (current snapshot + `ConnectionsChanged` + `LastError` +
+  lifecycle), `ConnectionInfo` (protocol, state, address family, nullable remote
+  endpoint, process identity), `ConnectionKey`, `EndpointFormatter` (always-LTR,
+  culture-safe; suppresses unspecified peers), and `Selection/ConnectionSelection`
+  (`ConnectionFilter` / `ConnectionFiltering` / `ConnectionSort`) — all non-mutating
+  and unit-testable without the OS.
+- `TrafficLens.Network/Connections/` owns the Windows implementation:
+  - `NativeConnectionTableReader` — IP Helper `GetExtendedTcpTable` /
+    `GetExtendedUdpTable` (owner-PID tables, IPv4 + IPv6), buffer-grow retry.
+  - `ConnectionTableParser` — pure parsing of the native row layouts.
+  - `ConnectionProcessResolver` — bounded `IProcessMetadataProvider` cache keyed by
+    `ProcessInstanceId`.
+  - `WindowsConnectionProvider` — ~1 s off-UI poll loop publishing snapshots;
+    partial failures degrade to warnings, total failures keep the last good snapshot
+    and surface `LastError`.
+- App: `ConnectionsViewModel` + `ConnectionRowViewModel` consume only
+  `IConnectionProvider`, marshal updates to the Dispatcher, and update rows in place;
+  `ConnectionsView` is hosted via `MainViewModel.Connections` and
+  `MainWindow`'s `ContentControl` (Dashboard / Applications / Connections).
+- Non-elevated by design; TCP/UDP only (no ICMP); endpoints/privacy and state
+  semantics are recorded in `docs/NETWORK_COLLECTION.md` and ADR-016.
+
 ## Future Plans
 
 - History: aggregated SQLite samples; retention policies.
 - Tray + floating widget.
-- Active connections (TL-008) and the Applications page UI over the process
-  collector.
 - See `docs/ROADMAP.md`.

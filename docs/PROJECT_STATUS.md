@@ -4,10 +4,10 @@ Updated: 2026-09-15
 
 ## Current Milestone
 
-M4 (per-process traffic) is **complete**: the `IProcessTrafficCollector` backend
-was implemented and verified earlier, and the Applications-list UI milestone
-(TL-007 UI) is now implemented, tested, and GUI-verified. M1, M2 (TL-005
-dashboard + TL-006 live graph), and M3 are complete.
+M5 (active connections) is **complete**: the IP Helper connection provider
+(TCP+UDP, IPv4+IPv6) and the Connections page are implemented, tested, and
+verified against native tooling. M1, M2 (TL-005 dashboard + TL-006 live graph),
+M3, and M4 (per-process traffic) are complete.
 
 ## Task IDs
 
@@ -19,7 +19,9 @@ dashboard + TL-006 live graph), and M3 are complete.
 - TL-006 Live Traffic Graph — **DONE**
 - TL-007 Per-Process Traffic — **DONE** (collector + engine + verification +
   Applications-list UI)
-- TL-008 and later — not started
+- TL-007F Shutdown deadlock fix — **DONE**
+- TL-008 Active Connections — **DONE**
+- TL-009 and later — not started
 
 ## Completed
 
@@ -182,10 +184,72 @@ dashboard + TL-006 live graph), and M3 are complete.
   - Localization: all Applications keys added to `Strings.resx` (en) and
     `Strings.fa-IR.resx` (fa, valid UTF-8).
 
+- TL-008 (active connections, M5):
+  - Core (`TrafficLens.Core`):
+    - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
+      process start-time identity (`ProcessStartTimeUtcTicks`), `ExecutablePath`,
+      `IconAvailable`, `Timestamp`; new `ConnectionProtocol`, `ConnectionState`,
+      `ConnectionAddressFamily` enums.
+    - `ConnectionKey` — stable identity `(Protocol, AddressFamily, LocalAddress,
+      LocalPort, RemoteAddress?, RemotePort?, ProcessId)` used for in-place row updates.
+    - `EndpointFormatter` — culture-safe, always-LTR `address:port` formatting; the
+      remote endpoint renders **empty** for a listening/unconnected socket
+      (unspecified `0.0.0.0`/`::` + port 0) instead of a misleading peer (ADR-016).
+    - `Selection/ConnectionSelection` — pure, non-mutating `ConnectionFilter`
+      (All/Established/Listening/Tcp/Udp/Ipv4/Ipv6), `ConnectionFiltering.Matches`/
+      `MatchesSearch`, and `ConnectionSort` (Default/Process/ProcessId/Protocol/State/
+      Local/Remote) with deterministic tie-breaks (name, PID, local, remote).
+  - Native collection (`TrafficLens.Network/Connections`):
+    - `NativeConnectionTableReader` — `GetExtendedTcpTable` (`TCP_TABLE_OWNER_PID_ALL`)
+      + `GetExtendedUdpTable` (`UDP_TABLE_OWNER_PID`), IPv4 and IPv6; parses the 4-byte
+      little-endian entry-count header and per-row layouts (TCPv4 24 B, TCPv6 56 B,
+      UDPv4 12 B, UDPv6 28 B); network→host port byte order; 64 KB initial buffer grown
+      on `ERROR_INSUFFICIENT_BUFFER`.
+    - `ConnectionTableParser` — pure static parsers over the native buffers, unit-tested
+      with synthetic payloads (no live table required).
+    - `ConnectionProcessResolver` — bounded cache (TTL 3 s, capacity 512, FIFO eviction,
+      negative caching) over `IProcessMetadataProvider`, keyed by full
+      `ProcessInstanceId`; never throws.
+    - `WindowsConnectionProvider` — ~1 s off-UI poll loop; a partial-table failure is a
+      warning (successful tables are kept), a total failure keeps the last good snapshot
+      and sets `LastError`, and any success clears it; `StopAsync` uses
+      `ConfigureAwait(false)` (ADR-015).
+  - App:
+    - `ConnectionsViewModel` + `ConnectionRowViewModel` — dispatcher-marshalled
+      `ConnectionsChanged` handler, in-place row updates (rebuild only when the key
+      sequence changes), per-refresh icon budget, error banner, empty state, Filter +
+      Address-Family + Sort combo boxes and a search box.
+    - `ConnectionSortOption` / `ConnectionFilterOption` (localized option records);
+      `ConnectionsView` (XAML + code-behind DI); `MainWindow` Dashboard/Connections
+      navigation; `App.xaml.cs` registers the ViewModel/View and starts the provider.
+    - Localization: en + fa-IR keys for headers, filters, sort, TCP states, empty/error,
+      and unknown process; endpoints remain LTR under RTL.
+
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 192/192 passed (`TrafficLens.Network.Tests` 162, `TrafficLens.App.Tests` 30).
+- **Automated tests:** 251/251 passed (`TrafficLens.Network.Tests` 206, `TrafficLens.App.Tests` 45).
+- **TL-008 real Windows verification** (`--connections` mode, non-elevated, live host):
+  - **TrafficLens `--connections`**: 112 connections (78 TCP / 34 UDP, 99 IPv4 /
+    13 IPv6), 26 established / 29 listening; `udpWithRemote = 0` and
+    `unknownProcess = 0`. An in-process `TcpListener` on `127.0.0.1` was observed as a
+    `Tcp / Ipv4 / Listen` row owned by the verification process; a `curl` download was
+    attributed one `Established` `Tcp / Ipv4` row (`local → 162.159.140.220:443`) with
+    the correct PID and process name.
+  - **Cross-check vs native MIB source (`netstat -ano`)**: TrafficLens TCP state
+    histogram (`TimeWait 32 / Listen 29 / Established 21 / CloseWait 5`) matched
+    `netstat` (31 / 28 / 21 / 5) at the same moment; TrafficLens UDP count (34) matched
+    `netstat` UDP (34) exactly.
+  - **`Get-NetTCPConnection` difference explained**: that cmdlet reported ~22 extra
+    TCP rows in a synthetic `Bound` state that do **not** appear in `netstat` nor in the
+    `TCP_TABLE_OWNER_PID_ALL` MIB table our provider reads — i.e. a cmdlet-side
+    convenience state, not data we drop. Targeted listener row matched the native view
+    exactly (`127.0.0.1:18888`, remote `0.0.0.0:0`, `Listen`, correct owning PID).
+  - **GUI smoke** (non-elevated): log shows
+    `Connection provider started (IP Helper tables, poll interval 00:00:01)`, no
+    connection-provider exceptions during polling, ETW session absent before/after, and
+    no leftover process; the process collector's elevation warning is expected and
+    non-fatal.
 - **TL-007 Applications UI real Windows GUI verification** (Release build, live
   network traffic, elevated + non-elevated runs):
   - Elevated run (app pid 5048): ETW session `TrafficLensProcessTrace` reported
@@ -267,14 +331,18 @@ dashboard + TL-006 live graph), and M3 are complete.
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 162 tests, all passing (incl. 22
+- `tests/TrafficLens.Network.Tests` — xUnit, 206 tests, all passing (incl. 22
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
-  formatter cases, and metadata-provider tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 30 tests, all passing
-  (incl. 6 dashboard-graph tests + 16 Applications-ViewModel tests).
+  formatter cases, metadata-provider tests, and the TL-008 connection parser /
+  key / selection / endpoint-formatter suites).
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 45 tests, all passing
+  (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, and the TL-008
+  Connections-ViewModel tests).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
-  `dotnet run --project tests/TrafficLens.Network.Verification` (adapter) or
-  `-- --process` (per-process, elevated or non-elevated).
+  `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
+  `-- --process` (per-process, elevated or non-elevated), or
+  `-- --connections` (active connections, non-elevated; set `TL_VERIFY_PORT` for a
+  fixed listener port).
 
 ## Known Issues / Not Started
 
@@ -284,7 +352,8 @@ dashboard + TL-006 live graph), and M3 are complete.
 - Per-adapter tunnel rates are published; only the system aggregate excludes them
   by default (`includeTunnels: true` to include on VPN-only hosts).
 - Graph history is in-memory only (5.5 min); persistent SQLite history is TL-009.
-- Active connections are TL-008.
+- Active-connection state is live-only (no history) and report raw IP endpoints; no
+  reverse DNS in TL-008 (deferred).
 - Range buttons do not show an explicit "selected" highlight; the selected range is
   visually implied by the plotted window. (Future polish.)
 
@@ -302,6 +371,7 @@ dashboard + TL-006 live graph), and M3 are complete.
 
 ## Git Commit
 
+- TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
 - TL-007F (shutdown deadlock fix): `e09111e` — `fix: prevent shutdown deadlock by not capturing the SynchronizationContext in collector StopAsync (TL-007F)`; docs `f425dca`.
 - TL-007 (per-process traffic, Applications-list UI): `27ca92d` — `feat: add per-process Applications view with sort, search, icons, and permission UX (TL-007)`; docs `b1059c6`.
 - TL-007 (per-process traffic collector): `8f080fb` — `feat: add per-process traffic collector via real-time ETW kernel network events (TL-007)`; docs `6f5dc49`.
@@ -312,7 +382,7 @@ dashboard + TL-006 live graph), and M3 are complete.
 
 ## Next Recommended Task
 
-- TL-007F (lingering-process shutdown fix) is complete and verified. Next
-  scheduled milestone is **TL-008 (active connections)**; the connection→process
-  mapping can reuse the same `WindowsProcessMetadataProvider` identities from
-  TL-007.
+- TL-008 (active connections) is complete and verified. Next scheduled milestone is
+  **TL-009 (SQLite history)**: aggregated sampling schema and repositories for
+  Today / Yesterday / 7d / 30d / Lifetime views. TL-008 deliberately keeps
+  connections live-only (no history) and does not persist them.

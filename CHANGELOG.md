@@ -2,6 +2,67 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.11] — 2026-09-15 (TL-008 complete — active connections)
+
+### Added
+- Core connection model and selection (presentation-safe, non-mutating):
+  - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
+    process start-time identity (`ProcessStartTimeUtcTicks`), `ExecutablePath`,
+    `IconAvailable`, `Timestamp`; new `ConnectionProtocol`, `ConnectionState`, and
+    `ConnectionAddressFamily` enums.
+  - `ConnectionKey` — stable identity `(Protocol, AddressFamily, LocalAddress,
+    LocalPort, RemoteAddress?, RemotePort?, ProcessId)` for in-place row updates.
+  - `EndpointFormatter` — culture-safe, always-LTR `address:port` formatting; the
+    remote endpoint renders empty for a listening/unconnected socket (unspecified
+    `0.0.0.0`/`::` + port 0) instead of a misleading peer (ADR-016).
+  - `ConnectionFilter` (All/Established/Listening/Tcp/Udp/Ipv4/Ipv6),
+    `ConnectionFiltering` (match + search), `ConnectionSort` (Default/Process/
+    ProcessId/Protocol/State/Local/Remote) with deterministic tie-breaks.
+  - `IConnectionProvider` extended — `ConnectionsChanged`, `LastError`,
+    `GetCurrentConnections`, `GetActiveConnectionsAsync(ct)`, `StartAsync`,
+    `StopAsync`, `IDisposable`.
+- Network collection (`TrafficLens.Network/Connections`):
+  - `NativeConnectionTableReader` — `GetExtendedTcpTable` (`TCP_TABLE_OWNER_PID_ALL`)
+    + `GetExtendedUdpTable` (`UDP_TABLE_OWNER_PID`), IPv4 and IPv6; 4-byte
+    little-endian entry-count header, per-row layouts (TCPv4 24 B, TCPv6 56 B,
+    UDPv4 12 B, UDPv6 28 B), network→host port byte order, 64 KB buffer grown on
+    `ERROR_INSUFFICIENT_BUFFER`.
+  - `ConnectionTableParser` — pure static parsers over the native buffers
+    (unit-tested with synthetic payloads; no live table required).
+  - `ConnectionProcessResolver` — bounded cache (TTL 3 s, capacity 512, FIFO,
+    negative caching) over `IProcessMetadataProvider`, keyed by full
+    `ProcessInstanceId`; never throws.
+  - `WindowsConnectionProvider` — ~1 s off-UI poll loop; partial-table failure is a
+    warning (successful tables kept), total failure keeps the last good snapshot and
+    sets `LastError`, any success clears it; `StopAsync` uses `ConfigureAwait(false)`
+    (ADR-015).
+- App Connections page and navigation:
+  - `ConnectionsViewModel` + `ConnectionRowViewModel` — dispatcher-marshalled
+    `ConnectionsChanged`, in-place row updates (rebuild only when the key sequence
+    changes), per-refresh icon budget, error banner, empty state, Filter +
+    Address-Family + Sort combo boxes and a search box.
+  - `ConnectionSortOption` / `ConnectionFilterOption`; `ConnectionsView` (XAML +
+    code-behind DI); `MainWindow` Dashboard/Connections navigation; `App.xaml.cs`
+    registers the ViewModel/View and starts `IConnectionProvider`.
+- Localization: en + fa-IR keys for column headers, filters, sort keys, TCP states,
+  empty/error, and unknown process; endpoints stay LTR under RTL.
+- Verification: `--connections` mode added to `TrafficLens.Network.Verification`
+  (non-elevated; optional `TL_VERIFY_PORT` fixed listener port).
+- Tests: `ConnectionTableParserTests`, `ConnectionKeyTests`,
+  `ConnectionSelectionTests`, `EndpointFormatterTests` (Network) and
+  `ConnectionsViewModelTests` (App).
+
+### Verified
+- Build Debug: **0 warnings, 0 errors**.
+- Tests: **251/251 passing** (206 Network + 45 App).
+- Real Windows verification (`--connections`, live host): 112 connections (78 TCP /
+  34 UDP, 99 IPv4 / 13 IPv6); in-process listener observed as `Listen`; curl download
+  attributed `Established` with correct PID/process name; cross-checked vs
+  `netstat -ano` (TCP state histogram + UDP count match the MIB source;
+  `Get-NetTCPConnection`'s `Bound` rows are cmdlet-synthesized, not in the table).
+- GUI smoke (non-elevated): provider started (1 s poll), no exceptions, clean
+  teardown (no orphan ETW session / leftover process).
+
 ## [0.0.10] — 2026-09-15 (TL-007F complete — shutdown deadlock fix)
 
 ### Fixed

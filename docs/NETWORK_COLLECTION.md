@@ -1,14 +1,14 @@
 # TrafficLens — Network Collection
 
-Status: **Implemented for TL-002 — TL-007 scope** (updated 2026-09-14).
+Status: **Implemented for TL-002 — TL-008 scope** (updated 2026-09-15).
 
 ## Goal
 
 Collect, at minimum:
 
 - Per-interface download/upload byte counters (TL-002: cumulative; TL-003: rates)
-- Per-process download/upload bytes (later milestone)
-- Active TCP/UDP connections with owning process (later milestone)
+- Per-process download/upload bytes (TL-007)
+- Active TCP/UDP connections with owning process (TL-008)
 
 ## Candidate mechanisms (Windows)
 
@@ -321,3 +321,78 @@ Run it yourself (elevated console):
 ```
 dotnet run --project tests/TrafficLens.Network.Verification -- --process
 ```
+
+## Active connections (TL-008)
+
+**Mechanism:** Windows IP Helper owner-PID tables — `GetExtendedTcpTable`
+(`TCP_TABLE_OWNER_PID_ALL`) and `GetExtendedUdpTable` (`UDP_TABLE_OWNER_PID`), for
+IPv4 **and** IPv6 — read through `NativeConnectionTableReader` and parsed by the
+pure `ConnectionTableParser`. Polled at ~1 s by `WindowsConnectionProvider` off the
+UI thread. **Non-elevated**: unlike per-process byte accounting (ADR-013), the
+connection list is owned by the user and needs no administrator rights.
+
+### Native layouts
+
+Each table is a 4-byte little-endian entry count followed by fixed-size rows:
+
+| Table | Class | Row size | Fields |
+|---|---|---|---|
+| TCP IPv4 | `TCP_TABLE_OWNER_PID_ALL` (5) | 24 B | state, local addr/port, remote addr/port, pid |
+| TCP IPv6 | `TCP_TABLE_OWNER_PID_ALL` (5) | 56 B | local addr+scope/port, remote addr+scope/port, state, pid |
+| UDP IPv4 | `UDP_TABLE_OWNER_PID` (1) | 12 B | local addr/port, pid |
+| UDP IPv6 | `UDP_TABLE_OWNER_PID` (1) | 28 B | local addr+scope/port, pid |
+
+The 16-bit port sits in network order inside a DWORD, so it is byte-swapped to host
+order. The buffer starts at 64 KB and is reallocated while the API returns
+`ERROR_INSUFFICIENT_BUFFER` (122). A failing table does not fail the poll: the
+successful tables are still published (warning), a total failure keeps the last
+good snapshot and sets `LastError`, and any later success clears it.
+
+### Semantics (no fabrication)
+
+- **TCP** rows expose the full state set (`Closed`…`TimeWait`); `Listen` rows carry
+  the native `0.0.0.0`/`::` + port 0 remote sentinel, which is rendered empty, and
+  are never treated as outbound. `Established` in the UI means TCP Established, or a
+  UDP row that actually has a remote.
+- **UDP** rows have **no** remote endpoint in the table; the remote stays null and
+  renders as `—`/empty. No peer is invented.
+- Endpoints are technical values: rendered LTR, untranslated, even under fa-IR RTL.
+- **Live-only**: current snapshot, no history, no persistence, no reverse DNS.
+  Privacy scope is endpoint/process metadata only — never payloads, URLs, or TLS.
+- Process attribution is resolved through a bounded `ConnectionProcessResolver`
+  cache (TTL 3 s, capacity 512, FIFO, negative caching) over
+  `IProcessMetadataProvider`, keyed by the same `(pid, start time)` identity from
+  TL-007, so PID reuse cannot mis-attribute ownership.
+
+### Live verification evidence (2026-09-15, non-elevated)
+
+`TrafficLens.Network.Verification --connections` (live host; fixed listener port via
+`TL_VERIFY_PORT`):
+
+- **112 connections** total — 78 TCP / 34 UDP, 99 IPv4 / 13 IPv6, 26 established /
+  29 listening; `udpWithRemote = 0` and `unknownProcess = 0`.
+- An in-process `TcpListener` on `127.0.0.1` was observed as a `Tcp / Ipv4 / Listen`
+  row owned by the verification process; a `curl` download was attributed one
+  `Established` `Tcp / Ipv4` row (`local → 162.159.140.220:443`) with the correct
+  PID and process name.
+- **Cross-check vs `netstat -ano`** (the same MIB owner-PID source): TrafficLens TCP
+  state histogram `TimeWait 32 / Listen 29 / Established 21 / CloseWait 5` matched
+  `netstat` `31 / 28 / 21 / 5`; TrafficLens UDP count (34) matched `netstat` UDP (34)
+  exactly.
+- **`Get-NetTCPConnection` difference explained:** the cmdlet reported ~22 extra TCP
+  rows in a synthetic `Bound` state that appear in neither `netstat` nor the
+  `TCP_TABLE_OWNER_PID_ALL` table — a cmdlet-side convenience state, not data we
+  drop. The targeted listener row matched the native view exactly
+  (`127.0.0.1:18888`, remote `0.0.0.0:0`, `Listen`, correct owning PID).
+
+Run it yourself (non-elevated console):
+
+```
+dotnet run --project tests/TrafficLens.Network.Verification -- --connections
+```
+
+### Scope boundary
+
+TL-008 covers TCP/UDP active connections with owning process only. ICMP and other
+protocols, reverse DNS/GeoIP/ASN, firewall/blocking, and bandwidth limiting are out
+of scope (no TL-009 connection history either — connections stay live-only).

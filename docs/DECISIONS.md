@@ -293,3 +293,49 @@ Reasoning:
 - Affects both collectors (`WindowsEtwProcessTrafficCollector` already used
   `await lifetime.ConfigureAwait(false)`; `WindowsNetworkTrafficCollector` now
   does the same for its loop await).
+
+## ADR-016: Active connections from IP Helper owner-PID tables (live-only, no fabricated peers)
+
+**Status:** Accepted (TL-008)
+
+Active TCP/UDP connections are enumerated directly from the Windows IP Helper
+owner-PID tables via `GetExtendedTcpTable` (`TCP_TABLE_OWNER_PID_ALL`) and
+`GetExtendedUdpTable` (`UDP_TABLE_OWNER_PID`) for IPv4 **and** IPv6, polled at
+~1 s off the UI thread (`WindowsConnectionProvider`). This is a read-only,
+**non-elevated** operation — unlike per-process byte accounting (ADR-013), the
+connection list is owned by the user and needs no administrator rights.
+
+Modeling rules:
+
+- **Identity** is `ConnectionKey = (Protocol, AddressFamily, LocalAddress,
+  LocalPort, RemoteAddress?, RemotePort?, ProcessId)`, so the ViewModel updates
+  rows in place and only rebuilds when the key sequence changes (no flicker).
+- **No fabricated peers.** UDP rows have no remote endpoint in the table, so the
+  remote stays null and renders empty; TCP rows in a listening/unconnected state
+  carry the native `0.0.0.0`/`::` + port 0 sentinel, which `EndpointFormatter`
+  suppresses rather than showing a fake peer. `LISTEN` is never treated as outbound.
+- **Endpoints are technical values** (raw IPs, ports, protocol/state names): they
+  are always rendered LTR and untranslated, consistent with ADR-011; only the
+  surrounding labels are localized.
+- **Live-only.** The provider keeps the current snapshot only; there is no history,
+  no persistence, and no reverse DNS in TL-008 (privacy: endpoint/process metadata
+  only, never payloads/URLs/TLS).
+- **Failure honesty.** A partial table failure is a warning and the successful
+  tables are still published; a total failure keeps the last good snapshot and sets
+  `LastError`, which any subsequent success clears — never a silent empty list.
+- **Process attribution** reuses `IProcessMetadataProvider` through a bounded
+  resolver cache (TTL 3 s, capacity 512, FIFO, negative caching) keyed by the same
+  `(pid, start time)` identity from TL-007, so PID reuse cannot mis-attribute.
+
+Reasoning:
+- IP Helper tables are the native, stable, dependency-free source and were already
+  proven for interface counters (ADR-008); no packet capture / WFP / WinDivert /
+  driver is introduced.
+- Verified against `netstat -ano` (the same MIB owner-PID data): TCP state
+  histogram and UDP count matched; `Get-NetTCPConnection` reports additional
+  `Bound` rows that are **not** in the owner-PID table, so we intentionally match
+  the table rather than the cmdlet.
+- Keeping selection/sort/format logic pure in Core (and the ViewModel a thin,
+  dispatcher-marshalled consumer) makes the behavior testable without a live table
+  or the UI.
+
