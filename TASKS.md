@@ -188,7 +188,7 @@
       - Elevated: ETW session `TrafficLensProcessTrace` Running + ~20 MB download →
         graceful close → process exits, session gone from `logman query -ets`
 - **Status: done**
-- **Commit:** `4134403` (code + tests; docs see `docs/PROJECT_STATUS.md`)
+- **Commit:** `e09111e` (code + tests; docs `f425dca`)
 
 ### TL-008 Active Connections
 - [ ] `IConnectionProvider`, TCP-first connections view
