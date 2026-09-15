@@ -275,7 +275,7 @@
 - [x] Docs: `DATABASE.md` finalized, `ARCHITECTURE.md`, `PROJECT_STATUS.md`,
       `CHANGELOG.md`, ADR-017
 - **Status: done**
-- **Commit:** `91549e7` (see `docs/PROJECT_STATUS.md`)
+- **Commit:** `861269c` (see `docs/PROJECT_STATUS.md`)
 
 ### TL-010 Floating Widget
 - [ ] Compact always-on-top widget

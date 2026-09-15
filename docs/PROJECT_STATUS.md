@@ -454,7 +454,7 @@ traffic on the live host. M1, M2 (TL-005 dashboard + TL-006 live graph), M3, M4
 
 ## Git Commit
 
-- TL-009 (SQLite history): `91549e7` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
+- TL-009 (SQLite history): `861269c` — `feat: add SQLite traffic history with ranges, History page, and native bar chart (TL-009)`.
 - TL-008 (active connections): `c29adf4` — `feat: add active connections provider and Connections view via IP Helper owner-PID tables (TL-008)`.
 - TL-007F (shutdown deadlock fix): `e09111e` — `fix: prevent shutdown deadlock by not capturing the SynchronizationContext in collector StopAsync (TL-007F)`; docs `f425dca`.
 - TL-007 (per-process traffic, Applications-list UI): `27ca92d` — `feat: add per-process Applications view with sort, search, icons, and permission UX (TL-007)`; docs `b1059c6`.
