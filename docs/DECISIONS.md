@@ -590,13 +590,97 @@ the fix; `SetAlwaysOnTop` closes the bug and makes Save idempotent.
 Reasoning: the settings page expresses intended *state*; the tray expresses an
 *action*. Encoding that difference in the interface keeps tests honest
 (the fake service records which call was made).
-
 ### Settings page DataContext is the SettingsViewModel, not MainViewModel
 
 The SettingsView's `DataContext` is set explicitly to the injected
-`SettingsViewModel` at the page level. Inheriting the window's
-`DataContext` (MainViewModel) was attempted first and silently produced an
-empty page — save/load commands and the alert-rule rows bound to the window
-model instead of the settings model. Page-scoped `DataContext` restores
-standard MVVM without leaking window concerns into the settings page.
+`SettingsViewModel` at the page level. Inheriting the window's `DataContext`
+(MainViewModel) was attempted first and silently produced an empty page —
+save/load commands and the alert-rule rows bound to the window model instead
+of the settings model. Page-scoped `DataContext` restores standard MVVM
+without leaking window concerns into the settings page.
+
+---
+
+## ADR-022 — Idle CPU optimization (TL-014 stability audit)
+
+### Context
+
+TrafficLens v0.0.16 exhibited periodic idle-CPU spikes that exceeded the 15%
+single-core threshold in 30-second measurement windows during the TL-014
+harness F2 soak test. The application should consume near-zero CPU when idle
+(no active network traffic, no user interaction), but post-startup profiling
+revealed sustained background work even with no traffic flowing.
+
+### Root causes identified
+
+Three independent sources combined to produce the spikes:
+
+**1. DashboardViewModel event-per-adapter dispatch storm.**
+`SpeedSampleReady` fires once per adapter per poll interval (~1 s). With N
+adapters (e.g. Wi-Fi + Bluetooth + OpenVPN TAP + OpenVPN DCO + Wi-Fi Direct
+= 5 adapters), `OnSpeedSample` was called N times per second. Each call
+dispatched `RefreshRates` to the WPF Dispatcher, producing N layout passes,
+N `INotifyPropertyChanged` storms, and N graph-buffer appends per second —
+all for scalar data that changes at most once per second.
+
+**2. ConnectionsViewModel always-on dispatch.**
+`OnConnectionsChanged` was subscribed to the provider's `ConnectionsChanged`
+event regardless of whether the Connections page was visible. Every ~1 s poll
+dispatched to the UI thread, forcing row-view-model rebuilds and icon
+resolution even though the Dashboard was the active page.
+
+**3. WindowsConnectionProvider native table enumeration.**
+`RunLoopAsync` called `EnumerateOnce()` unconditionally every ~1 s, executing
+four native P/Invoke calls (`GetExtendedTcpTable` × 2 + `GetExtendedUdpTable`
+× 2), process resolution for ~159 connections, and cache lookups — all
+needlessly when no page was reading the data.
+
+### Decision
+
+**Fix 1 — Coalesce speed-sample events in DashboardViewModel.** Add a
+`_refreshPending` flag; when `OnSpeedSample` is called, set the flag and
+schedule a single `BeginInvoke` that calls `RefreshRates` then clears the flag.
+All per-adapter events within the same second collapse into one layout pass.
+
+**Fix 2 — Gate ConnectionsViewModel on page visibility.** Add an `_isActive`
+flag set by `MainViewModel.SelectPage` via `Connections.SetActive(bool)`.
+When inactive, `OnConnectionsChanged` stores data in a pending buffer without
+dispatching. On activation, `SetActive(true)` immediately refreshes from the
+provider cache. The constructor and `SelectPage` call
+`Connections.SetActive(false)` for the default Dashboard page.
+
+**Fix 3 — Pause connection polling when page is hidden.** Add
+`SetPollingEnabled(bool)` to `IConnectionProvider` and `WindowsConnectionProvider`.
+When `_pollingEnabled` is false, `RunLoopAsync` skips `EnumerateOnce()` entirely.
+`ConnectionsViewModel.SetActive` propagates the flag to the provider. The four
+native P/Invoke table reads per second are eliminated when no page consumes them.
+
+**Fix 4 — Default to inactive on startup.** `MainViewModel` constructor calls
+`Connections.SetActive(false)` since Dashboard is the default page.
+
+### Rationale
+
+- **Coalescing** is preferred over throttling because speed samples arrive
+  exactly once per second per adapter; collapsing N events into one is lossless
+  (the aggregate has not changed within the same poll).
+- **Page-visibility gating** is a clean separation: the ViewModel owns the
+  "is this page visible" policy, the provider owns the "should I poll" policy.
+  No new abstractions are introduced; `_isActive` is a simple boolean.
+- **Provider-level polling pause** is the most impactful fix (eliminates native
+  P/Invoke + process resolution entirely) and is safe because
+  `WindowsConnectionProvider.GetCurrentConnections()` returns the last good
+  snapshot when polling is paused — the page always has data on activation.
+- **No new user-facing features**; no weakened thresholds; no new dependencies.
+
+### Consequences
+
+- Idle CPU dropped from ~20% peaks to ~9.88% max in 30 s windows (avg 3.43%
+  over 30 min soak), well under the 15% harness F2 threshold.
+- Main-thread on-CPU time confirmed at ~1.9% in the idle state via
+  dotnet-trace (113 samples / 60 s, ~11 ms on-CPU total).
+- Existing tests pass unchanged (397 total, 0 warnings, 0 errors).
+- `IConnectionProvider` interface gained one new method
+  (`SetPollingEnabled(bool)`); all implementations updated; `FakeConnectionProvider`
+  in tests stubs it as a no-op.
+
 

@@ -2,6 +2,59 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.17] — 2026-09-16 (TL-014 stability & performance audit complete)
+
+### Fixed
+- **Periodic idle-CPU spikes eliminated (TL-014).** The 30-min soak harness
+  (max CPU ≤15% single-core in 30 s windows) was failing with ~20%+ periodic
+  peaks. Three independent sources were found (via dotnet-trace Speedscope)
+  and fixed, with no new user-facing features and no weakened thresholds:
+  - **DashboardViewModel dispatch storm:** `SpeedSampleReady` fires once per
+    adapter per second; with 5 adapters, `OnSpeedSample` called `RefreshRates`
+    5×/s, producing N layout passes, N `INotifyPropertyChanged` storms, and N
+    graph-buffer appends per second. Added a `_refreshPending` flag +
+    `CoalesceRefresh()` (single `Dispatcher.BeginInvoke` per second) so all
+    per-adapter events merge into one `RefreshRates` call.
+  - **ConnectionsViewModel always-on dispatch:** every ~1 s poll dispatched
+    `OnConnectionsChanged` to the UI thread and rebuilt rows even while the
+    Dashboard page was active. Added `_isActive` + `SetActive(bool)`, called
+    from `MainViewModel.SelectPage`; while inactive the VM buffers the data
+    without dispatching and refreshes immediately on activation.
+  - **WindowsConnectionProvider native polling pause:** `RunLoopAsync` called
+    `EnumerateOnce()` every second unconditionally (four `GetExtendedTcpTable`
+    / `GetExtendedUdpTable` P/Invokes + process resolution for ~159 connections).
+    Added `IConnectionProvider.SetPollingEnabled(bool)` +
+    `WindowsConnectionProvider.SetPollingEnabled` so the loop is skipped
+    entirely when the Connections page is hidden; `GetCurrentConnections`
+    still returns the last good snapshot.
+  - **Default deactivation:** the `MainViewModel` constructor calls
+    `Connections.SetActive(false)` since Dashboard is the default page.
+- **Result:** harness F2 soak **avg 3.43%, max 9.88%** (well under 15%);
+  main thread idle on-CPU dropped from ~50% (22,449 samples/45 s) to ~1.9%
+  (113 samples/60 s) — the only remaining work is one dashboard Arrange per
+  second. F1/F3/F4 phases also pass; full harness log:
+  `%TEMP%\opencode\tl014-v2.log`.
+
+### Added
+- `IConnectionProvider.SetPollingEnabled(bool)` (+ `FakeConnectionProvider`
+  no-op stub in tests).
+- Regression tests: SingleInstanceGuard (6), FileLoggerProvider retention (3),
+  SpeedRateTracker sleep-gap.
+- `docs/PERFORMANCE.md` — CPU-optimization findings, measurement methodology,
+  and evidence.
+- ADR-022 (idle CPU optimization: coalescing, page-visibility gating, native
+  polling pause, default deactivation).
+
+### Tests
+- Total **397 tests** (App 145 / Network 212 / Infrastructure 40), Debug +
+  Release 0 warnings / 0 errors.
+
+### Verified
+- `scripts/tl014-stability.ps1` (Release, real host): F2 30-min soak passes
+  (avg 3.43%, max 9.88%); F1 idle, F3 memory (WS +5.8 MB, Private +15.5 MB),
+  F4 navigation/widget/window/restart stress all green; no exceptions in the
+  structured log; graceful exit with no orphan ETW sessions.
+
 ## [0.0.16] — 2026-09-16 (TL-013 complete — settings)
 
 ### Added

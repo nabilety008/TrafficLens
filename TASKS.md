@@ -488,9 +488,37 @@
 - [ ] Settings UI and persistence
 - **Status: not started**
 
-### TL-014 CSV Export
-- [ ] Export app / daily / hourly usage to CSV
-- **Status: not started**
+### TL-014 Stability & Performance Audit — **DONE**
+- [x] Harness F1: warm-up + idle (60 s) — dashboard/connections/history/GC handles
+      pass; WS +8 MB, handles +6, threads +9
+- [x] Harness F2: 30-min soak — max CPU ≤15% single-core in 30 s windows
+      (achieved avg 3.43%, max 9.88%)
+- [x] Fix 1 — DashboardViewModel event coalescing: `_refreshPending` flag +
+      `CoalesceRefresh()` merges all per-adapter `SpeedSampleReady` events into
+      one `RefreshRates` call per second (N events/s → 1 layout pass/s)
+- [x] Fix 2 — ConnectionsViewModel page-visibility gating: `_isActive` flag,
+      `SetActive(bool)` wired from `MainViewModel.SelectPage`; inactive state
+      stores pending data without dispatching to UI thread
+- [x] Fix 3 — WindowsConnectionProvider polling pause: `SetPollingEnabled(bool)`
+      on `IConnectionProvider` skips `EnumerateOnce()` (4 native P/Invokes +
+      process resolution for ~159 connections) when Connections page hidden
+- [x] Fix 4 — Default deactivation: `MainViewModel` constructor calls
+      `Connections.SetActive(false)` since Dashboard is default page
+- [x] Pre-fix evidence: main thread 50% on-CPU (22449 samples/45 s) via
+      dotnet-trace Speedscope; N events/s dispatch storm confirmed
+- [x] Post-fix evidence: main thread 1.9% on-CPU (113 samples/60 s); F2 soak
+      30 min: avg 3.43%, max 9.88% (all under 15%)
+- [x] Harness F3: memory leak (10 min soak) — WS +5.8 MB, Private +15.5 MB,
+      handles -3, threads -9 — PASS
+- [x] Harness F4: navigation stress — 50 nav, 25 widget, 25 window, 10 restart
+      cycles — PASS
+- [x] SingleInstanceGuard (6 tests), FileLoggerProvider retention (3 tests),
+      SpeedRateTracker sleep-gap test — all green
+- [x] Final: 397 tests (App 145, Network 212, Infrastructure 40), 0 warnings,
+      0 errors (Debug + Release)
+- [x] Docs: ADR-022, TASKS, PROJECT_STATUS, CHANGELOG, PERFORMANCE.md
+- **Status: done**
+- **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
 ### TL-015 Packaging / Installer
 - [ ] x64 packaging and installer
@@ -512,6 +540,7 @@
 | M5 | Active connections | TL-008 | Done |
 | M6 | SQLite history | TL-009 | Done |
 | M7 | Tray and widget | TL-010, TL-011 | Done |
-| M8 | Alerts and settings | TL-012, TL-013 | In progress (TL-012 alerts done; TL-013 owns settings) |
-| M9 | Stability, performance, tests, packaging | TL-015 | Not started |
-| M10 | Full Persian localization | TL-016 | Not started |
+| M8 | Alerts and settings | TL-012, TL-013 | Done |
+| M9 | Stability & performance | TL-014 | Done |
+| M10 | Packaging / installer | TL-015 | Not started |
+| M11 | Full Persian localization | TL-016 | Not started |

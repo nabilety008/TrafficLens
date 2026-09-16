@@ -4,14 +4,14 @@ Updated: 2026-09-16
 
 ## Current Milestone
 
-M8 (alerts and settings) is complete: **TL-012 (alerts)** delivered a pure Core
-alert engine (two speed rules + three daily usage rules, all disabled by
-default with suggested thresholds), live tray-balloon notifications, and an
-Alerts page; **TL-013 (settings)** delivered the full Settings page (General,
-Floating Widget, Alerts rule editors), startup registration (HKCU Run +
-`--minimized`), settings-file hardening (merge/preserve/malformed fallback),
-and a real-Windows GUI verification script covering all of it. M1–M7 remain
-complete. M9 items (TL-014 and later) are the next scheduled work.
+M9 (stability & performance) is complete: **TL-014** performed a full stability
+audit and fixed all idle-CPU sources so the 30-minute soak test (harness F2)
+passes with max CPU 9.88% (threshold 15%). Fixes: DashboardViewModel event
+coalescing, ConnectionsViewModel page-visibility gating, WindowsConnectionProvider
+polling pause when the Connections page is hidden, and default-deactivation on
+startup. SingleInstanceGuard, FileLoggerProvider retention, and SpeedRateTracker
+sleep-gap regression tests added. 397 tests, 0 warnings, 0 errors. M1–M8 remain
+complete. M10 (packaging/installer) is next.
 
 ## Task IDs
 
@@ -30,7 +30,9 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 - TL-011 System Tray — **DONE**
 - TL-012 Alerts — **DONE**
 - TL-013 Settings — **DONE**
-- TL-014 and later — not started
+- TL-014 Stability & Performance Audit — **DONE**
+- TL-015 Packaging / Installer — not started
+- TL-016 Localization / Persian UI — not started
 
 ## Completed
 
@@ -398,6 +400,42 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
     quoted/`--minimized`/own-value-only removal with sibling preservation;
     hidden `--minimized` start with tray alive; combined restart persistence;
     graceful exit, no orphan ETW sessions.
+- TL-014 (stability & performance audit, M9):
+  - **Root cause — DashboardViewModel event-per-adapter dispatch storm:**
+    `SpeedSampleReady` fires once per adapter per second; with 5 adapters
+    `OnSpeedSample` was calling `RefreshRates` 5×/s, producing N layout passes,
+    N `INotifyPropertyChanged` storms, and N graph-buffer appends per second —
+    all for scalar data that changes at most once per second. Fixed by adding
+    a `_refreshPending` flag and `CoalesceRefresh()` method that merges all
+    per-adapter events into a single `RefreshRates` call per second via
+    `Dispatcher.BeginInvoke`.
+  - **Root cause — ConnectionsViewModel always-on dispatch:** every ~1 s poll
+    dispatched `OnConnectionsChanged` to the UI thread and forced row rebuilds
+    even when the Dashboard page was active and Connections was invisible. Fixed
+    by adding `_isActive` flag with `SetActive(bool)` called from
+    `MainViewModel.SelectPage`; when inactive, connection data is buffered in
+    `_pendingConnections` without dispatching; on activation, data is refreshed
+    immediately from the provider cache.
+  - **Root cause — WindowsConnectionProvider native table enumeration:**
+    `RunLoopAsync` called `EnumerateOnce()` unconditionally every ~1 s,
+    executing four native P/Invoke table reads (`GetExtendedTcpTable` × 2 +
+    `GetExtendedUdpTable` × 2) plus process resolution for ~159 connections,
+    all needlessly when the Connections page was hidden. Fixed by adding
+    `SetPollingEnabled(bool)` to `IConnectionProvider` and
+    `WindowsConnectionProvider`; when polling is paused, `RunLoopAsync` skips
+    `EnumerateOnce()` entirely.
+  - **Default deactivation:** `MainViewModel` constructor calls
+    `Connections.SetActive(false)` since Dashboard is the default page.
+  - **Pre-fix evidence:** main thread 50% on-CPU (22,449 samples / 45 s) via
+    dotnet-trace Speedscope; N events/s dispatch storm confirmed.
+  - **Post-fix evidence:** main thread 1.9% on-CPU (113 samples / 60 s);
+    harness F2 soak 30 min: avg 3.43%, max 9.88% (threshold 15%).
+  - **Additional regression tests:** SingleInstanceGuard (6 tests),
+    FileLoggerProvider retention (3 tests), SpeedRateTracker sleep-gap test.
+  - **397 tests** (App 145 / Network 212 / Infrastructure 40); Debug +
+    Release 0 warnings / 0 errors.
+  - ADR-022 (idle CPU optimization: coalescing, page-visibility gating,
+    polling pause, default deactivation).
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -442,8 +480,25 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 349/349 passed (`TrafficLens.Network.Tests` 206,
-  `TrafficLens.App.Tests` 116, `TrafficLens.Infrastructure.Tests` 27).
+- **Automated tests:** 397/397 passed (`TrafficLens.Network.Tests` 212,
+  `TrafficLens.App.Tests` 145, `TrafficLens.Infrastructure.Tests` 40).
+- **TL-014 stability & performance harness** (`scripts/tl014-stability.ps1`,
+  Release, real host, non-elevated):
+  - **F1 warm-up + idle (60 s):** dashboard/connections/history/GC counts pass;
+    WS +8 MB, handles +6, threads +9 — PASS.
+  - **F2 idle CPU soak (30 min):** max single-core CPU in 30 s windows
+    **avg 3.43%, max 9.88%** — far below the 15% threshold — PASS.
+    Pre-fix the same soak peaked ~20%+; post-fix the main thread is ~1.9%
+    on-CPU (the remaining work is one dashboard Arrange pass per second).
+  - **F3 memory leak (10 min soak):** WS +5.8 MB, Private +15.5 MB, handles -3,
+    threads -9 — PASS.
+  - **F4 interaction stress:** 50 navigation, 25 widget toggle, 25 window show/
+    hide, 10 restart cycles — PASS (no crash, no exception, clean exit).
+  - **CPU attribution (dotnet-trace Speedscope):** pre-fix main thread 22,449
+    on-CPU samples / 45 s (~50%); post-fix 113 samples / 60 s (~1.9%). The
+    perf spikes were UI-thread layout/property-changed storms from the per-
+    adapter `SpeedSampleReady` events and the connections provider poll loop
+    (ADR-022 explains all three root causes and the fixes).
 - **TL-012 real Windows alerts GUI verification** (Release build,
   `scripts/tl012-verify.ps1`, real host; settings are read once per process
   startup, so each block relaunches from freshly written settings):
@@ -640,20 +695,23 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Tests
 
-- `tests/TrafficLens.Network.Tests` — xUnit, 206 tests, all passing (incl. 22
+- `tests/TrafficLens.Network.Tests` — xUnit, 212 tests, all passing (incl. 22
   per-process accounting-engine tests, 11 selection/sort tests, 12 data-size
-  formatter cases, metadata-provider tests, and the TL-008 connection parser /
-  key / selection / endpoint-formatter suites).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 116 tests, all passing
+  formatter cases, metadata-provider tests, the TL-008 connection parser /
+  key / selection / endpoint-formatter suites, and the TL-014
+  SingleInstanceGuard tests).
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 145 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
   FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
   TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests,
   17 TL-012 AlertEngine tests + 3 alert-buffer tests, 10 AlertService tests,
-  4 AlertsViewModel tests, and resource keys).
-- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 27 tests, all passing (TL-009:
+  4 AlertsViewModel tests, 6 TL-014 regression tests for CPU optimizations,
+  and resource keys).
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 40 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
-  over throwaway temp databases, TrafficHistoryService with fake collector/provider).
+  over throwaway temp databases, TrafficHistoryService with fake collector/provider;
+  TL-014 FileLoggerProvider retention tests).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
   `-- --process` (per-process, elevated or non-elevated),
@@ -682,6 +740,13 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Resolved
 
+- **Periodic idle-CPU spikes (TL-014).** The application no longer pegs CPU
+  during idle soak: three independent sources were found and fixed (event-per-
+  adapter dashboard dispatch storms, always-on ConnectionsViewModel
+  dispatches, and unconditional native connection-table polling) plus startup
+  default-deactivation of the hidden page. Harness F2 (30-min soak, 15%
+  single-core max in 30 s windows) dropped from ~20%+ peaks to
+  **avg 3.43% / max 9.88%**. See ADR-022 for full analysis.
 - **Lingering `TrafficLens.App` after graceful window Close (TL-007F).** Root
   cause: `WindowsNetworkTrafficCollector` disposes on the WPF dispatcher thread via
   `StopAsync().GetAwaiter().GetResult()`; `await loop;` without
@@ -694,6 +759,7 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Git Commit
 
+- TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `e11c3c2`.
 - TL-013 (settings): `6c0dec5` — `feat: add full Settings page with staged save, alert rule editors, startup registration, and absolute widget always-on-top (TL-013)`; docs `9c03cfe`.
 - TL-011 (system tray): `6e4d122` — `feat: add system tray with minimize/close-to-tray, singleton restore, and coordinator-based exit (TL-011)`; docs `8f230ec`.
 - TL-012 (alerts): `6512011` — `feat: add local alert engine with speed/daily usage rules, tray balloon notifications, and Alerts page (TL-012)`; docs `b41e33d`.
@@ -710,7 +776,6 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Next Recommended Task
 
-- M8 (TL-012 alerts + TL-013 settings) is complete and verified. Per ROADMAP
-  the next milestone is **M9 (stability, performance, tests, packaging)** —
-  no task ID is scheduled yet; confirm the first M9 item with the user before
-  starting any new task.
+- M9 (TL-014 stability & performance) is complete and verified. Per ROADMAP
+  the next milestone is **M10 (TL-015 packaging / installer)** — confirm the
+  first M10 item with the user before starting any new task.
