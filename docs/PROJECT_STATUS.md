@@ -759,7 +759,7 @@ complete. M10 (packaging/installer) is next.
 
 ## Git Commit
 
-- TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `e11c3c2`.
+- TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `1fb8463`.
 - TL-013 (settings): `6c0dec5` — `feat: add full Settings page with staged save, alert rule editors, startup registration, and absolute widget always-on-top (TL-013)`; docs `9c03cfe`.
 - TL-011 (system tray): `6e4d122` — `feat: add system tray with minimize/close-to-tray, singleton restore, and coordinator-based exit (TL-011)`; docs `8f230ec`.
 - TL-012 (alerts): `6512011` — `feat: add local alert engine with speed/daily usage rules, tray balloon notifications, and Alerts page (TL-012)`; docs `b41e33d`.
