@@ -76,7 +76,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         LanguageOptions = new[]
         {
             new LanguageOption("English", "en-US"),
-            new LanguageOption("ÙØ§Ø±Ø³ÛŒ", "fa-IR")
+            new LanguageOption("فارسی", "fa-IR")
         };
         SpeedUnitOptions = new[] { "KB/s", "MB/s", "GB/s" };
         SizeUnitOptions = new[] { "MB", "GB", "TB" };

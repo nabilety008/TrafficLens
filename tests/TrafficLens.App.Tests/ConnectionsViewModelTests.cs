@@ -17,6 +17,7 @@ public sealed class ConnectionsViewModelTests : IDisposable
     {
         _localization.SetCulture("en-US");
         _vm = new ConnectionsViewModel(_provider, _localization, _icons);
+        _vm.SetActive(true);
     }
 
     public void Dispose() => _vm.Dispose();

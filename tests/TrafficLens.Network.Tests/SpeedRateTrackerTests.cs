@@ -124,4 +124,20 @@ public sealed class SpeedRateTrackerTests
         Assert.Equal(500, Assert.Single(rates, r => r.AdapterId == "eth0").DownloadBytesPerSecond);
         Assert.Equal(900, Assert.Single(rates, r => r.AdapterId == "wg0").UploadBytesPerSecond);
     }
+
+    [Fact]
+    public void LongGapAfterSleep_SpreadsRateAcrossTheActualElapsedWindow()
+    {
+        var tracker = new SpeedRateTracker();
+        tracker.Track(Counters(C("eth0", 0, 0)), T(0), TicksPerSecond);
+
+        var rates = tracker.Track(
+            Counters(C("eth0", 108_000_000, 54_000_000)),
+            T(1800),
+            TicksPerSecond);
+
+        var rate = Assert.Single(rates);
+        Assert.Equal(60_000, rate.DownloadBytesPerSecond);
+        Assert.Equal(30_000, rate.UploadBytesPerSecond);
+    }
 }

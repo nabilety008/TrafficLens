@@ -3,9 +3,28 @@ using System.Net.NetworkInformation;
 
 namespace TrafficLens.Network.Adapters;
 
+/// <summary>
+/// Adapter snapshot source backed by the managed <see cref="NetworkInterface"/>
+/// API. Snapshots are served through an <see cref="AdapterSnapshotCache"/> so the
+/// per-second collectors and the per-sample view models share one enumeration per
+/// refresh window instead of each triggering their own (see the cache for the
+/// cost rationale). Network address/availability changes invalidate the cache
+/// immediately so topology changes surface on the next call.
+/// </summary>
 public sealed class NetworkInterfaceSource : INetworkInterfaceSource
 {
-    public IReadOnlyList<RawAdapterSnapshot> GetAdapters()
+    private readonly AdapterSnapshotCache _cache;
+
+    public NetworkInterfaceSource()
+    {
+        _cache = new AdapterSnapshotCache(Enumerate);
+        NetworkChange.NetworkAddressChanged += (_, _) => _cache.Invalidate();
+        NetworkChange.NetworkAvailabilityChanged += (_, _) => _cache.Invalidate();
+    }
+
+    public IReadOnlyList<RawAdapterSnapshot> GetAdapters() => _cache.GetSnapshot();
+
+    private static IReadOnlyList<RawAdapterSnapshot> Enumerate()
     {
         var result = new List<RawAdapterSnapshot>();
 

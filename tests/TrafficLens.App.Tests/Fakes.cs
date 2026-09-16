@@ -139,9 +139,13 @@ internal sealed class FakeConnectionProvider : IConnectionProvider
     public Task<IReadOnlyList<ConnectionInfo>> GetActiveConnectionsAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<ConnectionInfo>>(_connections.ToArray());
 
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task StopAsync() => Task.CompletedTask;
+
+    public void SetPollingEnabled(bool enabled)
+    {
+    }
 
     public void Dispose()
     {

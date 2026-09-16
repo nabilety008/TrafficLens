@@ -28,6 +28,7 @@ public sealed class WindowsConnectionProvider : IConnectionProvider
     private Task? _loopTask;
     private bool _disposed;
     private string? _lastError;
+    private bool _pollingEnabled = true;
 
     public WindowsConnectionProvider(
         IProcessMetadataProvider processMetadataProvider,
@@ -64,6 +65,14 @@ public sealed class WindowsConnectionProvider : IConnectionProvider
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.Run(() => EnumerateOnce(), cancellationToken);
+    }
+
+    public void SetPollingEnabled(bool enabled)
+    {
+        lock (_sync)
+        {
+            _pollingEnabled = enabled;
+        }
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -136,7 +145,16 @@ public sealed class WindowsConnectionProvider : IConnectionProvider
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            Publish(EnumerateOnce());
+            bool enabled;
+            lock (_sync)
+            {
+                enabled = _pollingEnabled;
+            }
+
+            if (enabled)
+            {
+                Publish(EnumerateOnce());
+            }
 
             try
             {

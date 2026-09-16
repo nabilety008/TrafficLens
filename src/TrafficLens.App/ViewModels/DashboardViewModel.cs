@@ -38,6 +38,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private bool _is30SecondsSelected;
     private bool _is1MinuteSelected;
     private bool _is5MinutesSelected;
+    private bool _refreshPending;
 
     private string _dashboardLabel = string.Empty;
     private string _downloadLabel = string.Empty;
@@ -350,7 +351,30 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _graphUploadSeriesLabel, value);
     }
 
-    private void OnSpeedSample(object? sender, NetworkSpeedSample sample) => RunOnUi(RefreshRates);
+    private void OnSpeedSample(object? sender, NetworkSpeedSample sample) => CoalesceRefresh();
+
+    private void CoalesceRefresh()
+    {
+        if (_refreshPending)
+        {
+            return;
+        }
+
+        _refreshPending = true;
+
+        if (_dispatcher is null || _dispatcher.CheckAccess())
+        {
+            _refreshPending = false;
+            RefreshRates();
+            return;
+        }
+
+        _dispatcher.BeginInvoke(() =>
+        {
+            _refreshPending = false;
+            RefreshRates();
+        });
+    }
 
     private void OnAdaptersChanged(object? sender, EventArgs e) =>
         RunOnUi(() =>

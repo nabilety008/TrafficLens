@@ -55,6 +55,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
         _closeToTray = TrayBehavior.GetCloseToTray(_settings);
 
+        Connections.SetActive(false);
+
         _localization.CultureChanged += OnCultureChanged;
         _floatingWidgetService.IsVisibleChanged += OnIsVisibleChanged;
         RefreshLocalizedStrings();
@@ -242,6 +244,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         IsHistoryVisible = page == Page.History;
         IsAlertsVisible = page == Page.Alerts;
         IsSettingsVisible = page == Page.Settings;
+
+        Connections.SetActive(page == Page.Connections);
     }
 
     private void OnCultureChanged(object? sender, EventArgs e) => RefreshLocalizedStrings();

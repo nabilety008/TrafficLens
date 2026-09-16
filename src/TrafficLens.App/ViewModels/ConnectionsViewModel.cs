@@ -59,6 +59,8 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private ConnectionDisplayStrings? _displayStrings;
     private readonly Dictionary<ConnectionState, string> _stateTexts = new();
     private bool _isEmpty = true;
+    private bool _isActive;
+    private IReadOnlyList<ConnectionInfo> _pendingConnections = Array.Empty<ConnectionInfo>();
 
     public ConnectionsViewModel(
         IConnectionProvider provider,
@@ -244,8 +246,29 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         get => !_isEmpty;
     }
 
-    private void OnConnectionsChanged(object? sender, IReadOnlyList<ConnectionInfo> connections) =>
+    public void SetActive(bool active)
+    {
+        _isActive = active;
+        _provider.SetPollingEnabled(active);
+        if (!active)
+        {
+            return;
+        }
+
+        _pendingConnections = _provider.GetCurrentConnections();
+        RefreshConnections(_pendingConnections);
+    }
+
+    private void OnConnectionsChanged(object? sender, IReadOnlyList<ConnectionInfo> connections)
+    {
+        if (!_isActive)
+        {
+            _pendingConnections = connections;
+            return;
+        }
+
         RunOnUi(() => RefreshConnections(connections));
+    }
 
     private void OnCultureChanged(object? sender, EventArgs e) =>
         RunOnUi(() =>

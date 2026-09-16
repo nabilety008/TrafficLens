@@ -2,6 +2,7 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using TrafficLens.App.Infrastructure;
 using TrafficLens.App.Services;
 using TrafficLens.App.ViewModels;
 using TrafficLens.App.Views;
@@ -16,11 +17,31 @@ namespace TrafficLens.App;
 
 public partial class App : Application
 {
+    private const string SingleInstanceMutexName = "TrafficLens.SingleInstance";
+    private const string SingleInstanceActivationEventName = "TrafficLens.SingleInstance.Activate";
+
     private ServiceProvider? _serviceProvider;
+    private SingleInstanceGuard? _singleInstanceGuard;
+    private IDisposable? _activationWatch;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
+            SingleInstanceMutexName,
+            SingleInstanceActivationEventName);
+
+        if (!_singleInstanceGuard.IsPrimary)
+        {
+            _singleInstanceGuard.SignalActivation();
+            _singleInstanceGuard.Dispose();
+            _singleInstanceGuard = null;
+            Shutdown();
+            return;
+        }
+
+        _activationWatch = _singleInstanceGuard.StartActivationWatcher(OnActivationRequested);
 
         var startMinimized = e.Args.Length > 0 &&
             e.Args.Any(arg => string.Equals(arg, "--minimized", StringComparison.OrdinalIgnoreCase));
@@ -128,9 +149,33 @@ public partial class App : Application
         finally
         {
             _serviceProvider?.Dispose();
+            _activationWatch?.Dispose();
+            _activationWatch = null;
+            _singleInstanceGuard?.Dispose();
+            _singleInstanceGuard = null;
         }
 
         base.OnExit(e);
+    }
+
+    private void OnActivationRequested()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            var mainWindow = _serviceProvider?.GetService<MainWindow>();
+            if (mainWindow is null)
+            {
+                return;
+            }
+
+            if (mainWindow.WindowState == WindowState.Minimized)
+            {
+                mainWindow.WindowState = WindowState.Normal;
+            }
+
+            mainWindow.Show();
+            mainWindow.Activate();
+        });
     }
 
     private static void ConfigureServices(IServiceCollection services)

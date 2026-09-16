@@ -22,6 +22,13 @@ public interface IConnectionProvider : IDisposable
     /// <summary>One-shot enumeration with an immediate result (call off the UI thread).</summary>
     Task<IReadOnlyList<ConnectionInfo>> GetActiveConnectionsAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Toggles background enumeration. When disabled the loop idles and the
+    /// last snapshot is kept; consumers that only need on-demand data (e.g.
+    /// hidden pages) should disable polling to avoid per-second enumeration.
+    /// </summary>
+    void SetPollingEnabled(bool enabled);
+
     Task StartAsync(CancellationToken cancellationToken);
 
     Task StopAsync();

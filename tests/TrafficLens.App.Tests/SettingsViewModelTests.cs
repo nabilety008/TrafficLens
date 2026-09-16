@@ -35,6 +35,16 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void LanguageOptions_FaPersianDisplayName_IsNotMojibake()
+    {
+        var fa = _vm.LanguageOptions.Single(o => o.Culture == "fa-IR");
+        Assert.Equal("فارسی", fa.DisplayName);
+
+        var en = _vm.LanguageOptions.Single(o => o.Culture == "en-US");
+        Assert.Equal("English", en.DisplayName);
+    }
+
+    [Fact]
     public void Constructor_LoadsPersistedValues()
     {
         _settings.Set(JsonSettingsService.StartWithWindowsKey, "True");
