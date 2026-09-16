@@ -24,5 +24,7 @@ public interface IFloatingWidgetService : IDisposable
 
     void ToggleAlwaysOnTop();
 
+    void SetAlwaysOnTop(bool alwaysOnTop);
+
     void RestoreIfEnabled();
 }

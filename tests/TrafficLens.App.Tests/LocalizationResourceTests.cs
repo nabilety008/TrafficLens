@@ -125,7 +125,25 @@ public class LocalizationResourceTests
         "AlertMsgHighUploadSpeed",
         "AlertMsgDailyDownloadLimit",
         "AlertMsgDailyUploadLimit",
-        "AlertMsgDailyTotalLimit"
+        "AlertMsgDailyTotalLimit",
+        "SettingsNavLabel",
+        "SettingsTitleLabel",
+        "GeneralLabel",
+        "LanguageLabel",
+        "StartWithWindowsLabel",
+        "StartMinimizedLabel",
+        "SystemTrayLabel",
+        "WidgetLabel",
+        "EnableFloatingWidgetLabel",
+        "AlertsLabel",
+        "CooldownLabel",
+        "MinutesLabel",
+        "CooldownRangeLabel",
+        "SaveLabel",
+        "ChangesSavedLabel",
+        "ResetToDefaultsLabel",
+        "ResetAreYouSureLabel",
+        "InvalidValueLabel"
     };
 
     [Fact]

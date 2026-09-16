@@ -384,4 +384,58 @@
   <data name="AlertMsgDailyTotalLimit" xml:space="preserve">
     <value>سقف مصرف روزانه رسیده: {0} امروز (حد مجاز {1})</value>
   </data>
+  <data name="SettingsNavLabel" xml:space="preserve">
+    <value>تنظیمات</value>
+  </data>
+  <data name="SettingsTitleLabel" xml:space="preserve">
+    <value>تنظیمات</value>
+  </data>
+  <data name="GeneralLabel" xml:space="preserve">
+    <value>عمومی</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>زبان</value>
+  </data>
+  <data name="StartWithWindowsLabel" xml:space="preserve">
+    <value>اجرای ترافیک‌لنز همراه با ویندوز</value>
+  </data>
+  <data name="StartMinimizedLabel" xml:space="preserve">
+    <value>راه‌اندازی کمینه در سینی سیستم</value>
+  </data>
+  <data name="SystemTrayLabel" xml:space="preserve">
+    <value>سینی سیستم</value>
+  </data>
+  <data name="WidgetLabel" xml:space="preserve">
+    <value>ویجت شناور</value>
+  </data>
+  <data name="EnableFloatingWidgetLabel" xml:space="preserve">
+    <value>فعال‌سازی ویجت شناور</value>
+  </data>
+  <data name="AlertsLabel" xml:space="preserve">
+    <value>هشدارها</value>
+  </data>
+  <data name="CooldownLabel" xml:space="preserve">
+    <value>فاصله زمانی هشدارها</value>
+  </data>
+  <data name="MinutesLabel" xml:space="preserve">
+    <value>دقیقه</value>
+  </data>
+  <data name="CooldownRangeLabel" xml:space="preserve">
+    <value>بازه مجاز: 1 تا 1440 دقیقه</value>
+  </data>
+  <data name="SaveLabel" xml:space="preserve">
+    <value>ذخیره</value>
+  </data>
+  <data name="ChangesSavedLabel" xml:space="preserve">
+    <value>ذخیره شد</value>
+  </data>
+  <data name="ResetToDefaultsLabel" xml:space="preserve">
+    <value>بازنشانی به پیش‌فرض‌ها</value>
+  </data>
+  <data name="ResetAreYouSureLabel" xml:space="preserve">
+    <value>آیا از بازنشانی همه تنظیمات ترافیک‌لنز به مقادیر پیش‌فرض مطمئن هستید؟</value>
+  </data>
+  <data name="InvalidValueLabel" xml:space="preserve">
+    <value>لطفاً مقادیر معتبر وارد کنید.</value>
+  </data>
 </root>

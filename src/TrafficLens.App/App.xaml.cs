@@ -22,6 +22,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        var startMinimized = e.Args.Length > 0 &&
+            e.Args.Any(arg => string.Equals(arg, "--minimized", StringComparison.OrdinalIgnoreCase));
+
         AppPaths.EnsureDirectories();
 
         var services = new ServiceCollection();
@@ -38,8 +41,15 @@ public partial class App : Application
         logger.LogInformation("Culture set to {Culture}", localization?.CurrentCulture.Name);
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        mainWindow.Show();
-        logger.LogInformation("MainWindow shown");
+        if (startMinimized)
+        {
+            logger.LogInformation("Starting hidden to system tray (--minimized)");
+        }
+        else
+        {
+            mainWindow.Show();
+            logger.LogInformation("MainWindow shown");
+        }
 
         var collector = _serviceProvider.GetRequiredService<INetworkTrafficCollector>();
         try
@@ -147,6 +157,9 @@ public partial class App : Application
         services.AddSingleton<IAlertService, AlertService>();
         services.AddSingleton<AlertsViewModel>();
         services.AddSingleton<AlertsView>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<SettingsView>();
+        services.AddSingleton<IStartupRegistrationService, StartupRegistrationService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();

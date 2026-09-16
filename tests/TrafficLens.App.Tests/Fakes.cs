@@ -263,6 +263,8 @@ internal sealed class FakeFloatingWidgetService : IFloatingWidgetService
 
     public int ToggleAlwaysOnTopCalls { get; private set; }
 
+    public int SetAlwaysOnTopCalls { get; private set; }
+
     public int RestoreCalls { get; private set; }
 
     public int DisposeCalls { get; private set; }
@@ -296,10 +298,17 @@ internal sealed class FakeFloatingWidgetService : IFloatingWidgetService
         }
     }
 
-    public void ToggleAlwaysOnTop()
+public void ToggleAlwaysOnTop()
     {
         ToggleAlwaysOnTopCalls++;
         IsAlwaysOnTop = !IsAlwaysOnTop;
+        AlwaysOnTopChanged?.Invoke(this, IsAlwaysOnTop);
+    }
+
+    public void SetAlwaysOnTop(bool alwaysOnTop)
+    {
+        SetAlwaysOnTopCalls++;
+        IsAlwaysOnTop = alwaysOnTop;
         AlwaysOnTopChanged?.Invoke(this, IsAlwaysOnTop);
     }
 
@@ -307,9 +316,35 @@ internal sealed class FakeFloatingWidgetService : IFloatingWidgetService
 
     public void Dispose() => DisposeCalls++;
 
-    private void SetVisible(bool visible)
+private void SetVisible(bool visible)
     {
         IsVisible = visible;
         IsVisibleChanged?.Invoke(this, EventArgs.Empty);
+    }
+}
+
+internal sealed class FakeStartupRegistrationService : IStartupRegistrationService
+{
+    public bool Registered { get; set; }
+
+    public int EnableCalls { get; private set; }
+
+    public int DisableCalls { get; private set; }
+
+    public bool? LastStartMinimized { get; private set; }
+
+    public bool IsRegistered() => Registered;
+
+    public void Enable(bool startMinimized)
+    {
+        EnableCalls++;
+        LastStartMinimized = startMinimized;
+        Registered = true;
+    }
+
+    public void Disable()
+    {
+        DisableCalls++;
+        Registered = false;
     }
 }

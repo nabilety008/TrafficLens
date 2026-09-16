@@ -111,6 +111,11 @@ public sealed class FloatingWidgetService : IFloatingWidgetService
         ApplyAlwaysOnTop(!GetAlwaysOnTop(), notify: true);
     }
 
+    public void SetAlwaysOnTop(bool alwaysOnTop)
+    {
+        ApplyAlwaysOnTop(alwaysOnTop, notify: true);
+    }
+
     private void ApplyAlwaysOnTop(bool alwaysOnTop, bool notify)
     {
         if (_window is not null)

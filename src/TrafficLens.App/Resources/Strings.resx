@@ -384,4 +384,58 @@
   <data name="AlertMsgDailyTotalLimit" xml:space="preserve">
     <value>Daily total usage limit reached: {0} today (limit {1})</value>
   </data>
+  <data name="SettingsNavLabel" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsTitleLabel" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="GeneralLabel" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="StartWithWindowsLabel" xml:space="preserve">
+    <value>Start TrafficLens with Windows</value>
+  </data>
+  <data name="StartMinimizedLabel" xml:space="preserve">
+    <value>Start minimized to system tray</value>
+  </data>
+  <data name="SystemTrayLabel" xml:space="preserve">
+    <value>System Tray</value>
+  </data>
+  <data name="WidgetLabel" xml:space="preserve">
+    <value>Floating Widget</value>
+  </data>
+  <data name="EnableFloatingWidgetLabel" xml:space="preserve">
+    <value>Enable Floating Widget</value>
+  </data>
+  <data name="AlertsLabel" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="CooldownLabel" xml:space="preserve">
+    <value>Alert cooldown</value>
+  </data>
+  <data name="MinutesLabel" xml:space="preserve">
+    <value>minutes</value>
+  </data>
+  <data name="CooldownRangeLabel" xml:space="preserve">
+    <value>Allowed range: 1-1440 minutes</value>
+  </data>
+  <data name="SaveLabel" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ChangesSavedLabel" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="ResetToDefaultsLabel" xml:space="preserve">
+    <value>Reset to Defaults</value>
+  </data>
+  <data name="ResetAreYouSureLabel" xml:space="preserve">
+    <value>Are you sure you want to reset all TrafficLens settings to their default values?</value>
+  </data>
+  <data name="InvalidValueLabel" xml:space="preserve">
+    <value>Please enter valid values.</value>
+  </data>
 </root>

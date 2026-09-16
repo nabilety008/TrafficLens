@@ -1,10 +1,23 @@
+using System.Text.Json;
 using TrafficLens.Core.Abstractions;
 
 namespace TrafficLens.Infrastructure.Services;
 
 public sealed class JsonSettingsService : ISettingsService
 {
-    private const string LanguageKey = "language";
+    public const string SettingsVersion = "1";
+    public const string VersionKey = "settings.version";
+    public const string LanguageKey = "language";
+    public const string StartWithWindowsKey = "StartWithWindows";
+    public const string StartMinimizedKey = "StartMinimized";
+
+    private const string DefaultLanguage = "en-US";
+
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 
     private readonly string _filePath;
     private readonly Dictionary<string, string> _values;
@@ -14,11 +27,15 @@ public sealed class JsonSettingsService : ISettingsService
         _filePath = filePath;
         _values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         Load();
+        if (string.IsNullOrEmpty(Get(VersionKey, string.Empty)))
+        {
+            Set(VersionKey, SettingsVersion);
+        }
     }
 
     public string Language
     {
-        get => Get(LanguageKey, "en-US");
+        get => Get(LanguageKey, DefaultLanguage);
         set => Set(LanguageKey, value);
     }
 
@@ -35,7 +52,7 @@ public sealed class JsonSettingsService : ISettingsService
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-        File.WriteAllText(_filePath, System.Text.Json.JsonSerializer.Serialize(_values));
+        WriteAtomic(_filePath, JsonSerializer.Serialize(_values, SerializerOptions));
     }
 
     private void Load()
@@ -47,12 +64,9 @@ public sealed class JsonSettingsService : ISettingsService
 
         try
         {
-            var loaded = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(
+            var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(
                 File.ReadAllText(_filePath),
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                SerializerOptions);
 
             if (loaded is not null)
             {
@@ -62,9 +76,40 @@ public sealed class JsonSettingsService : ISettingsService
                 }
             }
         }
-        catch (Exception)
+        catch
         {
-            // Corrupt or unreadable settings are ignored; defaults are used.
+        }
+    }
+
+    private static void WriteAtomic(string filePath, string content)
+    {
+        var temporaryPath = filePath + ".tmp";
+
+        try
+        {
+            using (var stream = File.CreateText(temporaryPath))
+            {
+                stream.Write(content);
+                stream.Flush();
+                stream.Close();
+            }
+
+            File.Move(temporaryPath, filePath, true);
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+            catch
+            {
+            }
+
+            throw;
         }
     }
 }
