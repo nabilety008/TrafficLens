@@ -694,6 +694,7 @@ complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Git Commit
 
+- TL-013 (settings): `6c0dec5` — `feat: add full Settings page with staged save, alert rule editors, startup registration, and absolute widget always-on-top (TL-013)`; docs `9c03cfe`.
 - TL-011 (system tray): `6e4d122` — `feat: add system tray with minimize/close-to-tray, singleton restore, and coordinator-based exit (TL-011)`; docs `8f230ec`.
 - TL-012 (alerts): `6512011` — `feat: add local alert engine with speed/daily usage rules, tray balloon notifications, and Alerts page (TL-012)`; docs `b41e33d`.
 - TL-010 (floating widget): `f3dc2e9` — `feat: add always-on-top floating widget reusing live aggregate rates with persisted position/topmost (TL-010)`; docs `a527168`.
