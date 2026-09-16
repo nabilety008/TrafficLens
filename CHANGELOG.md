@@ -2,6 +2,60 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.0.16] — 2026-09-16 (TL-013 complete — settings)
+
+### Added
+- Full Settings page (`SettingsView.xaml` + `SettingsViewModel` + DI
+  code-behind), replacing the minimal TL-011 tray-options popup: General
+  (language, start with Windows, start minimized, minimize/close to tray),
+  Floating Widget (enable, always-on-top, show/hide buttons), and Alerts (all
+  5 rule rows with enable checkbox, threshold field, unit combo, and a bounded
+  cooldown 1–1440 minutes with inline validation).
+- Staged-save model: numeric fields and dropdowns apply on **Save** (validate →
+  one logical persist → runtime apply → `RefreshFromSettings`), tray toggles
+  apply **immediately**, Reset stages defaults behind a Yes/No confirmation,
+  with `SavedNotice` feedback and dirty tracking.
+- `AlertRuleViewModel` per rule — threshold is typed in the displayed unit and
+  persisted as invariant bytes; unit-switch breaks (KB/s, MB/s, GB/s, TB/s for
+  speed; MB, GB, TB for daily).
+- `IFloatingWidgetService.SetAlwaysOnTop(bool)` added; `SettingsViewModel.Save`
+  now sets (not toggles) the widget topmost state so unchecking it actually
+  persists and applies, while the tray menu keeps `ToggleAlwaysOnTop`.
+- `IStartupRegistrationService`/`StartupRegistrationService` — HKCU Run value
+  `TrafficLens` = quoted exe path (+ optional ` --minimized`), removes only its
+  own value; `--minimized` CLI starts hidden to tray with a dedicated log
+  marker.
+- `JsonSettingsService` hardening: partial settings files merge with defaults,
+  unknown keys are preserved on Save, malformed JSON falls back to defaults
+  without crashing.
+- Localization en + fa-IR for the entire Settings surface (nav/title/sections/
+  labels/units/save/reset/confirm/change-saved); required-keys test extended.
+- `scripts/tl013-verify.ps1` — real-Windows Settings GUI verification (A–I):
+  partial-merge/unknown-key/malformed recovery, en→fa→en switch with restart,
+  tray immediate-apply + close-to-tray, widget enable/topmost-off/hide/show +
+  restart persistence, page-configured 256 KB/s threshold → real alert → Reset
+  with native confirmation → defaults + history DB intact, HKCU Run create/
+  quoted/`--minimized`/own-value-only removal, hidden `--minimized` start,
+  restart persistence, graceful exit with no orphan ETW sessions.
+- ADR-021 (settings architecture: staged-save vs immediate-apply, unit-of-
+  entry storage, widget always-on-top set-vs-toggle semantics).
+
+### Tests
+- `SettingsViewModelTests` — Save staging, validation (cooldown bounds,
+  threshold > 0), language apply, widget state via `SetAlwaysOnTop`, alert
+  config persistence, reset-to-defaults. `JsonSettingsServiceTests` —
+  default-merge, unknown-key preservation, malformed fallback.
+  `Fakes.cs` gained `SetAlwaysOnTop` on the fake widget service; localization
+  resource keys extended.
+- Total **382 tests** (App 138 / Network 206 / Infrastructure 38), Debug +
+  Release 0 warnings / 0 errors.
+
+### Verified
+- Real Windows GUI verification (`scripts/tl013-verify.ps1`, Release) green
+  end-to-end (blocks A–I), including a native `Reset to Defaults` MessageBox
+  discovered, answered via Win32 `WM_COMMAND`, and dismissed, with the traffic
+  history SQLite DB untouched (same mtime) and defaults restored on Save.
+
 ## [0.0.15] — 2026-09-15 (TL-012 complete — alerts)
 
 ### Added

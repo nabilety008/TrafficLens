@@ -542,3 +542,61 @@ Reasoning:
   proven by real-Windows verification (a sustained download produced exactly one
   balloon; a same-day restart produced no repeat).
 
+## ADR-021: Settings page — staged save, unit-of-entry thresholds, and absolute always-on-top set
+
+**Status:** Accepted (TL-013)
+
+### Staged-save vs immediate-apply
+
+Settings groups differ in how urgently a change must take effect:
+
+- **Tray behavior (minimize/close-to-tray)** applies **immediately** on toggle,
+  because the value gates the very next window-close and the user expects
+  instant feedback (TL-011 behavior preserved and verified live on the page).
+- **Everything else (language, start-with-Windows, start-minimized, widget
+  enable/always-on-top, all alert rule fields, cooldown)** is **staged and
+  committed by the Save button**. A single Save computes diffs against the
+  values **loaded** at page-open (`_loaded*`), applies runtime side effects
+  (culture switch, HKCU Run enable/disable, widget show/hide/topmost, alert
+  `RefreshConfig`), persists one logical write, then calls
+  `RefreshFromSettings()` so the page and the live services agree.
+- **Reset** only *stages* defaults once the user confirms a Yes/No MessageBox;
+  nothing is written until an explicit Save (mirrors the destructive-reads
+  model; the history database is deliberately untouched by a settings reset).
+
+Reasoning: mixed immediate/staged mirrors what users actually mean per group,
+stays predictable, and converges on a single persist path that is unit-testable.
+
+### Thresholds are stored in the physical unit (invariant bytes), typed in a unit
+
+Alert thresholds are persisted as **bytes** (or bytes/day-equivalents) in
+`alerts.<rule>.threshold` (invariant culture). The UI lets the user type a
+number and pick a unit (KB/s…TB/s for speed rules; MB…GB…TB for daily rules);
+the `AlertRuleViewModel` converts display→bytes on save and bytes→display on
+re-load, so switching a unit never betrays the entered magnitude. This keeps
+the alert engine's invariant-byte contract (TL-012/ADR-020) unchanged and puts
+all unit smarts in one converter layer covered by unit tests.
+
+### Widget always-on-top is an absolute set from Save, a toggle from the tray
+
+`SettingsViewModel.Save` calls the new
+`IFloatingWidgetService.SetAlwaysOnTop(bool)` (absolute value from the staged
+setting), while the tray menu keeps `ToggleAlwaysOnTop()` for quick flips.
+The initial implementation called `ToggleAlwaysOnTop()` from Save, which
+flipped relative to the **already-written** value — unchecking "Always on Top"
+persisted `False` and then immediately re-applied `True`. Verified live before
+the fix; `SetAlwaysOnTop` closes the bug and makes Save idempotent.
+
+Reasoning: the settings page expresses intended *state*; the tray expresses an
+*action*. Encoding that difference in the interface keeps tests honest
+(the fake service records which call was made).
+
+### Settings page DataContext is the SettingsViewModel, not MainViewModel
+
+The SettingsView's `DataContext` is set explicitly to the injected
+`SettingsViewModel` at the page level. Inheriting the window's
+`DataContext` (MainViewModel) was attempted first and silently produced an
+empty page — save/load commands and the alert-rule rows bound to the window
+model instead of the settings model. Page-scoped `DataContext` restores
+standard MVVM without leaking window concerns into the settings page.
+

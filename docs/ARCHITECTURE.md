@@ -328,8 +328,59 @@ domain contracts, collection logic, and infrastructure so each can evolve indepe
   `AlertsViewModel`). Speed re-evaluates each sample (cooldown-gated); daily
   re-evaluates on each history flush (~30 s).
 
+## Settings layer (TL-013)
+
+- `Views/SettingsView.xaml` + `Views/SettingsView.xaml.cs` (DI code-behind) —
+  three sections: **General** (language combo, start-with-Windows,
+  start-minimized, minimize/close-to-tray), **Floating Widget** (enable,
+  always-on-top, show/hide buttons), **Alerts** (five `AlertRuleViewModel*`
+  rows over an items control + the shared cooldown field). A `NavSettings`
+  button + `SettingsHost` ContentControl wire it into `MainViewModel`/
+  `MainWindow`. Each interactive control carries an `AutomationProperties.Name`
+  (`SettingsSave`, `SettingsReset`, `SettingsRule<RuleId>Enabled|Threshold|Unit`,
+  `SettingsCooldown`, …) so real-UIA verification can drive it.
+- The SettingsView's `DataContext` is **explicitly set to
+  `MainViewModel.Settings`** (`SettingsViewModel`) in the MainWindow code-behind
+  — not inherited from the window's `DataContext`. Inheriting the MainViewModel
+  (as initially wired) silently resolved every settings binding against the
+  window model (Save/Reset commands and the rule row collection never bound).
+- `SettingsViewModel` — staged-save state machine (ADR-021):
+  - Numeric fields and dropdowns commit only on **Save**; the two tray
+    checkboxes (`SettingsMinimizeToTray`/`SettingsCloseToTray`) apply
+    **immediately** on toggle.
+  - `Save()`: validates (cooldown 1–1440, threshold > 0) → computes diffs
+    (language / widget-enabled / widget-always-on-top / alert config) → applies
+    language (`SetCulture`), startup registration (enable/disable HKCU Run) →
+    persists every value + `AlertSettings.Save` → runtime-apply (widget
+    Show/Hide/`SetAlwaysOnTop`, `IAlertService.RefreshConfig`) →
+    `RefreshFromSettings()`. `ResetToDefaults()` stages defaults behind a
+    Yes/No `MessageBox` (Win32-native; automation answers it over window
+    messages, not UIA).
+  - Widget topmost uses **`IFloatingWidgetService.SetAlwaysOnTop(bool)`** —
+    absolute set, not toggle, so "Always on Top off + Save" truly disables it
+    (the toggle variant flipped relative to the already-persisted value and
+    re-enabled topmost). The tray menu keeps `ToggleAlwaysOnTop`.
+- `AlertRuleViewModel` — per-rule editor model: `Name`, `Enabled`, threshold
+  `TextBox` in the displayed unit, `UnitOptions` combo (KB/s…TB/s for speed;
+  MB…TB for daily). The rule's `Threshold` is stored invariant-bytes; the view
+  model converts bytes→unit for display and unit→bytes on save (parse failures
+  surface as inline validation).
+- Startup registration: `IStartupRegistrationService`/
+  `StartupRegistrationService` manages the HKCU `…\CurrentVersion\Run`
+  value `TrafficLens` as the **quoted exe path + optional ` --minimized`**,
+  removing only its own value name (sibling values untouched). The
+  `--minimized` CLI argument is consumed at startup to launch hidden to the
+  tray (log marker `Starting hidden to system tray`), already covered by the
+  TL-011 tray/exit architecture.
+- `JsonSettingsService` (Infrastructure) hardening — partial files merge the
+  remaining defaults, unknown keys are preserved verbatim on Save, and
+  malformed JSON falls back to defaults without crashing.
+- Data flow: user edits → `SettingsViewModel` staged state → `Save()` →
+  `ISettingsService` (flat keys) + `AlertSettings` + `IStartupRegistrationService`
+  + runtime services (localization/tray/widget/alerts). All labels/progress
+  strings come from `Strings*.resx` (en + fa-IR).
+
 ## Future Plans
 
-- Full settings page (TL-013) — currently just the minimal tray options popup.
 - Hourly view of the current day (raw minute samples are already retained 90 days).
 - See `docs/ROADMAP.md`.

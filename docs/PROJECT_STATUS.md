@@ -1,17 +1,17 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-15
+Updated: 2026-09-16
 
 ## Current Milestone
 
-M8 (alerts and settings) is in progress: **TL-012 (alerts) is complete and
-verified** — a pure Core alert engine (two speed rules + three daily usage
-rules, all disabled by default with suggested thresholds), live tray-balloon
-notifications (speed from the existing aggregate pipeline, daily from the
-cached history snapshot, never touching SQL), a new Alerts page, en + fa-IR
-localization, 32 new alert unit tests, and a full real-Windows verification
-script. M7 (TL-010 floating widget + TL-011 system tray) is complete, as are
-M1–M6. TL-013 (the full settings page) is the remaining M8 item.
+M8 (alerts and settings) is complete: **TL-012 (alerts)** delivered a pure Core
+alert engine (two speed rules + three daily usage rules, all disabled by
+default with suggested thresholds), live tray-balloon notifications, and an
+Alerts page; **TL-013 (settings)** delivered the full Settings page (General,
+Floating Widget, Alerts rule editors), startup registration (HKCU Run +
+`--minimized`), settings-file hardening (merge/preserve/malformed fallback),
+and a real-Windows GUI verification script covering all of it. M1–M7 remain
+complete. M9 items (TL-014 and later) are the next scheduled work.
 
 ## Task IDs
 
@@ -29,7 +29,8 @@ M1–M6. TL-013 (the full settings page) is the remaining M8 item.
 - TL-010 Floating Widget — **DONE**
 - TL-011 System Tray — **DONE**
 - TL-012 Alerts — **DONE**
-- TL-013 and later — not started
+- TL-013 Settings — **DONE**
+- TL-014 and later — not started
 
 ## Completed
 
@@ -353,6 +354,50 @@ M1–M6. TL-013 (the full settings page) is the remaining M8 item.
   - Localization en + fa-IR: `AlertsNavLabel`, `AlertsTitleLabel`,
     `AlertsNoAlertsLabel`, `AlertsCountFormat`, `AlertTitle`, `AlertType*` ×6,
     `AlertMsg*` ×5; `LocalizationResourceTests.RequiredKeys` extended.
+- TL-013 (settings, M8):
+  - Full Settings page (`SettingsView.xaml` + DI code-behind; `NavSettings`
+    button + host in `MainViewModel`/`MainWindow`): **General** (language combo,
+    start-with-Windows, start-minimized, minimize/close-to-tray), **Floating
+    Widget** (enable, always-on-top, show/hide buttons that reuse the TL-010/
+    TL-011 service), **Alerts** (all 5 rule rows from TL-012 with enable checkbox,
+    threshold text field, unit combo, and the shared cooldown bounded 1–1440).
+  - Staged-save vs immediate-apply (ADR-021): numeric fields/dropdowns commit
+    on **Save** — validate (cooldown 1–1440, threshold > 0) → single logical
+    persist (language, startup registration, tray, widget, alerts) → runtime
+    apply (`SetCulture`, enable/disable HKCU Run, `RefreshConfig`,
+    widget Show/Hide, `SetAlwaysOnTop`) → `RefreshFromSettings`; tray checkboxes
+    apply **immediately**; Reset stages defaults behind a Yes/No MessageBox;
+    `SavedNotice` + dirty tracking.
+  - `AlertRuleViewModel` per rule: threshold typed in the displayed unit and
+    persisted as invariant bytes; unit combos KB/s/MB/s/GB/s/TB/s (speed) and
+    MB/GB/TB (daily) re-parse on load; inline validation error text.
+  - Widget always-on-top semantics fixed (verified live): `SettingsViewModel.Save`
+    calls the new `IFloatingWidgetService.SetAlwaysOnTop(bool)` so an unchecked
+    setting persists and clears `WS_EX_TOPMOST` across restart; the tray menu
+    keeps `ToggleAlwaysOnTop`.
+  - Startup registration: `IStartupRegistrationService`/
+    `StartupRegistrationService` — HKCU `…\CurrentVersion\Run` value
+    `TrafficLens` = fully-quoted exe path (+ optional ` --minimized`), removes
+    only its own value name, preserves sibling values; `--minimized` CLI arg
+    starts hidden to tray (logged `Starting hidden to system tray`).
+  - `JsonSettingsService` hardening: partial file merges defaults, unknown keys
+    preserved on Save, malformed JSON falls back to defaults (all verified on
+    the real page with a real Save click).
+  - Localization en + fa-IR for the full Settings surface; required-keys test
+    extended. Tests: `SettingsViewModelTests`, `JsonSettingsServiceTests`,
+    fakes (`SetAlwaysOnTop`), localization keys.
+  - **382/382 tests** (App 138 / Network 206 / Infrastructure 38); Debug +
+    Release 0 warnings / 0 errors.
+  - Real-Windows GUI verification (`scripts/tl013-verify.ps1`, Release,
+    blocks A–I, all green): partial-merge/unknown-key/malformed recovery; en→fa→en
+    combo switch with restart persistence; tray immediate-apply + close-to-tray
+    via Win32; widget enable/topmost-off/hide/show + restart; page-configured
+    256 KB/s threshold → exactly one real alert download → Reset via the native
+    `Reset to Defaults` MessageBox (found + answered `IDYES` over Win32) →
+    defaults restored, history SQLite DB mtime untouched; HKCU Run create/
+    quoted/`--minimized`/own-value-only removal with sibling preservation;
+    hidden `--minimized` start with tray alive; combined restart persistence;
+    graceful exit, no orphan ETW sessions.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -664,8 +709,7 @@ M1–M6. TL-013 (the full settings page) is the remaining M8 item.
 
 ## Next Recommended Task
 
-- TL-012 (alerts) is complete and verified, advancing M8. Next scheduled item
-  is **TL-013 (settings)** — the full Settings page (language, start-with-
-  Windows, tray options, alert thresholds) that subsumes the minimal tray
-  options popup introduced in TL-011 and provides the UI for the alert rules
-  that TL-012 currently configures via settings keys only.
+- M8 (TL-012 alerts + TL-013 settings) is complete and verified. Per ROADMAP
+  the next milestone is **M9 (stability, performance, tests, packaging)** —
+  no task ID is scheduled yet; confirm the first M9 item with the user before
+  starting any new task.

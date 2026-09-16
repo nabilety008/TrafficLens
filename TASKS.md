@@ -110,6 +110,55 @@
 - **Status: done**
 - **Commit:** `6512011` (code + tests + script; see `docs/PROJECT_STATUS.md`)
 
+### TL-013 Settings — **DONE**
+- [x] Full Settings page (`SettingsView.xaml` + DI code-behind, nav button +
+      host in `MainViewModel`/`MainWindow`): General (language combo,
+      start-with-Windows, start-minimized, tray minimize/close), Floating
+      Widget (enable, always-on-top, show/hide-from-page buttons), Alerts
+      (5 rules with enable checkbox + threshold field + unit combo + cooldown
+      minutes 1–1440)
+- [x] Staged-save model: numeric fields/dropdowns apply on **Save** (validate →
+      one logical persist → runtime apply → `RefreshFromSettings`); tray
+      checkboxes apply **immediately** (no Save); Reset stages defaults behind
+      a Yes/No confirmation dialog; `SavedNotice` + dirty tracking
+- [x] `AlertRuleViewModel` per rule: threshold entered in the displayed unit
+      (unit combo KB/s / MB/s / GB/s / TB/s for speed; MB/GB/TB for daily),
+      converted invariant-bytes on persist, re-parse on load; cooldown
+      validation bounds 1–1440 with inline error text
+- [x] Save wiring uses `IFloatingWidgetService.SetAlwaysOnTop` (added) so an
+      unchecked always-on-top **persists and applies** (the old
+      `ToggleAlwaysOnTop` flipped relative to the already-written setting and
+      re-enabled topmost); tray menu keeps the toggle
+- [x] Startup registration: `IStartupRegistrationService` +
+      `StartupRegistrationService` (HKCU `…\Run` value `TrafficLens` = quoted
+      exe path, optional ` --minimized`, removes only its own value name);
+      `--minimized` CLI arg starts hidden to tray (log marker `Starting hidden
+      to system tray`)
+- [x] `JsonSettingsService` hardening (tested): partial file merges defaults,
+      unknown keys preserved on Save, malformed JSON falls back to defaults
+      without crashing
+- [x] Localization en + fa-IR for every Settings string (nav/title/sections/
+      labels/units/save/reset/confirm/notice); `LocalizationResourceTests.
+      RequiredKeys` extended
+- [x] Tests: `SettingsViewModelTests` (Save staging/validation/language apply/
+      widget state via `SetAlwaysOnTop`/alert config/reset defaults),
+      `JsonSettingsServiceTests` (merge/preserve/malformed), fakes +
+      localization keys; **382/382** (App 138 / Network 206 / Infrastructure
+      38), Debug + Release 0 warnings / 0 errors
+- [x] Real Windows GUI verification (`scripts/tl013-verify.ps1`, blocks A–I):
+      partial-merge + unknown-key preservation and malformed fallback through
+      the real page; en→fa→en combo switch + restart; tray immediate-apply +
+      close-to-tray; widget enable/topmost-off/hide/show + restart
+      persistence; page-configured 256 KB/s threshold → real alert → Reset with
+      native `Reset to Defaults` confirmation (found + answered via Win32)
+      → defaults + history DB untouched; HKCU Run create/quoted/--minimized/
+      own-value-only removal; `--minimized` hidden start + tray alive; restart
+      persistence; graceful exit with no orphan ETW sessions
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ARCHITECTURE, DECISIONS
+      ADR-021)
+- **Status: done**
+- **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
+
 ### TL-001 Project Bootstrap — **DONE**
 - [x] Inspect .NET environment (installed .NET 8 SDK 8.0.425)
 - [x] Create `TrafficLens.sln` and solution folder structure
