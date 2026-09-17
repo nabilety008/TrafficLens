@@ -1,0 +1,137 @@
+; TrafficLens Inno Setup installer script (TL-015)
+;
+; Compiled via:
+;   scripts\build-release.ps1   (preferred — passes /D defines)
+;
+; Or manually (using defines with defaults):
+;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.0-win-x64.exe TrafficLens.iss
+;
+; Per-user install into %LOCALAPPDATA%\Programs\TrafficLens — NO elevation.
+; Program files only; user data (%LOCALAPPDATA%\TrafficLens) is never touched.
+
+#ifndef AppVersion
+  #define AppVersion "0.1.0"
+#endif
+#ifndef AppVersionShort
+  #define AppVersionShort "0.1.0"
+#endif
+#ifndef SourceDir
+  #error "Define /DSourceDir=<publish directory>"
+#endif
+#ifndef OutputDir
+  #error "Define /DOutputDir=<artifacts\installer>"
+#endif
+#ifndef OutputFile
+  #error "Define /DOutputFile=TrafficLens-Setup-<version>-win-x64.exe"
+#endif
+
+#define AppName "TrafficLens"
+#define AppId "{{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}}"
+#define AppPublisher "TrafficLens Contributors"
+#define AppExe "TrafficLens.exe"
+
+[Setup]
+AppId={#AppId}
+AppName={#AppName}
+AppVersion={#AppVersion}
+AppVerName={#AppName} {#AppVersionShort}
+AppPublisher={#AppPublisher}
+AppPublisherURL=https://github.com/
+AppSupportURL=https://github.com/
+DefaultDirName={localappdata}\Programs\TrafficLens
+DefaultGroupName={#AppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+OutputDir={#OutputDir}
+OutputBaseFilename={#OutputFile}
+SetupIconFile=placeholder.ico
+UninstallDisplayIcon={app}\{#AppExe}
+UninstallDisplayName={#AppName}
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+; Program files only — user data is left entirely alone by design.
+UsePreviousAppDir=yes
+UsePreviousGroup=yes
+; Never auto-close the running app; the user is asked to close it first.
+CloseApplications=no
+RestartApplications=no
+; Stable uninstall key across versions (no duplicate uninstall entries).
+UsePreviousPrivileges=yes
+Uninstallable=yes
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+
+[Files]
+; Program files only. PDBs (debug symbols) are not shipped.
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.pdb"
+
+[Icons]
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#AppExe}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+; Only remove the empty install-dir shell (files themselves are removed by
+; uninstaller). Nothing under %LOCALAPPDATA%\TrafficLens is ever deleted.
+Type: dirifempty; Name: "{app}"
+
+[Code]
+// ---- Run check ------------------------------------------------------------
+// If TrafficLens is already running, ask the user to close it before the
+// installer replaces binaries. We never force-kill; the user drives it and
+// the built-in "file in use" dialog is a second safety net.
+function TrafficLensIsRunning(): Boolean;
+var
+  WbemLocator: Variant;
+  WbemService: Variant;
+  WbemObjectSet: Variant;
+begin
+  Result := False;
+  try
+    WbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+    WbemService := WbemLocator.ConnectServer('localhost', 'root\cimv2');
+    WbemObjectSet := WbemService.ExecQuery(
+      'SELECT Name FROM Win32_Process WHERE Name = ''TrafficLens.exe''');
+    Result := WbemObjectSet.Count > 0;
+  except
+    // WMI unavailable (rare) — fall through; Inno's file-in-use dialog still
+    // protects the live binaries.
+  end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpReady) and TrafficLensIsRunning() then
+  begin
+    MsgBox(
+      'TrafficLens is currently running. Please close it before continuing ' +
+      'so the new files can be installed safely.' + #13#10#13#10 +
+      '(Your settings and history are never affected by an upgrade.) ',
+      mbInformation, MB_OK);
+  end;
+end;
+
+// ---- User data policy -----------------------------------------------------
+// Normal uninstall MUST preserve user data: settings.json, the SQLite history
+// database and logs live under %LOCALAPPDATA%\TrafficLens and are APP-OWNED
+// (not installer-owned). No uninstall task removes them, and no
+// [UninstallDelete] entry references them. Users who want to remove retained
+// data can delete the %LOCALAPPDATA%\TrafficLens folder manually.
+//
+// Startup integration is APP-CONTROLLED (HKCU\...\Run value "TrafficLens"
+// managed by StartupRegistrationService, TL-013). The installer:
+//   - never creates a second startup mechanism
+//   - never auto-enables start-with-Windows
+//   - never deletes the user's existing Run value on upgrade/uninstall
+//     (it points at %LOCALAPPDATA%\Programs\TrafficLens\TrafficLens.exe and
+//     the app re-writes it from Environment.ProcessPath if the user changes
+//     the setting, so a stale path self-corrects on next save).

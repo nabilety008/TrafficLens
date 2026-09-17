@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>TrafficLens Contributors</Company>
+    <Product>TrafficLens</Product>
+    <AssemblyTitle>TrafficLens Network Monitor</AssemblyTitle>
+    <Description>TrafficLens Network Monitor</Description>
+    <Copyright>Copyright © 2026 TrafficLens Contributors</Copyright>
+  </PropertyGroup>
+</Project>

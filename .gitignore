@@ -6,6 +6,10 @@ x86/
 [Bb]in/
 [Oo]bj/
 
+# Release packaging artifacts (TL-015)
+artifacts/
+*.exe.sha256
+
 # Visual Studio
 .vs/
 *.suo
