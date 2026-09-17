@@ -812,4 +812,78 @@ leak).
 - Future raw messages added by providers simply stay log-only; UI consumers add a
   resx key when user-facing detail is required.
 
+## ADR-025 — Branding foundation, About page and Diagnostics (TL-016 continuation)
+
+**Status:** Accepted (TL-016)
+
+Decision completing the "product polish + branding foundation" scope of TL-016:
+a replaceable icon pipeline, an About page, and a copy-to-clipboard Diagnostics
+block.
+
+### Decision
+
+**1. One replaceable brand asset + a generator as the single source of truth.**
+`scripts/generate-icons.ps1` renders the brand glyph (rounded `#1E1E2E` square,
+cyan `#4FC3F7` down-arrow, teal `#26A69A` up-arrow — the TL-011 tray glyph) at
+16–256 px and writes `assets/branding/TrafficLens.ico` (PNG-encoded multi-size
+ICO) plus 256/128 PNGs. The assets are small, committed binaries; the generator
+keeps them reproducible. Replacing final marketing art means swapping the
+drawing routine (or the files) with zero wiring changes.
+
+**2. Branding wiring is centralized, not hard-coded per surface.** The ICO is
+declared once in `TrafficLens.App.csproj` (`<ApplicationIcon>` and a `<Resource>`
+loadable via the pack URI `pack://application:,,,/TrafficLens.ico`); the window
+icon, floating-widget glyph, tray icon, About page and installer
+(`SetupIconFile={#BrandIcon}` in `TrafficLens.iss`) all consume it. The tray
+icon prefers the embedded ICO and falls back to the runtime-drawn glyph if the
+resource is unavailable — preserving the TL-011 zero-asset guarantee as a
+fallback path.
+
+**3. About page is a first-class localized page.** A 7th nav item (`About`, page
+hosted like the others via a ViewModel + View, DI-registered as singletons)
+shows product identity, version, runtime, OS, display language and the data /
+settings / logs paths. All text comes from `Strings*.resx`; paths and endpoints
+render LeftToRight (matching the existing per-control RTL convention); the
+brand name stays untranslated (per ADR-024). The nav bar switched from a
+`StackPanel` to a `WrapPanel` so seven items cannot overflow the 640px minimum
+window width.
+
+**4. Diagnostics is a pure, testable builder + thin actions.** Version comes from
+`AssemblyInformationalVersionAttribute` (no `Assembly.Location`, which is empty
+under single-file publish — avoids IL3000). `DiagnosticsInfo.Build` is a pure
+static function that joins `Label: Value` lines, so clipboard content is unit-
+tested without touching the clipboard. Copy uses WPF `Clipboard.SetText` in a
+try/catch (never throws); "Open logs folder" shell-opens the entries directory,
+falling back to its parent if the `logs` dir has not been created yet.
+
+**5. Versioning stays at the v0.1.0 baseline.** No version bump in this task;
+the About page reads the runtime informational version, so the next release
+candidate only edits `Directory.Build.props`.
+
+### Rationale
+
+- A generated asset set avoids binary drift between the window icon, tray icon,
+  EXE icon and installer icon, and keeps the "replaceable, not final" promise
+  cheap: one routine to edit, one script to run.
+- The About/Diagnostics surface is the least architectural way to expose where
+  the app stores data — the first thing users and support need when reporting
+  issues — without adding new systems (no telemetry, no crash reporting).
+- Keeping the tray fallback guarantees the app still works if a resource is
+  missing (e.g. future trim/publish changes), matching the existing fallback
+  philosophy in TL-011.
+
+### Consequences
+
+- `Strings.resx` / `Strings.fa-IR.resx` grew from 146 to 161 symmetric keys;
+  `LocalizationResourceTests.RequiredKeys` updated.
+- New tests: `AboutViewModelTests`, `MainViewModelTests` (navigation incl. About),
+  `BrandAssetsTests` (ICO header/frames, PNG dimensions). Suite now 410 tests.
+- `packaging/placeholder.ico` was removed; the installer points at the shared
+  brand asset and carries `VersionInfo*` setup metadata. Stale docs updated:
+  `PACKAGING.md` (branding section), `docs/BRANDING.md` (new),
+  `PROJECT_STATUS.md`, `TASKS.md`, `CHANGELOG.md`. ADR-024's "146 keys" note
+  was accurate at the time and is superseded by this task's 161 keys.
+- English installer and placeholder project URLs in `TrafficLens.iss` remain
+  documented follow-ups for the real release, not this task.
+
 

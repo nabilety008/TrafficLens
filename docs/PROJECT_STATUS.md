@@ -12,18 +12,26 @@ user-data preservation (`%LOCALAPPDATA%\TrafficLens`). Baseline release version
 0.1.0 (previous 0.0.x entries are in-repo development milestones); artifacts and
 installer SHA-256 produced by the script and gitignored.
 
-M11 (TL-016 full Persian localization) is complete: the UI is fully localized
-with no hard-coded user-facing strings. The graph "now" label is now data-bound
-(`NowLabel` on `TrafficGraphControl`, default "now"); status/error banners in the
-Applications, Connections and History views show localized detail text instead of
-raw English provider messages (raw detail remains in the app log); the History
-chart dates render with `CultureInfo.CurrentCulture` (Persian calendar under
-fa-IR); en + fa-IR resx stay at 146 keys with identical key sets. Runtime language
-switching (English ⇄ فارسی) persists via settings and was already in place.
-398 tests, 0 warnings, 0 errors (Debug + Release), verified end-to-end on the
-published single-file build by `scripts/tl016-verify.ps1` and the existing TL-015
-smoke regression. The default branch `master` is untouched; TL-016 lived on
-`feature/tl016-persian-localization` and awaits merge approval.
+M11 (TL-016 full Persian localization) is complete **and merged into `master`**
+(merge `9dc8335`): the UI is fully localized with no hard-coded user-facing
+strings. The graph "now" label is now data-bound (`NowLabel` on
+`TrafficGraphControl`, default "now"); status/error banners in the Applications,
+Connections and History views show localized detail text instead of raw English
+provider messages (raw detail remains in the app log); the History chart dates
+render with `CultureInfo.CurrentCulture` (Persian calendar under fa-IR); en +
+fa-IR resx stay at identical key sets. Runtime language switching (English ⇄
+فارسی) persists via settings and was already in place.
+
+M11a (TL-016 continuation — product polish / branding foundation) is also
+complete on `master`: a replaceable icon pipeline (`scripts/generate-icons.ps1`
+→ `assets/branding/TrafficLens.ico` + PNGs) wired once in the csproj and consumed
+by the EXE/window/tray/widget/installer; a new localized **About page** (brand
+identity, version, runtime, OS, language, data/settings/logs paths); a
+copyable **Diagnostics** block (version read from
+`AssemblyInformationalVersionAttribute` — no single-file `Assembly.Location`);
+resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
+212 / Infrastructure 40) with 0 warnings / 0 errors on Debug + Release. See
+`docs/BRANDING.md` and ADR-025.
 
 ## Task IDs
 
@@ -44,7 +52,7 @@ smoke regression. The default branch `master` is untouched; TL-016 lived on
 - TL-013 Settings — **DONE**
 - TL-014 Stability & Performance Audit — **DONE**
 - TL-015 Packaging / Installer — **DONE**
-- TL-016 Localization / Persian UI — **DONE** (awaits merge approval)
+- TL-016 Localization / Persian UI — **DONE** (localization merged `9dc8335`; branding/About continuation done on `master`)
 
 ## Completed
 
@@ -504,8 +512,37 @@ smoke regression. The default branch `master` is untouched; TL-016 lived on
     en-US labels render, fa-IR content scan (nav + dashboard + History page in
     Persian, no English leak), en-US History no-leak, graceful exit, no orphan
     process / ETW. TL-015 smoke regression still passes on this branch build.
-  - Docs: ADR-024. `master` untouched; branch
-    `feature/tl016-persian-localization` ready to merge upon approval.
+  - Docs: ADR-024. Merged into `master` via `--no-ff` (`9dc8335`) after user
+    approval; `v0.1.0` tag untouched at `c1f677a`.
+- TL-016 continuation (product polish / branding foundation, M11a, on `master`):
+  - **Icon pipeline:** `scripts/generate-icons.ps1` draws the brand glyph (rounded
+    `#1E1E2E` square, cyan `#4FC3F7` down-arrow, teal `#26A69A` up-arrow — the
+    TL-011 tray art) at 16/24/32/48/64/128/256 and writes
+    `assets/branding/TrafficLens.ico` (PNG-encoded multi-size ICO, verified by
+    `BrandAssetsTests`) + 256/128 PNGs. Replaceable by re-running the generator.
+  - **Single wiring point:** `TrafficLens.App.csproj` declares the ICO once
+    (`<ApplicationIcon>` + `<Resource>` pack URI). Consumed by MainWindow icon,
+    FloatingWidget title glyph (14px), tray icon (`SystemTrayService` loads the
+    32px frame with the runtime-drawn fallback preserved), About page and the
+    installer (`SetupIconFile={#BrandIcon}`, `VersionInfo*` setup metadata).
+    `packaging/placeholder.ico` removed.
+  - **About page:** 7th localized nav item (`WrapPanel` nav — no overflow at
+    640px min width), `AboutViewModel`/`AboutView`, DI singletons; brand
+    identity, version, runtime, OS, display language, data/settings/logs paths.
+    Paths render LTR under RTL (existing per-control convention).
+  - **Diagnostics:** `DiagnosticsInfo.Build` pure `Label: Value` builder (unit
+    tested); Copy-diagnostics via `Clipboard.SetText` never throws; Open-logs
+    folder shell action with parent fallback. Version from
+    `AssemblyInformationalVersionAttribute` — avoids IL3000 under single-file
+    publish.
+  - **Localization:** en + fa-IR resx both **161 keys**, identical sets
+    (`RequiredKeys` extended); brand name untranslated (ADR-024/025).
+  - **Tests:** `AboutViewModelTests`, `MainViewModelTests` (nav incl. About),
+    `BrandAssetsTests`; **410 total** (App 158 / Network 212 / Infrastructure 40).
+  - **Verified:** Debug + Release 0 warnings / 0 errors; full suite green;
+    About reachable in en + fa-IR with no English leak on the published build.
+  - Docs: `docs/BRANDING.md`, ADR-025, `PACKAGING.md` branding section,
+    `TASKS.md`, `CHANGELOG.md`.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -550,8 +587,8 @@ smoke regression. The default branch `master` is untouched; TL-016 lived on
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 397/397 passed (`TrafficLens.Network.Tests` 212,
-  `TrafficLens.App.Tests` 145, `TrafficLens.Infrastructure.Tests` 40).
+- **Automated tests:** 410/410 passed (`TrafficLens.Network.Tests` 212,
+  `TrafficLens.App.Tests` 158, `TrafficLens.Infrastructure.Tests` 40).
 - **TL-014 stability & performance harness** (`scripts/tl014-stability.ps1`,
   Release, real host, non-elevated):
   - **F1 warm-up + idle (60 s):** dashboard/connections/history/GC counts pass;
@@ -829,6 +866,8 @@ smoke regression. The default branch `master` is untouched; TL-016 lived on
 
 ## Git Commit
 
+- TL-016 localization branch merged into `master`: `9dc8335` — `merge: feature/tl016-persian-localization into master (TL-016)` (`--no-ff`; `v0.1.0` tag remains at `c1f677a`).
+- TL-016 continuation (branding/About/Diagnostics): code `ce8f6b0` — `feat: complete TL-016 product polish with brand icon pipeline, About page and diagnostics support`; docs `<pending>`.
 - TL-016 (localization / Persian UI): `cbb1dce` — `feat: complete Persian localization with data-bound graph label and localized status/error detail surfaces (TL-016)`; docs `ae67cdb`.
 - TL-015 (packaging / installer): `d794480` — `feat: add reproducible release pipeline and per-user Inno Setup installer with single-file win-x64 publish (TL-015)`; docs `077c3e8`.
 - TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `1fb8463`.
@@ -848,9 +887,10 @@ smoke regression. The default branch `master` is untouched; TL-016 lived on
 
 ## Next Recommended Task
 
-- M11 (TL-016 full Persian localization) is complete and verified on
-  `feature/tl016-persian-localization`. The branch is ready to merge into
-  `master` pending user approval (do not merge without it). After merge, the
-  next release would be prepared via `scripts/build-release.ps1` (bumping the
-  version above the 0.1.0 baseline), producing an updated installer that
-  packages the localized build.
+- TL-016 is fully complete and merged into `master` (localization + branding/
+  About/Diagnostics continuation, 410 tests, 0 warnings/0 errors). The next step
+  is to prepare the next release: bump the version in `Directory.Build.props`
+  above the 0.1.0 baseline and rerun `scripts/build-release.ps1` (new installer
+  + portable ZIP + SHA-256) so the shipped artifacts carry the About-page
+  version. No architecture work is pending for networking/collectors/ETW/
+  SQLite; a future TL-017 would be scoped independently.

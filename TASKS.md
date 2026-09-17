@@ -554,6 +554,25 @@
       en-US labels render, fa-IR content scan (nav + dashboard + History page in Persian,
       no English leak), graceful exit, no orphan process/ETW; TL-015 smoke regression
       still passes
+- [x] **Branding foundation (TL-016 continuation):** `scripts/generate-icons.ps1` icon
+      pipeline → `assets/branding/TrafficLens.ico` (16–256 multi-size) + PNGs; glyph mirrors
+      the TL-011 tray art. Wired once in `TrafficLens.App.csproj`
+      (`<ApplicationIcon>` + `<Resource>` pack URI); MainWindow icon, FloatingWidget title
+      glyph, tray icon (embedded ICO with runtime-drawn fallback), installer
+      (`SetupIconFile={#BrandIcon}` + `VersionInfo*` metadata) all consume it;
+      `packaging/placeholder.ico` removed. `docs/BRANDING.md` added.
+- [x] **About page (TL-016 continuation):** 7th nav item (`WrapPanel` nav, AboutViewModel +
+      AboutView, DI singletons); brand identity, version, runtime, OS, display language,
+      data/settings/logs paths; all localized en + fa-IR; paths render LTR
+- [x] **Diagnostics (TL-016 continuation):** `DiagnosticsInfo.Build` pure builder; version read
+      from `AssemblyInformationalVersionAttribute` (no `Assembly.Location` → no IL3000 under
+      single-file publish); Copy-diagnostics via `Clipboard.SetText` (non-throwing);
+      Open-logs-folder shell action with parent fallback
+- [x] Tests: `AboutViewModelTests`, `MainViewModelTests` (nav incl. About),
+      `BrandAssetsTests` (ICO header/frames, PNG dimensions); resx en/fa both 161 keys
+      (identical sets). Total **410 tests** (App 158, Network 212, Infrastructure 40)
+- [x] Build Debug + Release: 0 warnings / 0 errors; full suite green
+- [x] GUI verification extended: About reachable in en + fa-IR, no English leak
 - **Status: done**
 - **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
@@ -573,3 +592,4 @@
 | M9 | Stability & performance | TL-014 | Done |
 | M10 | Packaging / installer | TL-015 | Done |
 | M11 | Full Persian localization | TL-016 | Done |
+| M11a | Product polish / branding & About | TL-016 continuation | Done |

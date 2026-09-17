@@ -2,7 +2,7 @@
 
 All notable changes are documented here in reverse chronological order.
 
-## [Unreleased] — TL-016 (full Persian localization / M11)
+## [Unreleased] — TL-016 (full Persian localization / M11, + product polish / M11a)
 
 ### Changed
 - **No hard-coded user-facing strings remain.** The dashboard graph "now" label is
@@ -19,22 +19,41 @@ All notable changes are documented here in reverse chronological order.
   CultureInfo.CurrentCulture)` — fa-IR renders Persian-calendar dates.
 - Language endonyms (`English` / «فارسی») and the TrafficLens brand remain
   intentionally untranslated.
+- **Navigation bar is now a `WrapPanel`** so the 7th (About) item cannot overflow
+  the 640px minimum window width.
+- **Tray/window/installer share one generated brand icon** (`assets/branding/`);
+  the tray icon prefers the embedded 32px frame with the TL-011 runtime-drawn
+  glyph as a fallback.
 
 ### Added
+- **Brand icon pipeline (TL-016 continuation).**
+  `scripts/generate-icons.ps1` renders the brand glyph (rounded dark square, cyan
+  down / teal up arrow — the tray art) at 16–256 px and writes a multi-size ICO +
+  PNGs under `assets/branding/`. Wired once in `TrafficLens.App.csproj`
+  (`<ApplicationIcon>` + `<Resource>` pack URI) and consumed by the main window,
+  floating-widget title glyph, tray icon, About page and installer
+  (`SetupIconFile={#BrandIcon}` + `VersionInfo*` setup metadata). The old
+  `packaging/placeholder.ico` is gone. See `docs/BRANDING.md` (ADR-025).
+- **About page.** Localized 7th nav page: brand identity, version, runtime, OS,
+  display language, data/settings/logs paths.
+- **Diagnostics support.** `DiagnosticsInfo.Build` (pure, tested); Copy
+  diagnostics to clipboard (never throws); Open logs folder. Version is read from
+  `AssemblyInformationalVersionAttribute` so it stays correct under single-file
+  publish (no IL3000).
 - `scripts/tl016-verify.ps1` — GUI verification of the published build: en-US
   label render, fa-IR content scan (nav + dashboard + History page in Persian,
   no English leak), graceful exit, no orphan process/ETW.
-- ADR-024 (localized detail surfaces: localized summary in UI, raw messages
-  log-only; key parity as a test invariant).
+- ADR-024 (localized detail surfaces) and ADR-025 (branding foundation / About /
+  Diagnostics).
 
 ### Verified
-- en + fa-IR resx both 146 keys, identical key sets (`RequiredKeys` test).
-- 398 tests (App 146 / Network 212 / Infrastructure 40); Debug + Release 0
+- en + fa-IR resx both 161 keys, identical key sets (`RequiredKeys` test).
+- 410 tests (App 158 / Network 212 / Infrastructure 40); Debug + Release 0
   warnings / 0 errors.
-- `tl016-verify.ps1` PASS on the published single-file win-x64 build; TL-015
-  smoke regression PASS.
-- Landed on `feature/tl016-persian-localization`; `master` untouched, awaiting
-  merge approval.
+- `tl016-verify.ps1` PASS on the published single-file win-x64 build (en-US,
+  fa-IR, About page, no English leak); TL-015 smoke regression PASS.
+- Localization landed in `master` via merge `9dc8335`; the branding/About
+  continuation is committed directly on `master`.
 
 ## [0.1.0] — 2026-09-17 (TL-015 complete — packaging / installer)
 

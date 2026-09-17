@@ -16,6 +16,7 @@
 | M9 | Stability, performance, tests | Done |
 | M10 | Packaging / installer | Done (TL-015) |
 | M11 | Full Persian localization + language switcher | Done (TL-016) |
+| M11a | Product polish / branding foundation + About / Diagnostics | Done (TL-016 continuation) |
 
 ## Guidance
 
