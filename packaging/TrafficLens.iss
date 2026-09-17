@@ -4,16 +4,16 @@
 ;   scripts\build-release.ps1   (preferred — passes /D defines)
 ;
 ; Or manually (using defines with defaults):
-;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.0-win-x64.exe TrafficLens.iss
+;   ISCC.exe /DAppVersion=0.1.1 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.1-win-x64.exe TrafficLens.iss
 ;
 ; Per-user install into %LOCALAPPDATA%\Programs\TrafficLens — NO elevation.
 ; Program files only; user data (%LOCALAPPDATA%\TrafficLens) is never touched.
 
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.1.1"
 #endif
 #ifndef AppVersionShort
-  #define AppVersionShort "0.1.0"
+  #define AppVersionShort "0.1.1"
 #endif
 #ifndef SourceDir
   #error "Define /DSourceDir=<publish directory>"
