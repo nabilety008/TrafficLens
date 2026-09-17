@@ -7,6 +7,7 @@
         xmlns:views="clr-namespace:TrafficLens.App.Views"
         xmlns:controls="clr-namespace:TrafficLens.App.Controls"
         mc:Ignorable="d"
+        Icon="pack://application:,,,/TrafficLens.ico"
         Title="{Binding WindowTitle}"
         Width="900" Height="560"
         WindowStartupLocation="CenterScreen"
@@ -85,7 +86,7 @@
         <Border Grid.Row="1" Background="{StaticResource SurfaceAltBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1" Padding="20,8">
-            <StackPanel Orientation="Horizontal">
+            <WrapPanel>
                 <Button Content="{Binding DashboardNavLabel}"
                         Command="{Binding ShowDashboardCommand}"
                         Background="{StaticResource SurfaceBrush}"
@@ -122,8 +123,15 @@
                         Background="{StaticResource SurfaceBrush}"
                         Foreground="{StaticResource TextBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
+                        Padding="14,6" Margin="0,0,8,0" />
+                <Button AutomationProperties.Name="NavAbout"
+                        Content="{Binding AboutNavLabel}"
+                        Command="{Binding ShowAboutCommand}"
+                        Background="{StaticResource SurfaceBrush}"
+                        Foreground="{StaticResource TextBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
                         Padding="14,6" />
-            </StackPanel>
+            </WrapPanel>
         </Border>
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
@@ -333,6 +341,9 @@
 
         <ContentControl x:Name="SettingsHost" Grid.Row="2"
                                  Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVis}}" />
+
+        <ContentControl x:Name="AboutHost" Grid.Row="2"
+                                 Visibility="{Binding IsAboutVisible, Converter={StaticResource BoolToVis}}" />
 
         <StatusBar Grid.Row="3" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextMutedBrush}">
             <TextBlock Text="{Binding StatusMessage}" FontSize="11" />

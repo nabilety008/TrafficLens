@@ -204,6 +204,8 @@ public partial class App : Application
         services.AddSingleton<AlertsView>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SettingsView>();
+        services.AddSingleton<AboutViewModel>();
+        services.AddSingleton<AboutView>();
         services.AddSingleton<IStartupRegistrationService, StartupRegistrationService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

@@ -29,6 +29,8 @@
 #define AppId "{{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}}"
 #define AppPublisher "TrafficLens Contributors"
 #define AppExe "TrafficLens.exe"
+; Shared brand icon produced by scripts\generate-icons.ps1 (replaceable asset).
+#define BrandIcon SourcePath + "\..\assets\branding\TrafficLens.ico"
 
 [Setup]
 AppId={#AppId}
@@ -36,15 +38,23 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersionShort}
 AppPublisher={#AppPublisher}
+AppCopyright=Copyright (C) 2026 TrafficLens Contributors
+; Placeholder project URLs — marketing/final branding will provide real ones.
 AppPublisherURL=https://github.com/
 AppSupportURL=https://github.com/
+; Embedded product metadata for the Setup executable.
+VersionInfoCompany={#AppPublisher}
+VersionInfoDescription={#AppName} Network Monitor Setup
+VersionInfoProductName={#AppName}
+VersionInfoProductVersion={#AppVersionShort}
+VersionInfoVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\TrafficLens
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir={#OutputDir}
 OutputBaseFilename={#OutputFile}
-SetupIconFile=placeholder.ico
+SetupIconFile={#BrandIcon}
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max

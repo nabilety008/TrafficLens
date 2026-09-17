@@ -19,7 +19,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\branding\TrafficLens.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\assets\branding\TrafficLens.ico" />
+  </ItemGroup>
 
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

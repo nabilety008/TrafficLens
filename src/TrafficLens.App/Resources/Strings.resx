@@ -450,4 +450,49 @@
   <data name="HistoryErrorDetailLabel" xml:space="preserve">
     <value>The traffic history is currently unavailable. Details were written to the application log.</value>
   </data>
+  <data name="AboutNavLabel" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="AboutTitleLabel" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="AboutDescriptionLabel" xml:space="preserve">
+    <value>TrafficLens is a local-first network monitor for Windows. It shows each application's download and upload activity without sending data anywhere.</value>
+  </data>
+  <data name="ProductNameLabel" xml:space="preserve">
+    <value>TrafficLens</value>
+  </data>
+  <data name="VersionLabel" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="RuntimeLabel" xml:space="preserve">
+    <value>Runtime</value>
+  </data>
+  <data name="OsLabel" xml:space="preserve">
+    <value>Operating system</value>
+  </data>
+  <data name="CultureLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="DataPathLabel" xml:space="preserve">
+    <value>Data location</value>
+  </data>
+  <data name="SettingsPathLabel" xml:space="preserve">
+    <value>Settings file</value>
+  </data>
+  <data name="LogsPathLabel" xml:space="preserve">
+    <value>Logs folder</value>
+  </data>
+  <data name="DiagnosticsHeaderLabel" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="CopyDiagnosticsLabel" xml:space="preserve">
+    <value>Copy diagnostics</value>
+  </data>
+  <data name="DiagnosticsCopiedLabel" xml:space="preserve">
+    <value>Diagnostics copied to clipboard.</value>
+  </data>
+  <data name="OpenLogFolderLabel" xml:space="preserve">
+    <value>Open logs folder</value>
+  </data>
 </root>

@@ -147,7 +147,22 @@ public class LocalizationResourceTests
         "PermissionDeniedDetailLabel",
         "MonitoringFailedDetailLabel",
         "ConnectionsErrorDetailLabel",
-        "HistoryErrorDetailLabel"
+        "HistoryErrorDetailLabel",
+        "AboutNavLabel",
+        "AboutTitleLabel",
+        "AboutDescriptionLabel",
+        "ProductNameLabel",
+        "VersionLabel",
+        "RuntimeLabel",
+        "OsLabel",
+        "CultureLabel",
+        "DataPathLabel",
+        "SettingsPathLabel",
+        "LogsPathLabel",
+        "DiagnosticsHeaderLabel",
+        "CopyDiagnosticsLabel",
+        "DiagnosticsCopiedLabel",
+        "OpenLogFolderLabel"
     };
 
     [Fact]

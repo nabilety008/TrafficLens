@@ -28,7 +28,8 @@ public partial class MainWindow : Window
         ConnectionsView connectionsView,
         HistoryView historyView,
         AlertsView alertsView,
-        SettingsView settingsView)
+        SettingsView settingsView,
+        AboutView aboutView)
     {
         _localization = localization;
         _trayService = trayService;
@@ -43,7 +44,9 @@ public partial class MainWindow : Window
         HistoryHost.Content = historyView;
         AlertsHost.Content = alertsView;
         SettingsHost.Content = settingsView;
+        AboutHost.Content = aboutView;
         settingsView.DataContext = viewModel.Settings;
+        aboutView.DataContext = viewModel.About;
 
         _localization.CultureChanged += OnCultureChanged;
         UpdateFlowDirection();

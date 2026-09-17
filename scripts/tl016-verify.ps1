@@ -126,8 +126,8 @@ Info "Settings file : $Settings"
 $en = Get-EnResx
 $fa = Get-FaResx
 
-$enNav  = @($en.DashboardLabel, $en.ApplicationsLabel, $en.ConnectionsLabel, $en.HistoryLabel, $en.AlertsNavLabel, $en.SettingsNavLabel)
-$faNav  = @($fa.DashboardLabel, $fa.ApplicationsLabel, $fa.ConnectionsLabel, $fa.HistoryLabel, $fa.AlertsNavLabel, $fa.SettingsNavLabel)
+$enNav  = @($en.DashboardLabel, $en.ApplicationsLabel, $en.ConnectionsLabel, $en.HistoryLabel, $en.AlertsNavLabel, $en.SettingsNavLabel, $en.AboutNavLabel)
+$faNav  = @($fa.DashboardLabel, $fa.ApplicationsLabel, $fa.ConnectionsLabel, $fa.HistoryLabel, $fa.AlertsNavLabel, $fa.SettingsNavLabel, $fa.AboutNavLabel)
 $enPage = @($en.GraphLiveTrafficLabel, $en.GraphLast30SecondsLabel, $en.DownloadLabel, $en.UploadLabel)
 $faPage = @($fa.GraphLiveTrafficLabel, $fa.GraphLast30SecondsLabel, $fa.DownloadLabel, $fa.UploadLabel)
 
@@ -208,6 +208,72 @@ try {
         if ($histEnLeak.Count -eq 0) { Pass "C3: no English 'History' leak on fa History page" } else { Fail "C3: English leak" "History" }
     } else {
         Fail "C1: UIA window" "not found"
+    }
+
+    # ---- E) About page: reachable + localized (fa-IR then en-US) ----
+    Write-Host ""
+    Write-Host "E) About page reachable and localized" -ForegroundColor Yellow
+    if ($null -ne $script:tlWin) {
+        if (Invoke-ButtonByName "NavAbout") {
+            Pass "E1: 'NavAbout' nav button invoked (fa-IR)"
+        } else {
+            Fail "E1: NavAbout nav button" "not found/invocable"
+        }
+        Start-Sleep -Milliseconds 900
+        $script:tlWin = Get-AppWindowElement $pB
+        $aboutSet = Get-DescendantNames $script:tlWin
+        $enAbout  = @($en.AboutTitleLabel, $en.VersionLabel, $en.RuntimeLabel, $en.OsLabel, $en.DiagnosticsHeaderLabel, $en.CopyDiagnosticsLabel, $en.OpenLogFolderLabel)
+        $faAbout  = @($fa.AboutTitleLabel, $fa.VersionLabel, $fa.RuntimeLabel, $fa.OsLabel, $fa.DiagnosticsHeaderLabel, $fa.CopyDiagnosticsLabel, $fa.OpenLogFolderLabel)
+        $missingFa = @($faAbout | Where-Object { -not $aboutSet.Contains($_) })
+        if ($missingFa.Count -eq 0) {
+            Pass "E2: About page content localized (fa-IR)"
+        } else {
+            Fail "E2: fa About page labels" "missing: $($missingFa -join ' | ')"
+        }
+        $leakFa = @($enAbout | Where-Object { $aboutSet.Contains($_) })
+        if ($leakFa.Count -eq 0) {
+            Pass "E3: no English About labels leaked in fa-IR"
+        } else {
+            Fail "E3: English leak on fa About page" ($leakFa -join ' | ')
+        }
+        if ($aboutSet.Contains("AboutProductName") -or $aboutSet.Contains($fa.ProductNameLabel)) {
+            Pass "E4: brand identity present on About page (TrafficLens)"
+        } else {
+            Fail "E4: product name on fa About page" "not found"
+        }
+    } else {
+        Fail "E1: UIA window" "not found"
+    }
+
+    # ---- E') About page in en-US ----
+    Kill-All; Start-Sleep -Milliseconds 800
+    Write-SettingsFile @{ Language = 'en-US'; MinimizeToTray = 'True'; CloseToTray = 'True'; FloatingWidgetEnabled = 'False' }
+    $pE = Start-Process -FilePath $Exe -PassThru
+    $titleE = Wait-MainWindowTitle $pE
+    $script:tlWin = Get-AppWindowElement $pE
+    if ($null -ne $script:tlWin -and $titleE) {
+        if (Invoke-ButtonByName "NavAbout") {
+            Pass "E5: 'NavAbout' invoked (en-US)"
+        } else {
+            Fail "E5: NavAbout nav button" "not found/invocable"
+        }
+        Start-Sleep -Milliseconds 900
+        $script:tlWin = Get-AppWindowElement $pE
+        $enSet = Get-DescendantNames $script:tlWin
+        $missingEn = @($enAbout | Where-Object { -not $enSet.Contains($_) })
+        if ($missingEn.Count -eq 0) {
+            Pass "E6: About page content in English"
+        } else {
+            Fail "E6: en About page labels" "missing: $($missingEn -join ' | ')"
+        }
+        $leakEn = @($faAbout | Where-Object { $enSet.Contains($_) })
+        if ($leakEn.Count -eq 0) {
+            Pass "E7: no Persian About labels leaked in en-US"
+        } else {
+            Fail "E7: Persian leak on en About page" ($leakEn -join ' | ')
+        }
+    } else {
+        Fail "E5: en-UIA window" "not found"
     }
 
     # ---- D) Graceful exit + cleanup ----

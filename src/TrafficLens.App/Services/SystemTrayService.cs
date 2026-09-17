@@ -29,6 +29,8 @@ public sealed class SystemTrayService : ISystemTrayService
     private ToolStripMenuItem? _toggleWidgetItem;
     private ToolStripMenuItem? _alwaysOnTopItem;
     private ToolStripMenuItem? _exitItem;
+    private Icon? _brandIcon;
+    private bool _ownsIconHandle;
     private IntPtr _iconHandle;
     private bool _disposed;
 
@@ -134,8 +136,18 @@ public sealed class SystemTrayService : ISystemTrayService
 
                 if (_iconHandle != IntPtr.Zero)
                 {
-                    NativeMethods.DestroyIcon(_iconHandle);
+                    if (_ownsIconHandle)
+                    {
+                        NativeMethods.DestroyIcon(_iconHandle);
+                    }
+
                     _iconHandle = IntPtr.Zero;
+                }
+
+                if (_brandIcon is not null)
+                {
+                    _brandIcon.Dispose();
+                    _brandIcon = null;
                 }
             });
         }
@@ -152,7 +164,17 @@ public sealed class SystemTrayService : ISystemTrayService
             return;
         }
 
-        _iconHandle = CreateTrayIconHandle();
+        _brandIcon = TryLoadBrandIcon();
+        if (_brandIcon is not null)
+        {
+            _iconHandle = _brandIcon.Handle;
+            _ownsIconHandle = false;
+        }
+        else
+        {
+            _iconHandle = CreateTrayIconHandle();
+            _ownsIconHandle = true;
+        }
 
         _openItem = new ToolStripMenuItem(GetString("OpenTrafficLensLabel"));
         _openItem.Click += (_, _) => OpenRequested?.Invoke(this, EventArgs.Empty);
@@ -199,6 +221,31 @@ public sealed class SystemTrayService : ISystemTrayService
         _floatingWidgetService.IsVisibleChanged += OnWidgetVisibilityChanged;
         _floatingWidgetService.AlwaysOnTopChanged += OnAlwaysOnTopChanged;
         _localization.CultureChanged += OnCultureChanged;
+    }
+
+    private static Icon? TryLoadBrandIcon()
+    {
+        if (System.Windows.Application.Current is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var streamInfo = System.Windows.Application.GetResourceStream(
+                new System.Uri("pack://application:,,,/TrafficLens.ico"));
+            if (streamInfo is null)
+            {
+                return null;
+            }
+
+            using var stream = streamInfo.Stream;
+            return new Icon(stream, 32, 32);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static IntPtr CreateTrayIconHandle()

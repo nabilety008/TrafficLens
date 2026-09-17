@@ -19,6 +19,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private string _historyNavLabel = string.Empty;
     private string _alertsNavLabel = string.Empty;
     private string _settingsNavLabel = string.Empty;
+    private string _aboutNavLabel = string.Empty;
     private string _floatingWidgetToggleLabel = string.Empty;
     private string _minimizeToTrayLabel = string.Empty;
     private string _closeToTrayLabel = string.Empty;
@@ -30,6 +31,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     private bool _isHistoryVisible;
     private bool _isAlertsVisible;
     private bool _isSettingsVisible;
+    private bool _isAboutVisible;
 
     public MainViewModel(
         ILocalizationService localization,
@@ -40,6 +42,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         HistoryViewModel history,
         AlertsViewModel alerts,
         SettingsViewModel settingsPage,
+        AboutViewModel about,
         IFloatingWidgetService floatingWidgetService)
     {
         _localization = localization;
@@ -50,6 +53,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         History = history;
         Alerts = alerts;
         Settings = settingsPage;
+        About = about;
         _floatingWidgetService = floatingWidgetService;
 
         _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
@@ -69,12 +73,14 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         ShowHistoryCommand = new RelayCommand(() => SelectPage(Page.History));
         ShowAlertsCommand = new RelayCommand(() => SelectPage(Page.Alerts));
         ShowSettingsCommand = new RelayCommand(() => SelectPage(Page.Settings));
+        ShowAboutCommand = new RelayCommand(() => SelectPage(Page.About));
         ToggleFloatingWidgetCommand = new RelayCommand(() => _floatingWidgetService.Toggle());
     }
 
     public void Dispose()
     {
         _floatingWidgetService.IsVisibleChanged -= OnIsVisibleChanged;
+        About.Dispose();
         Settings.Dispose();
     }
 
@@ -89,6 +95,14 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     public AlertsViewModel Alerts { get; }
 
     public SettingsViewModel Settings { get; }
+
+    public AboutViewModel About { get; }
+
+    public string AboutNavLabel
+    {
+        get => _aboutNavLabel;
+        private set => SetProperty(ref _aboutNavLabel, value);
+    }
 
     public string SettingsNavLabel
     {
@@ -200,6 +214,12 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _isApplicationsVisible, value);
     }
 
+    public bool IsAboutVisible
+    {
+        get => _isAboutVisible;
+        private set => SetProperty(ref _isAboutVisible, value);
+    }
+
     public string WindowTitle
     {
         get => _windowTitle;
@@ -228,6 +248,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public ICommand ShowSettingsCommand { get; }
 
+    public ICommand ShowAboutCommand { get; }
+
     public ICommand ToggleFloatingWidgetCommand { get; }
 
     public string FloatingWidgetToggleLabel
@@ -244,6 +266,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         IsHistoryVisible = page == Page.History;
         IsAlertsVisible = page == Page.Alerts;
         IsSettingsVisible = page == Page.Settings;
+        IsAboutVisible = page == Page.About;
 
         Connections.SetActive(page == Page.Connections);
     }
@@ -262,6 +285,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         HistoryNavLabel = _localization["HistoryLabel"];
         AlertsNavLabel = _localization["AlertsNavLabel"];
         SettingsNavLabel = _localization["SettingsNavLabel"];
+        AboutNavLabel = _localization["AboutNavLabel"];
         MinimizeToTrayLabel = _localization["MinimizeToTrayLabel"];
         CloseToTrayLabel = _localization["CloseToTrayLabel"];
         RefreshFloatingWidgetToggleLabel();
@@ -279,6 +303,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         Connections,
         History,
         Alerts,
-        Settings
+        Settings,
+        About
     }
 }

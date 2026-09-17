@@ -450,4 +450,49 @@
   <data name="HistoryErrorDetailLabel" xml:space="preserve">
     <value>تاریخچه ترافیک در حال حاضر در دسترس نیست. جزئیات در گزارش برنامه نوشته شده است.</value>
   </data>
+  <data name="AboutNavLabel" xml:space="preserve">
+    <value>درباره</value>
+  </data>
+  <data name="AboutTitleLabel" xml:space="preserve">
+    <value>درباره</value>
+  </data>
+  <data name="AboutDescriptionLabel" xml:space="preserve">
+    <value>ترافیک‌لنز یک پایشگر شبکه محلی برای ویندوز است؛ فعالیت دانلود و آپلود هر برنامه را بدون ارسال داده به جایی نشان می‌دهد.</value>
+  </data>
+  <data name="ProductNameLabel" xml:space="preserve">
+    <value>TrafficLens</value>
+  </data>
+  <data name="VersionLabel" xml:space="preserve">
+    <value>نسخه</value>
+  </data>
+  <data name="RuntimeLabel" xml:space="preserve">
+    <value>زمان اجرا</value>
+  </data>
+  <data name="OsLabel" xml:space="preserve">
+    <value>سیستم عامل</value>
+  </data>
+  <data name="CultureLabel" xml:space="preserve">
+    <value>زبان</value>
+  </data>
+  <data name="DataPathLabel" xml:space="preserve">
+    <value>مسیر داده</value>
+  </data>
+  <data name="SettingsPathLabel" xml:space="preserve">
+    <value>مسیر فایل تنظیمات</value>
+  </data>
+  <data name="LogsPathLabel" xml:space="preserve">
+    <value>مسیر گزارش‌ها</value>
+  </data>
+  <data name="DiagnosticsHeaderLabel" xml:space="preserve">
+    <value>اطلاعات تشخیص</value>
+  </data>
+  <data name="CopyDiagnosticsLabel" xml:space="preserve">
+    <value>کپی اطلاعات تشخیص</value>
+  </data>
+  <data name="DiagnosticsCopiedLabel" xml:space="preserve">
+    <value>اطلاعات تشخیص در کلیپ‌بورد کپی شد.</value>
+  </data>
+  <data name="OpenLogFolderLabel" xml:space="preserve">
+    <value>باز کردن پوشه گزارش</value>
+  </data>
 </root>
