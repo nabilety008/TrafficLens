@@ -870,6 +870,7 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 
 - TL-016 localization branch merged into `master`: `9dc8335` — `merge: feature/tl016-persian-localization into master (TL-016)` (`--no-ff`; `v0.1.0` tag remains at `c1f677a`).
 - TL-016 continuation (branding/About/Diagnostics): code `ce8f6b0` — `feat: complete TL-016 product polish with brand icon pipeline, About page and diagnostics support`; docs `8e7fa00`.
+- **v0.1.1 release (first post-TL-016):** version bump `f8d1b97` — `build: bump release version to 0.1.1 for the first post-TL-016 release`; docs `4fc21bf` — `docs: document v0.1.1 release (version bump, verification, upgrade results)`. Tag `v0.1.1` at `4fc21bf` (lightweight, same style as `v0.1.0` at `c1f677a`). Installer `TrafficLens-Setup-0.1.1-win-x64.exe`, SHA-256 `3FB5EE38238D497883755390C4659BFED5E3DDD8F9DD6F477FA776F29E68DE3B`.
 - TL-016 (localization / Persian UI): `cbb1dce` — `feat: complete Persian localization with data-bound graph label and localized status/error detail surfaces (TL-016)`; docs `ae67cdb`.
 - TL-015 (packaging / installer): `d794480` — `feat: add reproducible release pipeline and per-user Inno Setup installer with single-file win-x64 publish (TL-015)`; docs `077c3e8`.
 - TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `1fb8463`.
