@@ -49,7 +49,7 @@
 ```powershell
 git clone <repo>
 cd TrafficLens
-.\scripts\build-release.ps1 -Version 0.1.0
+.\scripts\build-release.ps1 -Version 0.1.1
 ```
 
 - `-Version` defaults to the `Version` in `Directory.Build.props` if omitted.
@@ -72,10 +72,10 @@ artifacts/
     fa-IR/TrafficLens.App.resources.dll              (Persian satellite)
     ...
   installer/
-    TrafficLens-Setup-0.1.0-win-x64.exe
-    TrafficLens-Setup-0.1.0-win-x64.exe.sha256
+    TrafficLens-Setup-0.1.1-win-x64.exe
+    TrafficLens-Setup-0.1.1-win-x64.exe.sha256
   portable/
-    TrafficLens-Portable-0.1.0-win-x64.zip
+    TrafficLens-Portable-0.1.1-win-x64.zip
 ```
 
 `artifacts/` is gitignored; only the source scripts and installer definition
@@ -85,7 +85,7 @@ are kept in Git.
 
 - Centralised in `Directory.Build.props`:
   `Version`, `AssemblyVersion`, `FileVersion`, `InformationalVersion`
-  (currently `0.1.0`).
+  (currently `0.1.1`).
 - The release script overrides them for the publish (`-p:Version=…`).
 - Stable `AppId` GUID in `TrafficLens.iss` keeps one uninstall entry and
   upgrade-aware paths across versions.

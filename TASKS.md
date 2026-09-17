@@ -593,3 +593,4 @@
 | M10 | Packaging / installer | TL-015 | Done |
 | M11 | Full Persian localization | TL-016 | Done |
 | M11a | Product polish / branding & About | TL-016 continuation | Done |
+| R1 | Release v0.1.1 (first post-TL-016 release) | — | Done (tag `v0.1.1`) |

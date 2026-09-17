@@ -2,6 +2,37 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.1] — 2026-09-17 (first release after TL-016)
+
+### Changed
+- **Release version 0.1.0 → 0.1.1** — first released build that ships the
+  TL-016 branding/About/Diagnostics work end-to-end. Version stays centralized in
+  `Directory.Build.props` (`Version`/`AssemblyVersion`/`FileVersion`/
+  `InformationalVersion`); the About page reads it at runtime, and
+  `scripts/build-release.ps1` feeds it to the installer (`/DAppVersion`/
+  `/DAppVersionShort`; the `.iss` fallback defines match).
+- Installer `TrafficLens-Setup-0.1.1-win-x64.exe` built (Inno Setup 6.7.3):
+  `SetupIconFile` brand icon + `VersionInfo*` metadata (ProductVersion 0.1.1,
+  FileVersion 0.1.1).
+
+### Verified
+- `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
+- 410/410 tests pass (App 158 / Network 212 / Infrastructure 40).
+- Published single-file win-x64 EXE metadata: ProductVersion 0.1.1, FileVersion
+  0.1.1, FileDescription "TrafficLens Network Monitor".
+- Installer SHA-256 `3FB5EE38238D497883755390C4659BFED5E3DDD8F9DD6F477FA776F29E68DE3B`.
+- **Upgrade v0.1.0 → v0.1.1 in place:** `settings.json`, `data\trafficlens.db`
+  and all logs preserved byte-identical; start-menu shortcut not duplicated;
+  exactly one uninstall entry (DisplayVersion 0.1.1); HKCU Run untouched.
+- Installed-app smoke (Dashboard, graph, Applications, Connections, History,
+  Settings, widget, tray, en/fa switch, single-instance, graceful exit, no ETW
+  orphan) PASS.
+- About page shows **0.1.1**; brand icon on the EXE matches
+  `assets/branding/TrafficLens.ico` at the 32 px frame (100% pixel match).
+- `tl016-verify.ps1` PASS on the published 0.1.1 build (en-US labels, fa-IR
+  content scan, History page, About page en + fa-IR, no English/Persian leaks,
+  graceful exit, no orphan process/ETW).
+
 ## [Unreleased] — TL-016 (full Persian localization / M11, + product polish / M11a)
 
 ### Changed

@@ -17,6 +17,7 @@
 | M10 | Packaging / installer | Done (TL-015) |
 | M11 | Full Persian localization + language switcher | Done (TL-016) |
 | M11a | Product polish / branding foundation + About / Diagnostics | Done (TL-016 continuation) |
+| R1 | Release v0.1.1 (first post-TL-016 build) | Released (tag `v0.1.1`) |
 
 ## Guidance
 

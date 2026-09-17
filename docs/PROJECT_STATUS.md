@@ -10,7 +10,9 @@ pipeline (`scripts/build-release.ps1`), self-contained single-file win-x64 publi
 with full install/uninstall/reinstall/upgrade verification and hash-identical
 user-data preservation (`%LOCALAPPDATA%\TrafficLens`). Baseline release version
 0.1.0 (previous 0.0.x entries are in-repo development milestones); artifacts and
-installer SHA-256 produced by the script and gitignored.
+installer SHA-256 produced by the script and gitignored. **Released v0.1.1**
+(2026-09-17) as the first post-TL-016 release — same reproducible pipeline, now
+packaging the branding/About/Diagnostics work (see Git Commit / tag `v0.1.1`).
 
 M11 (TL-016 full Persian localization) is complete **and merged into `master`**
 (merge `9dc8335`): the UI is fully localized with no hard-coded user-facing
@@ -887,10 +889,9 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 
 ## Next Recommended Task
 
-- TL-016 is fully complete and merged into `master` (localization + branding/
-  About/Diagnostics continuation, 410 tests, 0 warnings/0 errors). The next step
-  is to prepare the next release: bump the version in `Directory.Build.props`
-  above the 0.1.0 baseline and rerun `scripts/build-release.ps1` (new installer
-  + portable ZIP + SHA-256) so the shipped artifacts carry the About-page
-  version. No architecture work is pending for networking/collectors/ETW/
-  SQLite; a future TL-017 would be scoped independently.
+- **TL-017 is now the next task.** Defer to `TASKS.md` for its scope definition;
+  typical candidates for a fresh task ID: monitoring feature additions,
+  additional localization languages, or a UX surface. Do not rename existing IDs.
+- Release v0.1.1 shipped (tag `v0.1.1`); the 0.1.x baseline is current, so no
+  further version bump is implied. Architecture work remains none-pending for
+  networking/collectors/ETW/SQLite unless TL-017 defines it.

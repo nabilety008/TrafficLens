@@ -52,10 +52,10 @@ exclude `assets/`).
 
 ## Versioning
 
-Version state remains the v0.1.0 baseline (`Directory.Build.props`:
-`<Version>0.1.0</Version>`, `<AssemblyVersion>0.1.0.0</AssemblyVersion>`,
-`<FileVersion>0.1.0.0</FileVersion>`,
-`<InformationalVersion>0.1.0</InformationalVersion>`). The About page reads the
+Version state is the released **v0.1.1** (`Directory.Build.props`:
+`<Version>0.1.1</Version>`, `<AssemblyVersion>0.1.1.0</AssemblyVersion>`,
+`<FileVersion>0.1.1.0</FileVersion>`,
+`<InformationalVersion>0.1.1</InformationalVersion>`). The About page reads the
 informational version at runtime. Version bumps belong to the next release
 candidate at release time (see `docs/PACKAGING.md` for the publish flow).
 
