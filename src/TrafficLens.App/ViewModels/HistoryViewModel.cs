@@ -26,6 +26,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     private long _scaleMax = 1;
     private bool _isUnavailable;
     private string _errorDetail = string.Empty;
+    private string _historyErrorDetailText = string.Empty;
     private bool _hasData;
 
     private string _historyLabel = string.Empty;
@@ -262,6 +263,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         TotalLabel = _localization["TotalRateLabel"];
         NoDataText = _localization["HistoryNoDataLabel"];
         UnavailableText = _localization["HistoryUnavailableLabel"];
+        _historyErrorDetailText = _localization["HistoryErrorDetailLabel"];
         TodayLabel = _localization["TodayLabel"];
         YesterdayLabel = _localization["YesterdayLabel"];
         Last7DaysLabel = _localization["Last7DaysLabel"];
@@ -305,7 +307,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     private void ApplySnapshot(HistorySnapshot snapshot)
     {
         IsUnavailable = !snapshot.IsAvailable;
-        ErrorDetail = snapshot.Error ?? string.Empty;
+        ErrorDetail = IsUnavailable ? _historyErrorDetailText : string.Empty;
 
         UpdateSelectionFlags();
 

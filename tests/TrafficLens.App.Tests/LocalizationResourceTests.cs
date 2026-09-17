@@ -143,7 +143,11 @@ public class LocalizationResourceTests
         "ChangesSavedLabel",
         "ResetToDefaultsLabel",
         "ResetAreYouSureLabel",
-        "InvalidValueLabel"
+        "InvalidValueLabel",
+        "PermissionDeniedDetailLabel",
+        "MonitoringFailedDetailLabel",
+        "ConnectionsErrorDetailLabel",
+        "HistoryErrorDetailLabel"
     };
 
     [Fact]

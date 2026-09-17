@@ -533,8 +533,29 @@
 - **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
 ### TL-016 Localization / Persian UI
-- [ ] Runtime language switcher, full fa-IR translation
-- **Status: not started**
+- [x] Audit: resx key parity (en + fa-IR), `LocalizationService` (RTL, CultureChanged,
+      fallback), runtime switcher already in place (`SwitchToEnglishCommand`/
+      `SwitchToPersianCommand`, Settings `LanguageOptions`, persisted via settings)
+- [x] No hard-coded user-facing strings: graph "now" label now via `NowLabel`
+      DependencyProperty (bound to Dashboard `GraphNowLabel`, default "now");
+      all UI text through `Strings*.resx` except endonyms (English / فارسی) and brand
+- [x] Error/status surfaces localized instead of raw English provider messages:
+      Applications (`PermissionDeniedDetailLabel`, `MonitoringFailedDetailLabel`),
+      Connections (`ConnectionsErrorDetailLabel`), History (`HistoryErrorDetailLabel`);
+      raw detail stays in app log
+- [x] Culture-aware history chart date labels (`ToString(..., CultureInfo.CurrentCulture)`
+      so fa-IR uses the Persian calendar)
+- [x] en + fa-IR key parity maintained: 146 keys each, identical key sets
+      (`LocalizationResourceTests.RequiredKeys` extended)
+- [x] Tests updated/added: 398 tests (App 146, Network 212, Infrastructure 40) — localized
+      detail assertions, raw English never surfaced, fa-IR detail localization
+- [x] Build Debug + Release: 0 warnings / 0 errors
+- [x] Real GUI verification (`scripts/tl016-verify.ps1` on published single-file build):
+      en-US labels render, fa-IR content scan (nav + dashboard + History page in Persian,
+      no English leak), graceful exit, no orphan process/ETW; TL-015 smoke regression
+      still passes
+- **Status: done**
+- **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
 ## Milestones
 
@@ -551,4 +572,4 @@
 | M8 | Alerts and settings | TL-012, TL-013 | Done |
 | M9 | Stability & performance | TL-014 | Done |
 | M10 | Packaging / installer | TL-015 | Done |
-| M11 | Full Persian localization | TL-016 | Not started |
+| M11 | Full Persian localization | TL-016 | Done |

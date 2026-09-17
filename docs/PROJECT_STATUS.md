@@ -4,17 +4,26 @@ Updated: 2026-09-17
 
 ## Current Milestone
 
-M10 (packaging/installer) is complete: **TL-015** adds a reproducible one-command
-release pipeline (`scripts/build-release.ps1`), a self-contained single-file
-win-x64 publish (`TrafficLens.exe`, assembly name `TrafficLens`), an Inno Setup 6
-per-user installer (per-user apps folder, stable AppId, no PDBs, running-app
-notice, never force-kills), and full install / uninstall / reinstall / upgrade
-verification (0.1.0 → 0.1.1 → 0.1.0) with user data
-(`%LOCALAPPDATA%\TrafficLens`) preserved hash-identically throughout. Release
-artifacts and the installer SHA-256 are produced by the script; artifacts are
-gitignored. 397 tests, 0 warnings, 0 errors. TL-015 is the first shippable
-installer release (baseline version 0.1.0; previous 0.0.x entries are in-repo
-development milestones). M11 (TL-016 full Persian localization) is next.
+M10 (packaging/installer) shipped as **TL-015**: reproducible one-command release
+pipeline (`scripts/build-release.ps1`), self-contained single-file win-x64 publish
+(`TrafficLens.exe`, assembly name `TrafficLens`), Inno Setup 6 per-user installer
+with full install/uninstall/reinstall/upgrade verification and hash-identical
+user-data preservation (`%LOCALAPPDATA%\TrafficLens`). Baseline release version
+0.1.0 (previous 0.0.x entries are in-repo development milestones); artifacts and
+installer SHA-256 produced by the script and gitignored.
+
+M11 (TL-016 full Persian localization) is complete: the UI is fully localized
+with no hard-coded user-facing strings. The graph "now" label is now data-bound
+(`NowLabel` on `TrafficGraphControl`, default "now"); status/error banners in the
+Applications, Connections and History views show localized detail text instead of
+raw English provider messages (raw detail remains in the app log); the History
+chart dates render with `CultureInfo.CurrentCulture` (Persian calendar under
+fa-IR); en + fa-IR resx stay at 146 keys with identical key sets. Runtime language
+switching (English ⇄ فارسی) persists via settings and was already in place.
+398 tests, 0 warnings, 0 errors (Debug + Release), verified end-to-end on the
+published single-file build by `scripts/tl016-verify.ps1` and the existing TL-015
+smoke regression. The default branch `master` is untouched; TL-016 lived on
+`feature/tl016-persian-localization` and awaits merge approval.
 
 ## Task IDs
 
@@ -35,7 +44,7 @@ development milestones). M11 (TL-016 full Persian localization) is next.
 - TL-013 Settings — **DONE**
 - TL-014 Stability & Performance Audit — **DONE**
 - TL-015 Packaging / Installer — **DONE**
-- TL-016 Localization / Persian UI — not started
+- TL-016 Localization / Persian UI — **DONE** (awaits merge approval)
 
 ## Completed
 
@@ -474,6 +483,29 @@ development milestones). M11 (TL-016 full Persian localization) is next.
     install dir and shortcuts fully cleaned on uninstall.
   - Docs: `docs/PACKAGING.md` (full packaging doc), ADR-023. 397 tests;
     Debug + Release 0 warnings / 0 errors.
+- TL-016 (localization / Persian UI, M11):
+  - **No hard-coded UI strings:** graph "now" label now data-bound — new
+    `TrafficGraphControl.NowLabel` DependencyProperty (default `"now"`), bound in
+    `MainWindow.xaml` to `Dashboard.GraphNowLabel` (already localized).
+  - **Localized status/error detail surfaces:** Applications
+    (`PermissionDeniedDetailLabel`, `MonitoringFailedDetailLabel`), Connections
+    (`ConnectionsErrorDetailLabel`) and History (`HistoryErrorDetailLabel`) views
+    show localized detail text; raw English provider/collector messages (e.g.
+    "Elevation required", "boom", "disk full") are never rendered — they continue
+    to drive the error state and remain in the app log.
+  - **Culture-aware History chart dates:** `ToString("MM-dd",
+    CultureInfo.CurrentCulture)` shows Persian-calendar dates under fa-IR.
+  - **Key parity enforced:** en + fa-IR resx both at 146 keys, identical key sets;
+    `LocalizationResourceTests.RequiredKeys` extended; endonyms (English / فارسی)
+    and brand intentionally untranslated.
+  - **398 tests** (App 146 / Network 212 / Infrastructure 40); Debug + Release 0
+    warnings / 0 errors.
+  - **Verified on the published single-file build** (`scripts/tl016-verify.ps1`):
+    en-US labels render, fa-IR content scan (nav + dashboard + History page in
+    Persian, no English leak), en-US History no-leak, graceful exit, no orphan
+    process / ETW. TL-015 smoke regression still passes on this branch build.
+  - Docs: ADR-024. `master` untouched; branch
+    `feature/tl016-persian-localization` ready to merge upon approval.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -797,6 +829,7 @@ development milestones). M11 (TL-016 full Persian localization) is next.
 
 ## Git Commit
 
+- TL-016 (localization / Persian UI): `cbb1dce` — `feat: complete Persian localization with data-bound graph label and localized status/error detail surfaces (TL-016)`; docs `ae67cdb`.
 - TL-015 (packaging / installer): `d794480` — `feat: add reproducible release pipeline and per-user Inno Setup installer with single-file win-x64 publish (TL-015)`; docs `077c3e8`.
 - TL-014 (stability & performance): `d04fc8d` — `fix: eliminate periodic idle-CPU spikes via event coalescing and page-visibility gating (TL-014)`; docs `1fb8463`.
 - TL-013 (settings): `6c0dec5` — `feat: add full Settings page with staged save, alert rule editors, startup registration, and absolute widget always-on-top (TL-013)`; docs `9c03cfe`.
@@ -815,6 +848,9 @@ development milestones). M11 (TL-016 full Persian localization) is next.
 
 ## Next Recommended Task
 
-- M10 (TL-015 packaging / installer) is complete and verified. Per ROADMAP
-  the next milestone is **M11 (TL-016 full Persian localization)** — confirm the
-  first M11 item with the user before starting any new task.
+- M11 (TL-016 full Persian localization) is complete and verified on
+  `feature/tl016-persian-localization`. The branch is ready to merge into
+  `master` pending user approval (do not merge without it). After merge, the
+  next release would be prepared via `scripts/build-release.ps1` (bumping the
+  version above the 0.1.0 baseline), producing an updated installer that
+  packages the localized build.

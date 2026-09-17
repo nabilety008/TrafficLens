@@ -258,7 +258,8 @@
                                                       Points="{Binding Dashboard.GraphPoints}"
                                                       YAxisMax="{Binding Dashboard.GraphScaleMax}"
                                                       WindowSeconds="{Binding Dashboard.GraphWindowSeconds}"
-                                                      ReferenceTime="{Binding Dashboard.GraphReferenceTime}" />
+                                                      ReferenceTime="{Binding Dashboard.GraphReferenceTime}"
+                                                      NowLabel="{Binding Dashboard.GraphNowLabel}" />
                     </StackPanel>
                 </Border>
 

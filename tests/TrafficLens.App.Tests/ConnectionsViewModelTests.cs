@@ -189,14 +189,15 @@ public sealed class ConnectionsViewModelTests : IDisposable
     }
 
     [Fact]
-    public void ProviderError_SurfacesAsBanner_WithoutClearingRows()
+    public void ProviderError_SurfacesAsLocalizedBanner_WithoutClearingRows()
     {
         _provider.Publish(Tcp("1", 1, "2", 2, ConnectionState.Established, 1, "a"));
 
         _provider.SetError("boom");
 
         Assert.True(_vm.HasError);
-        Assert.Contains("boom", _vm.ErrorDetail);
+        Assert.Equal(_localization["ConnectionsErrorDetailLabel"], _vm.ErrorDetail);
+        Assert.DoesNotContain("boom", _vm.ErrorDetail);
         Assert.Single(_vm.Connections);
     }
 

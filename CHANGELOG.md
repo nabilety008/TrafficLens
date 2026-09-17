@@ -2,6 +2,40 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — TL-016 (full Persian localization / M11)
+
+### Changed
+- **No hard-coded user-facing strings remain.** The dashboard graph "now" label is
+  now data-bound via `TrafficGraphControl.NowLabel` (a `DependencyProperty`,
+  default `"now"`) to the localized `Dashboard.GraphNowLabel`, so it renders
+  «اکنون» under fa-IR.
+- **Status/error detail surfaces are localized.** Applications
+  (`PermissionDeniedDetailLabel`, `MonitoringFailedDetailLabel`), Connections
+  (`ConnectionsErrorDetailLabel`) and History (`HistoryErrorDetailLabel`)
+  banners show localized Persian/English detail text instead of raw English
+  provider messages. Raw detail (e.g. `_collector.LastError`) is no longer
+  rendered; it stays in the application log. (ADR-024.)
+- **Culture-aware History chart dates.** `ToString("MM-dd",
+  CultureInfo.CurrentCulture)` — fa-IR renders Persian-calendar dates.
+- Language endonyms (`English` / «فارسی») and the TrafficLens brand remain
+  intentionally untranslated.
+
+### Added
+- `scripts/tl016-verify.ps1` — GUI verification of the published build: en-US
+  label render, fa-IR content scan (nav + dashboard + History page in Persian,
+  no English leak), graceful exit, no orphan process/ETW.
+- ADR-024 (localized detail surfaces: localized summary in UI, raw messages
+  log-only; key parity as a test invariant).
+
+### Verified
+- en + fa-IR resx both 146 keys, identical key sets (`RequiredKeys` test).
+- 398 tests (App 146 / Network 212 / Infrastructure 40); Debug + Release 0
+  warnings / 0 errors.
+- `tl016-verify.ps1` PASS on the published single-file win-x64 build; TL-015
+  smoke regression PASS.
+- Landed on `feature/tl016-persian-localization`; `master` untouched, awaiting
+  merge approval.
+
 ## [0.1.0] — 2026-09-17 (TL-015 complete — packaging / installer)
 
 Versioning note: 0.0.1–0.0.17 are in-repo development milestones. **0.1.0 is the

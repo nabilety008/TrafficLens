@@ -50,6 +50,7 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private string _noActiveConnectionsText = string.Empty;
     private string _errorTitle = string.Empty;
     private string _errorDetail = string.Empty;
+    private string _connectionErrorDetailText = string.Empty;
     private bool _hasError;
     private string _processLabel = string.Empty;
     private string _pidLabel = string.Empty;
@@ -305,6 +306,7 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         SearchPlaceholder = _localization["SearchConnectionsPlaceholder"];
         NoActiveConnectionsText = _localization["NoActiveConnectionsLabel"];
         _errorTitle = _localization["ConnectionErrorLabel"];
+        _connectionErrorDetailText = _localization["ConnectionsErrorDetailLabel"];
         _unknownProcessText = _localization["UnknownProcessLabel"];
         _tcpText = _localization["TcpLabel"];
         _udpText = _localization["UdpLabel"];
@@ -353,8 +355,8 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private void UpdateErrorState()
     {
         var error = _provider.LastError;
-        ErrorDetail = string.IsNullOrWhiteSpace(error) ? string.Empty : error;
-        HasError = !string.IsNullOrWhiteSpace(ErrorDetail);
+        HasError = !string.IsNullOrWhiteSpace(error);
+        ErrorDetail = HasError ? _connectionErrorDetailText : string.Empty;
         if (HasError)
         {
             ErrorTitle = _errorTitle;

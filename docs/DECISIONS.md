@@ -754,4 +754,62 @@ so ProductVersion/FileVersion are plain `0.1.0` (no developer-machine git hash);
   `%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe`); the pipeline resolves ISCC
   and fails with a clear message if missing.
 
+## ADR-024 — Localized error/status detail surfaces (TL-016)
+
+**Status:** Accepted (TL-016)
+
+Decision for completing "no hard-coded user-facing strings" under full Persian
+localization.
+
+### Decision
+
+**1. Localized summary text is the only surfaced detail; raw messages stay in
+the log.** When a collector/provider/history snapshot reports a failure, the
+ViewModel shows a localized banner/text from `Strings*.resx`: Applications →
+`PermissionDeniedDetailLabel` / `MonitoringFailedDetailLabel`, Connections →
+`ConnectionsErrorDetailLabel`, History → `HistoryErrorDetailLabel`. The raw
+developer-facing message (e.g. `_collector.LastError`, provider `Error`,
+`HistorySnapshot.Error`) is no longer rendered to the UI; it continues to drive
+the error state and is written to the application log.
+
+**2. App-layer fix only; no architecture change.** The `ILocalizationService`
+contract, ViewModel landscape, and error-state model are unchanged. Each affected
+ViewModel gains a private localized-detail field refreshed in
+`RefreshLocalizedStrings()` and the existing culture-change event path re-renders
+it, so switching English ⇄ فارسی at runtime re-localizes the banner.
+
+**3. Remaining hard-coded UI text is deliberate.** The graph axis "now" label was
+the last literal; it is now data-bound via `TrafficGraphControl.NowLabel` (DP,
+default `"now"`) to the localized `Dashboard.GraphNowLabel`. Language endonyms
+(`English` / `فارسی`) and the `TrafficLens` brand are intentionally never
+translated. History chart dates use `CultureInfo.CurrentCulture` so fa-IR renders
+Persian-calendar dates.
+
+**4. Key parity is a test invariant.** `LocalizationResourceTests.RequiredKeys`
+asserts the en and fa-IR key sets are identical; new keys are added to both files
+together. fa-IR content is verified on the published build by
+`scripts/tl016-verify.ps1` (nav + dashboard + History page in Persian, no English
+leak).
+
+### Rationale
+
+- Raw collector errors are technical strings (provider exceptions, native
+  messages) that cannot be meaningfully translated per-locale; translating them
+  verbatim would be fabricated localization. Keeping them in the log preserves
+  debuggability while the UI stays fully localized.
+- Value semantics preserved: the banner still appears exactly when the underlying
+  error exists (`PermissionDenied`/`Failed` status, `HasError`, `IsUnavailable`),
+  so behavior is unchanged and testable.
+- Surfacing only at the App layer keeps Core/Network/Infrastructure free of UI
+  strings (matching the existing convention).
+
+### Consequences
+
+- `Strings.resx` and `Strings.fa-IR.resx` grew to 146 keys each (identical sets);
+  `LocalizationResourceTests.RequiredKeys` updated and pass.
+- Tests asserting raw English text was surfaced were updated to assert the
+  localized detail and the absence of the raw string (en + fa-IR).
+- Future raw messages added by providers simply stay log-only; UI consumers add a
+  resx key when user-facing detail is required.
+
 

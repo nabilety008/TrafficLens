@@ -438,4 +438,16 @@
   <data name="InvalidValueLabel" xml:space="preserve">
     <value>لطفاً مقادیر معتبر وارد کنید.</value>
   </data>
+  <data name="PermissionDeniedDetailLabel" xml:space="preserve">
+    <value>برای پایش ترافیک هر فرآیند، ترافیک‌لنز را با دسترسی مدیر اجرا کنید.</value>
+  </data>
+  <data name="MonitoringFailedDetailLabel" xml:space="preserve">
+    <value>پایش ترافیک هر فرآیند با خطا مواجه شد. جزئیات در گزارش برنامه نوشته شده است.</value>
+  </data>
+  <data name="ConnectionsErrorDetailLabel" xml:space="preserve">
+    <value>فهرست اتصالات در حال حاضر در دسترس نیست. جزئیات در گزارش برنامه نوشته شده است.</value>
+  </data>
+  <data name="HistoryErrorDetailLabel" xml:space="preserve">
+    <value>تاریخچه ترافیک در حال حاضر در دسترس نیست. جزئیات در گزارش برنامه نوشته شده است.</value>
+  </data>
 </root>

@@ -179,7 +179,7 @@ public sealed class ApplicationsViewModelTests : IDisposable
     }
 
     [Fact]
-    public void PermissionDenied_ShowsBannerWithRestartAction_NoAutoElevation()
+    public void PermissionDenied_ShowsLocalizedBanner_NoAutoElevation()
     {
         _collector.SetStatus(ProcessTrafficCollectorStatus.PermissionDenied, "Elevation required");
 
@@ -189,7 +189,18 @@ public sealed class ApplicationsViewModelTests : IDisposable
         Assert.Equal(0, _collector.StartCalls);
         Assert.Equal("Administrator permission is required to see per-process traffic.",
             _vm.StatusText);
-        Assert.Equal("Elevation required", _vm.StatusDetailText);
+        Assert.Equal(_localization["PermissionDeniedDetailLabel"], _vm.StatusDetailText);
+        Assert.DoesNotContain("Elevation required", _vm.StatusDetailText);
+    }
+
+    [Fact]
+    public void PermissionDenied_DetailLocalizesToPersian()
+    {
+        _localization.SetCulture("fa-IR");
+        _collector.SetStatus(ProcessTrafficCollectorStatus.PermissionDenied, "Elevation required");
+
+        Assert.Equal(_localization["PermissionDeniedDetailLabel"], _vm.StatusDetailText);
+        Assert.DoesNotContain("Elevation required", _vm.StatusDetailText);
     }
 
     [Fact]
@@ -198,6 +209,7 @@ public sealed class ApplicationsViewModelTests : IDisposable
         _collector.SetStatus(ProcessTrafficCollectorStatus.Stopped);
         Assert.True(_vm.IsStartMonitoringVisible);
         Assert.False(_vm.IsPermissionDenied);
+        Assert.Equal(string.Empty, _vm.StatusDetailText);
 
         _vm.StartMonitoringCommand.Execute(null);
         Assert.Equal(1, _collector.StartCalls);
@@ -205,7 +217,8 @@ public sealed class ApplicationsViewModelTests : IDisposable
 
         _collector.SetStatus(ProcessTrafficCollectorStatus.Failed, "boom");
         Assert.True(_vm.IsStartMonitoringVisible);
-        Assert.Equal("boom", _vm.StatusDetailText);
+        Assert.Equal(_localization["MonitoringFailedDetailLabel"], _vm.StatusDetailText);
+        Assert.DoesNotContain("boom", _vm.StatusDetailText);
     }
 
     [Fact]

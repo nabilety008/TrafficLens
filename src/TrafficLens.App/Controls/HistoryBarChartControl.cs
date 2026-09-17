@@ -99,7 +99,7 @@ public sealed class HistoryBarChartControl : FrameworkElement
 
             if (ShouldShowLabel(i, points.Count))
             {
-                var label = point.Date.ToString("MM-dd", CultureInfo.InvariantCulture);
+                var label = point.Date.ToString("MM-dd", CultureInfo.CurrentCulture);
                 DrawText(dc, label, center, plot.Bottom + 4, maxBrush, centerAligned: true);
             }
         }
