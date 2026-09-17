@@ -15,7 +15,7 @@
 | M8 | Alerts + settings | Done |
 | M9 | Stability, performance, tests | Done |
 | M10 | Packaging / installer | Done (TL-015) |
-| M11 | Full Persian localization + language switcher | Not started |
+| M11 | Full Persian localization + language switcher | Done (TL-016) |
 
 ## Guidance
 
