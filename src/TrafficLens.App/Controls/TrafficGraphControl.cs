@@ -43,6 +43,12 @@ public sealed class TrafficGraphControl : FrameworkElement
         typeof(TrafficGraphControl),
         new FrameworkPropertyMetadata(DateTime.MinValue, OnLayoutPropertyChanged));
 
+    public static readonly DependencyProperty NowLabelProperty = DependencyProperty.Register(
+        nameof(NowLabel),
+        typeof(string),
+        typeof(TrafficGraphControl),
+        new FrameworkPropertyMetadata("now", OnLayoutPropertyChanged));
+
     public IReadOnlyList<TrafficGraphPoint> Points
     {
         get => (IReadOnlyList<TrafficGraphPoint>)GetValue(PointsProperty);
@@ -65,6 +71,12 @@ public sealed class TrafficGraphControl : FrameworkElement
     {
         get => (DateTime)GetValue(ReferenceTimeProperty);
         set => SetValue(ReferenceTimeProperty, value);
+    }
+
+    public string NowLabel
+    {
+        get => (string)GetValue(NowLabelProperty);
+        set => SetValue(NowLabelProperty, value);
     }
 
     public TrafficGraphControl()
@@ -118,7 +130,7 @@ public sealed class TrafficGraphControl : FrameworkElement
 
         if (points.Count > 0)
         {
-            DrawAxisLabel(dc, "now", plot.Right - 2, plot.Bottom + 2, maxBrush, rightAligned: true);
+            DrawAxisLabel(dc, NowLabel, plot.Right - 2, plot.Bottom + 2, maxBrush, rightAligned: true);
         }
     }
 

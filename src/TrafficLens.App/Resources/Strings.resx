@@ -438,4 +438,16 @@
   <data name="InvalidValueLabel" xml:space="preserve">
     <value>Please enter valid values.</value>
   </data>
+  <data name="PermissionDeniedDetailLabel" xml:space="preserve">
+    <value>Run TrafficLens as Administrator to monitor per-process traffic.</value>
+  </data>
+  <data name="MonitoringFailedDetailLabel" xml:space="preserve">
+    <value>Per-process traffic monitoring failed. Details were written to the application log.</value>
+  </data>
+  <data name="ConnectionsErrorDetailLabel" xml:space="preserve">
+    <value>The connection list is currently unavailable. Details were written to the application log.</value>
+  </data>
+  <data name="HistoryErrorDetailLabel" xml:space="preserve">
+    <value>The traffic history is currently unavailable. Details were written to the application log.</value>
+  </data>
 </root>

@@ -110,7 +110,8 @@ public sealed class HistoryViewModelTests : IDisposable
     {
         SetSnapshot(HistorySnapshot.Unavailable("disk full"));
         Assert.True(_vm.IsUnavailable);
-        Assert.Equal("disk full", _vm.ErrorDetail);
+        Assert.Equal(_localization["HistoryErrorDetailLabel"], _vm.ErrorDetail);
+        Assert.DoesNotContain("disk full", _vm.ErrorDetail);
         Assert.True(_vm.IsEmpty);
     }
 

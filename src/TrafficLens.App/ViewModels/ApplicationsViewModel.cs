@@ -72,6 +72,8 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
     private string _statusStoppedText = string.Empty;
     private string _statusFailedText = string.Empty;
     private string _adminPermissionRequiredText = string.Empty;
+    private string _permissionDeniedDetailText = string.Empty;
+    private string _monitoringFailedDetailText = string.Empty;
     private string _runningText = string.Empty;
     private string _exitedText = string.Empty;
     private string _restartAsAdministratorLabel = string.Empty;
@@ -376,6 +378,8 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
         _statusStoppedText = _localization["MonitoringStoppedLabel"];
         _statusFailedText = _localization["MonitoringFailedLabel"];
         _adminPermissionRequiredText = _localization["AdminPermissionRequiredLabel"];
+        _permissionDeniedDetailText = _localization["PermissionDeniedDetailLabel"];
+        _monitoringFailedDetailText = _localization["MonitoringFailedDetailLabel"];
         _runningText = _localization["RunningLabel"];
         _exitedText = _localization["ExitedLabel"];
         _restartAsAdministratorLabel = _localization["RestartAsAdministratorLabel"];
@@ -491,7 +495,7 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
     private void UpdateStatus()
     {
         _collectorStatus = _collector.Status;
-        StatusDetailText = _collector.LastError ?? string.Empty;
+        StatusDetailText = LocalizedStatusDetail(_collectorStatus);
         HasStatusDetail = !string.IsNullOrWhiteSpace(StatusDetailText);
 
         switch (_collectorStatus)
@@ -538,6 +542,13 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
 
         _ = _collector.StartAsync(CancellationToken.None);
     }
+
+    private string LocalizedStatusDetail(ProcessTrafficCollectorStatus status) => status switch
+    {
+        ProcessTrafficCollectorStatus.PermissionDenied => _permissionDeniedDetailText,
+        ProcessTrafficCollectorStatus.Failed => _monitoringFailedDetailText,
+        _ => string.Empty
+    };
 
     private void RestartAsAdministrator()
     {
