@@ -521,8 +521,16 @@
 - **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
 ### TL-015 Packaging / Installer
-- [ ] x64 packaging and installer
-- **Status: not started**
+- [x] x64 packaging and installer
+- [x] `scripts/build-release.ps1` one-command release pipeline
+- [x] Single-file self-contained win-x64 publish (`TrafficLens.exe`)
+- [x] Inno Setup 6 per-user installer (no PDBs, running-app notice, never force-kill)
+- [x] Install / uninstall / reinstall / upgrade verification with user-data preservation
+- [x] Installer + portable ZIP SHA-256; artifacts gitignored
+- [x] Metadata: clean product version 0.1.0, FileDescription, app.manifest
+- [x] Docs: PACKAGING.md, ADR-023, PROJECT_STATUS, CHANGELOG
+- **Status: done**
+- **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
 ### TL-016 Localization / Persian UI
 - [ ] Runtime language switcher, full fa-IR translation
@@ -542,5 +550,5 @@
 | M7 | Tray and widget | TL-010, TL-011 | Done |
 | M8 | Alerts and settings | TL-012, TL-013 | Done |
 | M9 | Stability & performance | TL-014 | Done |
-| M10 | Packaging / installer | TL-015 | Not started |
+| M10 | Packaging / installer | TL-015 | Done |
 | M11 | Full Persian localization | TL-016 | Not started |

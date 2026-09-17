@@ -1,17 +1,20 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-16
+Updated: 2026-09-17
 
 ## Current Milestone
 
-M9 (stability & performance) is complete: **TL-014** performed a full stability
-audit and fixed all idle-CPU sources so the 30-minute soak test (harness F2)
-passes with max CPU 9.88% (threshold 15%). Fixes: DashboardViewModel event
-coalescing, ConnectionsViewModel page-visibility gating, WindowsConnectionProvider
-polling pause when the Connections page is hidden, and default-deactivation on
-startup. SingleInstanceGuard, FileLoggerProvider retention, and SpeedRateTracker
-sleep-gap regression tests added. 397 tests, 0 warnings, 0 errors. M1–M8 remain
-complete. M10 (packaging/installer) is next.
+M10 (packaging/installer) is complete: **TL-015** adds a reproducible one-command
+release pipeline (`scripts/build-release.ps1`), a self-contained single-file
+win-x64 publish (`TrafficLens.exe`, assembly name `TrafficLens`), an Inno Setup 6
+per-user installer (per-user apps folder, stable AppId, no PDBs, running-app
+notice, never force-kills), and full install / uninstall / reinstall / upgrade
+verification (0.1.0 → 0.1.1 → 0.1.0) with user data
+(`%LOCALAPPDATA%\TrafficLens`) preserved hash-identically throughout. Release
+artifacts and the installer SHA-256 are produced by the script; artifacts are
+gitignored. 397 tests, 0 warnings, 0 errors. TL-015 is the first shippable
+installer release (baseline version 0.1.0; previous 0.0.x entries are in-repo
+development milestones). M11 (TL-016 full Persian localization) is next.
 
 ## Task IDs
 
@@ -31,7 +34,7 @@ complete. M10 (packaging/installer) is next.
 - TL-012 Alerts — **DONE**
 - TL-013 Settings — **DONE**
 - TL-014 Stability & Performance Audit — **DONE**
-- TL-015 Packaging / Installer — not started
+- TL-015 Packaging / Installer — **DONE**
 - TL-016 Localization / Persian UI — not started
 
 ## Completed
@@ -436,6 +439,41 @@ complete. M10 (packaging/installer) is next.
     Release 0 warnings / 0 errors.
   - ADR-022 (idle CPU optimization: coalescing, page-visibility gating,
     polling pause, default deactivation).
+- TL-015 (packaging / installer, M10):
+  - **Release pipeline** (`scripts/build-release.ps1`): resolve a .NET 8 SDK
+    (`--list-sdks` guard), restore → Release build (0 warnings / 0 errors) →
+    all tests → single-file self-contained win-x64 publish → validation
+    (exe size, PE machine 0x8664, product/file version) → portable ZIP →
+    Inno Setup compile → SHA-256 checksum file. Artifacts land under
+    `artifacts\` (gitignored); nothing binary is committed.
+  - **Single-file publish:** `PublishSingleFile` + native-libs self-extract +
+    compression, `InvariantGlobalization=false` (fa-IR satellite bundled inside
+    the exe), `AssemblyName=TrafficLens` so the process/exe is `TrafficLens`.
+  - **Installer** (`packaging/TrafficLens.iss`): Inno Setup 6.7.3,
+    `PrivilegesRequired=lowest`, installs to `{localappdata}\Programs\TrafficLens`,
+    stable AppId, Start-Menu shortcut (desktop icon off by task), `Excludes:
+    "*.pdb"` (no PDBs shipped), post-install launch, `[UninstallDelete]` only
+    `dirifempty`. Running-app detection via a `[Code]` WMI
+    (`Win32_Process` + `WbemObjectSet.Count`) prompt in `wpReady`; never
+    force-kills; Inno file-in-use dialog is the second safety net.
+  - **Metadata:** `Directory.Build.props` sets `IncludeSourceRevisionInInformationalVersion=false`
+    (clean `0.1.0` ProductVersion, no git hash) and
+    `AssemblyTitle=TrafficLens Network Monitor` (FileDescription); `app.manifest`
+    asInvoker / Win10+ / PerMonitorV2 / longPathAware.
+  - **Verification (real Windows):** published-exe smoke
+    (`scripts/tl015-smoke.ps1`) and installed-app verification
+    (`scripts/tl015-installed-app.ps1`) all PASS (window, dashboard, graph,
+    Applications, Connections, History, Settings persistence, floating widget,
+    tray, fa-IR + en-US, single-instance, graceful exit, no orphan process, no
+    orphan ETW). Install 0.1.0 → uninstall (data preserved) → reinstall (data
+    preserved, hashes identical) → upgrade to 0.1.1 (single uninstall entry,
+    DisplayVersion 0.1.1) → final 0.1.0 over 0.1.1 all exit 0. Final installer
+    SHA-256 `0E9F1186…6D0B`.
+  - **User data** (`%LOCALAPPDATA%\TrafficLens\settings.json` + `data\` +
+    `logs\`) is installer-untouched by design; manual removal documented,
+    install dir and shortcuts fully cleaned on uninstall.
+  - Docs: `docs/PACKAGING.md` (full packaging doc), ADR-023. 397 tests;
+    Debug + Release 0 warnings / 0 errors.
 - TL-008 (active connections, M5):
   - Core (`TrafficLens.Core`):
     - `ConnectionInfo` extended — nullable remote endpoint, `ConnectionAddressFamily`,
@@ -776,6 +814,6 @@ complete. M10 (packaging/installer) is next.
 
 ## Next Recommended Task
 
-- M9 (TL-014 stability & performance) is complete and verified. Per ROADMAP
-  the next milestone is **M10 (TL-015 packaging / installer)** — confirm the
-  first M10 item with the user before starting any new task.
+- M10 (TL-015 packaging / installer) is complete and verified. Per ROADMAP
+  the next milestone is **M11 (TL-016 full Persian localization)** — confirm the
+  first M11 item with the user before starting any new task.

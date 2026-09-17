@@ -5,16 +5,17 @@
 | Milestone | Scope | Status |
 |---|---|---|
 | M0 | Project bootstrap, docs, localization foundation | Done |
-| M1 | Global network monitoring | Not started |
-| M2 | Dashboard + live graph | Not started |
-| M3 | Network interfaces | Not started |
-| M4 | Per-process traffic | Not started |
-| M5 | Active connections | Not started |
-| M6 | SQLite history | Not started |
+| M1 | Global network monitoring | Done |
+| M2 | Dashboard + live graph | Done |
+| M3 | Network interfaces | Done |
+| M4 | Per-process traffic | Done |
+| M5 | Active connections | Done |
+| M6 | SQLite history | Done |
 | M7 | System tray + floating widget | Done |
-| M8 | Alerts + settings | In progress (TL-012 alerts done; TL-013 settings remains) |
-| M9 | Stability, performance, tests, packaging | Not started |
-| M10 | Full Persian localization + language switcher | Not started |
+| M8 | Alerts + settings | Done |
+| M9 | Stability, performance, tests | Done |
+| M10 | Packaging / installer | Done (TL-015) |
+| M11 | Full Persian localization + language switcher | Not started |
 
 ## Guidance
 
@@ -30,4 +31,4 @@
 - Per-process (M4) and connections (M5) build on mapping and collector abstractions.
 - Persistence (M6) consumes aggregated samples produced by earlier milestones.
 - Tray/widget (M7) are presentation of existing data.
-- Alerts/settings (M8), hardening/packaging (M9), Persian UI (M10) follow.
+- Alerts/settings (M8), hardening/packaging (M9–M10), Persian UI (M11) follow.

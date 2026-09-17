@@ -683,4 +683,75 @@ native P/Invoke table reads per second are eliminated when no page consumes them
   (`SetPollingEnabled(bool)`); all implementations updated; `FakeConnectionProvider`
   in tests stubs it as a no-op.
 
+## ADR-023 — Packaging and installer (TL-015)
+
+**Status:** Accepted (TL-015)
+
+Decisions for producing the first installable release.
+
+### Decision
+
+**1. One-command reproducible release pipeline.** `scripts/build-release.ps1`
+owns the entire flow: resolve a .NET 8 SDK, restore, Release build, all tests,
+single-file win-x64 publish, artifact validation, portable ZIP, Inno Setup
+compile, and a SHA-256 sidecar. Nothing binary is committed; `artifacts\` and
+`*.exe.sha256` are gitignored.
+
+**2. Self-contained single-file exe (not MSIX, not WiX).** Publish with
+`PublishSingleFile=true`, native-libs self-extract, compression, no trimming,
+`InvariantGlobalization=false`. Reasoning: the app is local-first and
+non-elevated (ADR-014); MSIX/WiX add signing, package-store, and file-layout
+complexity with no benefit here, and would complicate the per-user
+`%LOCALAPPDATA%` file model. The fa-IR satellite is bundled inside the exe.
+
+**3. Inno Setup 6 per-user installer.** `PrivilegesRequired=lowest`, install to
+`{localappdata}\Programs\TrafficLens`, stable AppId, Start-Menu shortcut,
+desktop-icon option off by default, post-install launch. Per-user avoids UAC,
+matches the app's asInvoker manifest and LocalAppData-only write pattern, and
+still supports clean in-place upgrades via the uninstall DisplayVersion.
+
+**4. Never ship debug symbols; never force-kill the app.** The `.iss` excludes
+`*.pdb`. If the app is already running, a `[Code]` WMI check prompts the user to
+close it (`WbemObjectSet.Count`, wpReady); Inno's built-in file-in-use dialog is
+the second safety net. The installer must never terminate `TrafficLens.exe`.
+
+**5. Installer must not touch user data.** Settings, SQLite history, and logs
+live in `%LOCALAPPDATA%\TrafficLens\` and are never created, migrated, or
+deleted by the installer; uninstall removes only the install dir + shortcuts
+(`dirifempty` on the app-data path only). Manual data removal is documented.
+
+**6. Clean product metadata.** `IncludeSourceRevisionInInformationalVersion=false`
+so ProductVersion/FileVersion are plain `0.1.0` (no developer-machine git hash);
+`AssemblyName=TrafficLens` so process name, exe, and uninstall keys are stable;
+`AssemblyTitle=TrafficLens Network Monitor` so FileDescription is user-friendly.
+
+### Rationale
+
+- Pipeline reproducibility over manual steps: every artifact (exe, portable ZIP,
+  installer, checksum) must be regenerable with one command and verified, fitting
+  the agent-friendly and never-fabricate rules.
+- Single-file self-contained keeps the installed footprint to `TrafficLens.exe`
+  + Inno runtime files, simplifying the install/upgrade/uninstall story and the
+  per-user file model; no runtime dependency on a framework install.
+- Per-user Inno is the lowest-friction honest installer for a non-elevated app;
+  MSIX/WiX were rejected for added complexity, not capability.
+- Killing the app during update would contradict the graceful-exit design
+  (`ApplicationExitCoordinator`); prompting respects the singleton and ETW-clean
+  shutdown invariants.
+- User-data separation is deliberate: history and settings are user-owned, not
+  install-owned (matches uninstall tests: data preserved hash-identically
+  through 0.1.0 → uninstall → reinstall → 0.1.1 → 0.1.0).
+
+### Consequences
+
+- Installer output: `artifacts\installer\TrafficLens-Setup-<ver>-win-x64.exe`
+  + `.exe.sha256`; portable `TrafficLens-Portable-<ver>-win-x64.zip`.
+- The installer is unsigned (no code-signing certificate in TL-015); Windows
+  SmartScreen may warn. Documented in `docs/PACKAGING.md` as a future task.
+- The tray/app icon is a temporary placeholder (`packaging/placeholder.ico`);
+  branding is future work.
+- Inno Setup 6.7.3 was installed per-user via `winget` (ISCC at
+  `%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe`); the pipeline resolves ISCC
+  and fails with a clear message if missing.
+
 

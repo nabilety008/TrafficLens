@@ -2,6 +2,61 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.0] — 2026-09-17 (TL-015 complete — packaging / installer)
+
+Versioning note: 0.0.1–0.0.17 are in-repo development milestones. **0.1.0 is the
+first installer-driveable release** and the version baked into the produced
+artifacts; it is centralised in `Directory.Build.props`.
+
+### Added
+- **Release pipeline** `scripts/build-release.ps1` — one command does restore →
+  Release build (0 Warnings/0 Errors) → all tests → single-file self-contained
+  win-x64 publish → artifact validation (size, PE x64, product/file version) →
+  portable ZIP → Inno Setup compile → SHA-256 checksum. Artifacts land in
+  `artifacts\` (gitignored); nothing binary is committed.
+- **Single-file publish** — `PublishSingleFile=true`, native-libs self-extract +
+  compression, `InvariantGlobalization=false` (the `fa-IR` satellite is bundled
+  inside the exe), `AssemblyName=TrafficLens` so the process/exe/reg-entry is
+  `TrafficLens`.
+- **Per-user Inno Setup installer** (`packaging/TrafficLens.iss`, Inno Setup
+  6.7.3) — `PrivilegesRequired=lowest`, installs to
+  `{localappdata}\Programs\TrafficLens`, stable AppId, Start-Menu shortcut
+  (desktop icon off by task), `Excludes: "*.pdb"` (no PDBs shipped),
+  post-install launch, `[UninstallDelete]` only `dirifempty`. Running-app prompt
+  (`[Code]`, WMI `Win32_Process` + `WbemObjectSet.Count`) shown in `wpReady` —
+  the installer never force-kills; Inno's file-in-use dialog is the second
+  safety net.
+- **Clean product metadata** — `Directory.Build.props`:
+  `IncludeSourceRevisionInInformationalVersion=false` (ProductVersion/FileVersion
+  = 0.1.0, no git hash) and `AssemblyTitle=TrafficLens Network Monitor`
+  (FileDescription); `app.manifest`: asInvoker, Windows 10/11, PerMonitorV2,
+  longPathAware.
+- `docs/PACKAGING.md` — full packaging documentation (decisions, per-user
+  scope, release command, artifact naming, upgrade/uninstall user-data policy,
+  checksum, security/untrusted-build caveats).
+- ADR-023 (packaging: pipeline, single-file vs MSIX/WiX, per-user Inno, no PDBs,
+  never-kill policy, user-data preservation).
+
+### Verified
+- Published-exe smoke (`scripts/tl015-smoke.ps1`) and installed-app
+  verification (`scripts/tl015-installed-app.ps1`) on real Windows — all PASS:
+  window render, dashboard + live rate, graph section, Applications,
+  Connections, History, Settings persistence, floating widget, tray, fa-IR
+  Persian + en-US fallback, single-instance, graceful exit, no orphan process,
+  no orphan ETW session (`TrafficLens.SingleInstance` / up-again event naming).
+- Install 0.1.0 → Start-Menu shortcut + HKCU uninstall entry; uninstall removes
+  install dir + shortcuts + uninstall entry; reinstall and upgrade (0.1.0 →
+  0.1.1 → 0.1.0) all exit 0 with **user data
+  (`%LOCALAPPDATA%\TrafficLens\settings.json` + `data\` + `logs\`) preserved
+  hash-identically**; single uninstall entry / single .lnk throughout; no PDBs
+  in the install dir.
+- Final 0.1.0 installer SHA-256
+  `0E9F11865700342E4F49EBF6B77C18C9FCAD640E56E9773FD0D826BC803D6D0B`
+  (`artifacts\installer\TrafficLens-Setup-0.1.0-win-x64.exe`, checksum sidecar
+  `.exe.sha256`).
+- Regression: **397 tests** (App 145 / Network 212 / Infrastructure 40), Debug +
+  Release 0 warnings / 0 errors.
+
 ## [0.0.17] — 2026-09-16 (TL-014 stability & performance audit complete)
 
 ### Fixed
