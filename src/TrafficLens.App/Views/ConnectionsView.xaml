@@ -100,39 +100,49 @@
                        Foreground="{StaticResource TextMutedBrush}" />
         </Border>
 
-        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto"
-                      Visibility="{Binding IsNotEmpty, Converter={StaticResource BoolToVis}}">
-            <StackPanel>
-                <Border Background="{StaticResource SurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="1,1,1,0" Padding="8,8,8,10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="26" />
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="2*" />
-                        </Grid.ColumnDefinitions>
+        <Grid Grid.Row="4"
+              Visibility="{Binding IsNotEmpty, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Column="1" Text="{Binding ProcessLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                        <TextBlock Grid.Column="2" Text="{Binding PidLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                        <TextBlock Grid.Column="3" Text="{Binding ProtocolLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                        <TextBlock Grid.Column="4" Text="{Binding StateLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                        <TextBlock Grid.Column="5" Text="{Binding LocalEndpointLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                        <TextBlock Grid.Column="6" Text="{Binding RemoteEndpointLabel}"
-                                   FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                    </Grid>
-                </Border>
+            <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1,1,1,0" Padding="8,8,8,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="26" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
 
+                    <TextBlock Grid.Column="1" Text="{Binding ProcessLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="2" Text="{Binding PidLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="3" Text="{Binding ProtocolLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="4" Text="{Binding StateLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="5" Text="{Binding LocalEndpointLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="6" Text="{Binding RemoteEndpointLabel}"
+                               FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                 <ItemsControl ItemsSource="{Binding Connections}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel VirtualizationMode="Recycling" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{StaticResource SurfaceBrush}"
@@ -183,7 +193,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </UserControl>

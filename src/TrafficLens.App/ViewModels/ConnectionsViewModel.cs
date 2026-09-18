@@ -440,17 +440,65 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        Connections.Clear();
-        _displayedKeys.Clear();
+        ApplyDisplayKeys(ordered);
+    }
+
+    private void ApplyDisplayKeys(IReadOnlyList<ConnectionInfo> ordered)
+    {
+        var target = new List<ConnectionRowViewModel>(ordered.Count);
+        var targetKeys = new List<ConnectionKey>(ordered.Count);
         foreach (var connection in ordered)
         {
             var key = ConnectionKey.From(connection);
             if (_rows.TryGetValue(key, out var row))
             {
-                Connections.Add(row);
-                _displayedKeys.Add(key);
+                target.Add(row);
+                targetKeys.Add(key);
             }
         }
+
+        var present = new HashSet<ConnectionRowViewModel>(target);
+
+        for (var i = Connections.Count - 1; i >= 0; i--)
+        {
+            if (!present.Contains(Connections[i]))
+            {
+                Connections.RemoveAt(i);
+            }
+        }
+
+        var expected = 0;
+        foreach (var row in target)
+        {
+            var current = -1;
+            for (var j = expected; j < Connections.Count; j++)
+            {
+                if (ReferenceEquals(Connections[j], row))
+                {
+                    current = j;
+                    break;
+                }
+            }
+
+            if (current == -1)
+            {
+                Connections.Insert(expected, row);
+            }
+            else if (current != expected)
+            {
+                Connections.Move(current, expected);
+            }
+
+            expected++;
+        }
+
+        while (Connections.Count > target.Count)
+        {
+            Connections.RemoveAt(Connections.Count - 1);
+        }
+
+        _displayedKeys.Clear();
+        _displayedKeys.AddRange(targetKeys);
 
         IsEmpty = Connections.Count == 0;
         OnPropertyChanged(nameof(IsNotEmpty));
