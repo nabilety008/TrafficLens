@@ -388,7 +388,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         {
             RefreshLocalizedStrings();
             ReloadAdapters();
-            RefreshAll();
+            RefreshAll(force: true);
             RefreshGraph();
         });
 
@@ -456,7 +456,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RefreshAll();
     }
 
-    private void RefreshAll()
+    private void RefreshAll(bool force = false)
     {
         _aggregate = NetworkTrafficAggregator.AggregateRates(_samples, _adapters);
 
@@ -469,17 +469,35 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             RefreshGraph();
         }
 
-        DownloadBytesPerSecond = _aggregate?.DownloadBytesPerSecond ?? 0;
-        UploadBytesPerSecond = _aggregate?.UploadBytesPerSecond ?? 0;
-        TotalBytesPerSecond = DownloadBytesPerSecond + UploadBytesPerSecond;
+        var download = _aggregate?.DownloadBytesPerSecond ?? 0;
+        var upload = _aggregate?.UploadBytesPerSecond ?? 0;
+        var total = download + upload;
+
+        var downloadChanged = force || download != _downloadBytesPerSecond;
+        var uploadChanged = force || upload != _uploadBytesPerSecond;
+
+        DownloadBytesPerSecond = download;
+        UploadBytesPerSecond = upload;
+        TotalBytesPerSecond = total;
         HasConnection = _adapters.Any(a => a.IsUp);
 
-        DownloadText = DataRateFormatter.FormatAdaptive(DownloadBytesPerSecond);
-        UploadText = DataRateFormatter.FormatAdaptive(UploadBytesPerSecond);
-        TotalText = DataRateFormatter.FormatAdaptive(TotalBytesPerSecond);
-        DownloadMbpsText = DataRateFormatter.FormatMbps(DownloadBytesPerSecond);
-        UploadMbpsText = DataRateFormatter.FormatMbps(UploadBytesPerSecond);
-        TotalMbpsText = DataRateFormatter.FormatMbps(TotalBytesPerSecond);
+        if (downloadChanged)
+        {
+            DownloadText = DataRateFormatter.FormatAdaptive(download);
+            DownloadMbpsText = DataRateFormatter.FormatMbps(download);
+        }
+
+        if (uploadChanged)
+        {
+            UploadText = DataRateFormatter.FormatAdaptive(upload);
+            UploadMbpsText = DataRateFormatter.FormatMbps(upload);
+        }
+
+        if (downloadChanged || uploadChanged)
+        {
+            TotalText = DataRateFormatter.FormatAdaptive(total);
+            TotalMbpsText = DataRateFormatter.FormatMbps(total);
+        }
 
         UpdateAdapterItemRates();
 
