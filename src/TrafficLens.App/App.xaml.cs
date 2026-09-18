@@ -27,6 +27,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        StartupTrace.Tick("app-start");
 
         _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
             SingleInstanceMutexName,
@@ -42,15 +43,18 @@ public partial class App : Application
         }
 
         _activationWatch = _singleInstanceGuard.StartActivationWatcher(OnActivationRequested);
+        StartupTrace.Tick("single-instance");
 
         var startMinimized = e.Args.Length > 0 &&
             e.Args.Any(arg => string.Equals(arg, "--minimized", StringComparison.OrdinalIgnoreCase));
 
         AppPaths.EnsureDirectories();
+        StartupTrace.Tick("directories");
 
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
+        StartupTrace.Tick("service-provider");
 
         var logger = _serviceProvider.GetRequiredService<ILogger<App>>();
         logger.LogInformation("TrafficLens starting up");
@@ -59,9 +63,12 @@ public partial class App : Application
         var settings = _serviceProvider.GetRequiredService<ISettingsService>();
 
         localization?.SetCulture(settings.Language);
+        StartupTrace.Tick("culture");
         logger.LogInformation("Culture set to {Culture}", localization?.CurrentCulture.Name);
 
+        StartupTrace.Tick("mainwindow-resolve-start");
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        StartupTrace.Tick("mainwindow-resolved");
         if (startMinimized)
         {
             logger.LogInformation("Starting hidden to system tray (--minimized)");
@@ -69,6 +76,7 @@ public partial class App : Application
         else
         {
             mainWindow.Show();
+            StartupTrace.Tick("window-shown");
             logger.LogInformation("MainWindow shown");
         }
 
@@ -76,6 +84,7 @@ public partial class App : Application
         try
         {
             _ = collector.StartAsync(CancellationToken.None);
+            StartupTrace.Tick("network-collector");
             logger.LogInformation("Network traffic collector started");
         }
         catch (Exception ex)
@@ -87,6 +96,7 @@ public partial class App : Application
         try
         {
             _ = processCollector.StartAsync(CancellationToken.None);
+            StartupTrace.Tick("process-collector");
             logger.LogInformation("Process traffic collector started");
         }
         catch (Exception ex)
@@ -98,6 +108,7 @@ public partial class App : Application
         try
         {
             _ = connectionProvider.StartAsync(CancellationToken.None);
+            StartupTrace.Tick("connection-provider");
             logger.LogInformation("Connection provider started");
         }
         catch (Exception ex)
@@ -109,6 +120,7 @@ public partial class App : Application
         try
         {
             _ = history.StartAsync(CancellationToken.None);
+            StartupTrace.Tick("history");
             logger.LogInformation("Traffic history service started");
         }
         catch (Exception ex)
@@ -118,11 +130,13 @@ public partial class App : Application
 
         var widgetService = _serviceProvider.GetRequiredService<IFloatingWidgetService>();
         widgetService.RestoreIfEnabled();
+        StartupTrace.Tick("widget-restore");
 
         var exitCoordinator = _serviceProvider.GetRequiredService<ApplicationExitCoordinator>();
         var trayService = _serviceProvider.GetRequiredService<ISystemTrayService>();
         trayService.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
         trayService.Show();
+        StartupTrace.Tick("tray-show");
 
         var alertService = _serviceProvider.GetRequiredService<IAlertService>();
         if (localization is not null)
@@ -140,6 +154,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        StartupTrace.Close();
         try
         {
             _serviceProvider

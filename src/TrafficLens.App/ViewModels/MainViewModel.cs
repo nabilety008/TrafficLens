@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using TrafficLens.App.Commands;
+using TrafficLens.App.Infrastructure;
 using TrafficLens.App.Services;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
@@ -55,6 +56,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         Settings = settingsPage;
         About = about;
         _floatingWidgetService = floatingWidgetService;
+        StartupTrace.Tick("mainviewmodel-ctor-begin");
 
         _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
         _closeToTray = TrayBehavior.GetCloseToTray(_settings);
