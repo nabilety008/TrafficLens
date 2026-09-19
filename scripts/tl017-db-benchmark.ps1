@@ -168,9 +168,6 @@ class DbBenchmark
 }
 "@
 
-$benchFile = Join-Path $testDir "DbBenchmark.cs"
-$benchCode | Set-Content -Path $benchFile -Encoding UTF8
-
 # Compile and run benchmark
 $exePath = Join-Path $testDir "DbBenchmark.exe"
 & "C:\dotnet\dotnet.exe" build $projPath -c Release --no-restore --nologo 2>&1 | Out-Null
@@ -194,7 +191,7 @@ $benchProj = Join-Path $testDir "DbBenchmark.csproj"
 $benchCode | Set-Content -Path (Join-Path $testDir "Program.cs") -Encoding UTF8
 
 $largeDbStr = if ($LargeDb) { "True" } else { "False" }
-& "C:\dotnet\dotnet.exe" run --project $benchProj -c Release --no-build -- $TestDbPath $FlushCount $BucketsPerFlush $largeDbStr $LargeDbDays 2>&1
+& "C:\dotnet\dotnet.exe" run --project $benchProj -c Release -- $TestDbPath $FlushCount $BucketsPerFlush $largeDbStr $LargeDbDays 2>&1
 
 # Cleanup
 Remove-Item -Recurse -Force $testDir -ErrorAction SilentlyContinue

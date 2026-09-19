@@ -4,6 +4,7 @@ param(
     [string]$OutDir = "C:\Users\ali\Documents\New folder\TrafficLens\artifacts\tl017-baseline"
 )
 $ErrorActionPreference = 'Stop'
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 if ([System.Threading.Thread]::CurrentThread.ApartmentState -ne [System.Threading.ApartmentState]::STA) {
     powershell.exe -NoProfile -Sta -ExecutionPolicy Bypass -File $PSCommandPath @args
     exit $LASTEXITCODE
