@@ -288,6 +288,9 @@
   <data name="HistoryDailyTrafficLabel" xml:space="preserve">
     <value>Daily Traffic</value>
   </data>
+  <data name="HistoryHourlyTrafficLabel" xml:space="preserve">
+    <value>Hourly Traffic</value>
+  </data>
   <data name="TodayLabel" xml:space="preserve">
     <value>Today</value>
   </data>

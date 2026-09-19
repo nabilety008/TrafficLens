@@ -95,6 +95,62 @@ public class SqliteTrafficHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task QuerySamplesAsync_ReturnsOnlyBucketsInHalfOpenRange_OldestFirst()
+    {
+        await _repo.InitializeAsync(CancellationToken.None);
+        var b0 = new TrafficHistoryBucket(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), 60, 10, 0);
+        var b1 = new TrafficHistoryBucket(new DateTime(2026, 1, 1, 0, 30, 0, DateTimeKind.Utc), 60, 20, 30);
+        var b2 = new TrafficHistoryBucket(new DateTime(2026, 1, 1, 1, 0, 0, DateTimeKind.Utc), 60, 40, 5);
+        await _repo.AppendBucketsAsync(new[] { b0, b1, b2 }, TestZone, CancellationToken.None);
+
+        var rows = await _repo.QuerySamplesAsync(
+            new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 1, 1, 1, 0, 0, DateTimeKind.Utc),
+            CancellationToken.None);
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), rows[0].BucketStartUtc);
+        Assert.Equal(10, rows[0].DownloadBytes);
+        Assert.Equal(30, rows[1].UploadBytes);
+        Assert.Equal(60, rows[1].DurationSeconds);
+    }
+
+    [Fact]
+    public async Task QuerySamplesAsync_EmptyRange_ReturnsNoRows()
+    {
+        await _repo.InitializeAsync(CancellationToken.None);
+        var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var rows = await _repo.QuerySamplesAsync(now, now, CancellationToken.None);
+        Assert.Empty(rows);
+    }
+
+    [Fact]
+    public async Task QueryPlan_ForSampleRange_UsesPrimaryKeySeek_NotScan()
+    {
+        await _repo.InitializeAsync(CancellationToken.None);
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_dbPath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "EXPLAIN QUERY PLAN " +
+            "SELECT bucket_start_utc, bucket_duration_seconds, download_bytes, upload_bytes " +
+            "FROM traffic_samples " +
+            "WHERE bucket_start_utc >= $start AND bucket_start_utc < $end " +
+            "ORDER BY bucket_start_utc;";
+        command.Parameters.AddWithValue("$start", 0L);
+        command.Parameters.AddWithValue("$end", 1L);
+        using var reader = command.ExecuteReader();
+        var details = new List<string>();
+        while (reader.Read())
+        {
+            details.Add(reader.GetString(3));
+        }
+
+        Assert.Contains(details, d => d.Contains("USING INTEGER PRIMARY KEY"));
+        Assert.DoesNotContain(details, d => d.Contains("SCAN"));
+    }
+
+    [Fact]
     public async Task PruneRawSamplesBeforeAsync_DeletesOldBuckets_KeepsDaily()
     {
         await _repo.InitializeAsync(CancellationToken.None);

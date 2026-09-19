@@ -35,6 +35,16 @@ public interface ITrafficHistoryRepository : IDisposable
         DateOnly endExclusive,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Raw minute buckets with a start time in [startUtcInclusive, endUtcExclusive),
+    /// oldest first. Used to build the Today hourly series from the append-only
+    /// source of truth; callers bound the query to the current local day.
+    /// </summary>
+    Task<IReadOnlyList<TrafficHistoryBucket>> QuerySamplesAsync(
+        DateTime startUtcInclusive,
+        DateTime endUtcExclusive,
+        CancellationToken cancellationToken);
+
     /// <summary>All-time usage totals.</summary>
     Task<TrafficUsage> QueryLifetimeAsync(CancellationToken cancellationToken);
 

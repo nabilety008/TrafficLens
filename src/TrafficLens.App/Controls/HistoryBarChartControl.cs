@@ -1,16 +1,17 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
+using TrafficLens.App.ViewModels;
 using TrafficLens.Core.Conversion;
-using TrafficLens.Core.History;
 
 namespace TrafficLens.App.Controls;
 
 /// <summary>
-/// Lightweight native WPF daily-traffic bar chart. Renders one download/upload
-/// bar pair per day straight into a <see cref="DrawingContext"/> — no chart
+/// Lightweight native WPF traffic bar chart. Renders one download/upload bar
+/// pair per point straight into a <see cref="DrawingContext"/> — no chart
 /// library and no per-point UI elements. Bars always draw oldest-left →
-/// newest-right regardless of the surrounding UI's FlowDirection.
+/// newest-right regardless of the surrounding UI's FlowDirection. Each point
+/// carries a precomputed axis label (daily range → date, Today → hour).
 /// </summary>
 public sealed class HistoryBarChartControl : FrameworkElement
 {
@@ -21,9 +22,9 @@ public sealed class HistoryBarChartControl : FrameworkElement
 
     public static readonly DependencyProperty PointsProperty = DependencyProperty.Register(
         nameof(Points),
-        typeof(IReadOnlyList<DailyUsagePoint>),
+        typeof(IReadOnlyList<HistoryChartPoint>),
         typeof(HistoryBarChartControl),
-        new FrameworkPropertyMetadata(Array.Empty<DailyUsagePoint>(), OnLayoutPropertyChanged));
+        new FrameworkPropertyMetadata(Array.Empty<HistoryChartPoint>(), OnLayoutPropertyChanged));
 
     public static readonly DependencyProperty YAxisMaxProperty = DependencyProperty.Register(
         nameof(YAxisMax),
@@ -31,9 +32,9 @@ public sealed class HistoryBarChartControl : FrameworkElement
         typeof(HistoryBarChartControl),
         new FrameworkPropertyMetadata(1.0, OnLayoutPropertyChanged));
 
-    public IReadOnlyList<DailyUsagePoint> Points
+    public IReadOnlyList<HistoryChartPoint> Points
     {
-        get => (IReadOnlyList<DailyUsagePoint>)GetValue(PointsProperty);
+        get => (IReadOnlyList<HistoryChartPoint>)GetValue(PointsProperty);
         set => SetValue(PointsProperty, value);
     }
 
@@ -99,8 +100,7 @@ public sealed class HistoryBarChartControl : FrameworkElement
 
             if (ShouldShowLabel(i, points.Count))
             {
-                var label = point.Date.ToString("MM-dd", CultureInfo.CurrentCulture);
-                DrawText(dc, label, center, plot.Bottom + 4, maxBrush, centerAligned: true);
+                DrawText(dc, point.Label, center, plot.Bottom + 4, maxBrush, centerAligned: true);
             }
         }
     }
