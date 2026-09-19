@@ -70,6 +70,8 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private string _graphNowLabel = string.Empty;
     private string _graphDownloadSeriesLabel = string.Empty;
     private string _graphUploadSeriesLabel = string.Empty;
+    private string _tunnelAggregateHint = string.Empty;
+    private bool _hasTunnelAdapter;
 
     public DashboardViewModel(
         INetworkTrafficCollector collector,
@@ -369,6 +371,22 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _graphUploadSeriesLabel, value);
     }
 
+    /// <summary>
+    /// Contextual hint shown near the system total when an active tunnel
+    /// adapter exists: the aggregate excludes tunnels to avoid double-counting.
+    /// </summary>
+    public string TunnelAggregateHint
+    {
+        get => _tunnelAggregateHint;
+        private set => SetProperty(ref _tunnelAggregateHint, value);
+    }
+
+    public bool HasTunnelAdapter
+    {
+        get => _hasTunnelAdapter;
+        private set => SetProperty(ref _hasTunnelAdapter, value);
+    }
+
     private void OnSpeedSample(object? sender, NetworkSpeedSample sample)
     {
         if (!_isActive)
@@ -458,6 +476,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         GraphNowLabel = _localization["GraphNowLabel"];
         GraphDownloadSeriesLabel = _localization["GraphDownloadSeriesLabel"];
         GraphUploadSeriesLabel = _localization["GraphUploadSeriesLabel"];
+        TunnelAggregateHint = _localization["TunnelAggregateHintText"];
     }
 
     private void ReloadAdapters()
@@ -468,6 +487,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         {
             _adapters = newAdapters;
             UpdateAdapterItemStates();
+            UpdateHasTunnelAdapter();
             return;
         }
 
@@ -484,7 +504,11 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         }
 
         UpdateAdapterItemRates();
+        UpdateHasTunnelAdapter();
     }
+
+    private void UpdateHasTunnelAdapter() =>
+        HasTunnelAdapter = _adapters.Any(a => a.Kind == NetworkAdapterKind.Tunnel && a.IsUp);
 
     private void RefreshRates()
     {

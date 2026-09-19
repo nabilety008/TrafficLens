@@ -16,6 +16,16 @@
                        Foreground="{StaticResource TextMutedBrush}"
                        Margin="0,0,0,10" />
 
+            <Button AutomationProperties.Name="AboutGetStarted"
+                    Content="{Binding GetStartedLabel}"
+                    Command="{Binding ShowGuideCommand}"
+                    Background="{StaticResource SurfaceAltBrush}"
+                    Foreground="{StaticResource TextBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    Padding="10,4"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,0,10" />
+
             <Border Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1" Padding="14,12" Margin="0,0,0,10">

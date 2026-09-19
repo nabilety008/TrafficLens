@@ -221,6 +221,7 @@ public partial class App : Application
         services.AddSingleton<SettingsView>();
         services.AddSingleton<AboutViewModel>();
         services.AddSingleton<AboutView>();
+        services.AddSingleton<OnboardingViewModel>();
         services.AddSingleton<IStartupRegistrationService, StartupRegistrationService>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

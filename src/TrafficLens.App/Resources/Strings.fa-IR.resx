@@ -498,4 +498,55 @@
   <data name="OpenLogFolderLabel" xml:space="preserve">
     <value>باز کردن پوشه گزارش</value>
   </data>
+  <data name="TunnelAggregateHintText" xml:space="preserve">
+    <value>مجموع سیستم برای جلوگیری از شمارش مضاعف، آداپتورهای تونل را لحاظ نمی‌کند.</value>
+  </data>
+  <data name="GetStartedTitle" xml:space="preserve">
+    <value>شروع کار با ترافیک‌لنز</value>
+  </data>
+  <data name="GetStartedIntro" xml:space="preserve">
+    <value>ترافیک‌لنز یک پایشگر شبکه محلی و حریم‌خصوصی‌محور برای ویندوز است؛ میزان دانلود و آپلود هر برنامه را روی همین دستگاه نشان می‌دهد و هیچ داده‌ای از رایانه شما خارج نمی‌شود.</value>
+  </data>
+  <data name="GetStartedApplicationsTitle" xml:space="preserve">
+    <value>برنامه‌ها</value>
+  </data>
+  <data name="GetStartedApplicationsText" xml:space="preserve">
+    <value>میزان دانلود و آپلود هر برنامه (هر فرآیند) در صفحه «برنامه‌ها» نمایش داده می‌شود. برای این کار، ترافیک‌لنز باید با دسترسی مدیر (Administrator) اجرا شود؛ زیرا ویندوز این داده را از طریق ارائه‌دهنده هسته ETW در سطح بالا در اختیار می‌گذارد. ترافیک‌لنز هرگز از پیش خود سطح دسترسی را بالا نمی‌برد و در صورت نبود دسترسی، وضعیت فعلی را توضیح می‌دهد.</value>
+  </data>
+  <data name="GetStartedTunnelsTitle" xml:space="preserve">
+    <value>وی‌پی‌ان و تونل‌ها</value>
+  </data>
+  <data name="GetStartedTunnelsText" xml:space="preserve">
+    <value>آداپتورهای تونل (مانند WireGuard و OpenVPN) همچنان به‌صورت جداگانه در داشبورد فهرست می‌شوند، اما مجموع سیستم آن‌ها را لحاظ نمی‌کند تا همان بایت‌ها دو بار شمارش نشوند.</value>
+  </data>
+  <data name="GetStartedTrayTitle" xml:space="preserve">
+    <value>سینی سیستم</value>
+  </data>
+  <data name="GetStartedTrayText" xml:space="preserve">
+    <value>ترافیک‌لنز می‌تواند در سینی سیستم به‌کار خود ادامه دهد. بسته به تنظیمات، بستن یا کوچک‌کردن پنجره به‌جای خروج برنامه، آن را در سینی پنهان می‌کند.</value>
+  </data>
+  <data name="GetStartedWidgetTitle" xml:space="preserve">
+    <value>ویجت شناور</value>
+  </data>
+  <data name="GetStartedWidgetText" xml:space="preserve">
+    <value>یک نمای کوچک همیشه‌در-بالا که هنگام کار با پنجره‌های دیگر، نرخ زنده دانلود و آپلود را نشان می‌دهد. می‌توانید آن را از تنظیمات یا دکمه گوشه بالا-راست فعال یا غیرفعال کنید.</value>
+  </data>
+  <data name="GetStartedAlertsTitle" xml:space="preserve">
+    <value>هشدارها</value>
+  </data>
+  <data name="GetStartedAlertsText" xml:space="preserve">
+    <value>اعلان‌های اختیاری برای سرعت‌های بالا و سقف مصرف روزانه (دانلود، آپلود یا مجموع) با فاصله زمانی مناسب برای جلوگیری از مزاحمت. تنظیم آن‌ها در بخش تنظیمات انجام می‌شود.</value>
+  </data>
+  <data name="GetStartedLanguageTitle" xml:space="preserve">
+    <value>زبان</value>
+  </data>
+  <data name="GetStartedLanguageText" xml:space="preserve">
+    <value>در هر زمان با دکمه‌های گوشه بالا-راست یا گزینه «زبان» در تنظیمات، می‌توانید بین انگلیسی و فارسی جابه‌جا شوید.</value>
+  </data>
+  <data name="GetStartedDismiss" xml:space="preserve">
+    <value>متوجه شدم</value>
+  </data>
+  <data name="GetStartedReopen" xml:space="preserve">
+    <value>راهنمای شروع</value>
+  </data>
 </root>

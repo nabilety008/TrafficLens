@@ -22,6 +22,7 @@ public sealed class AboutViewModel : ViewModelBase, IDisposable
 
     private string _aboutTitleLabel = string.Empty;
     private string _aboutDescriptionLabel = string.Empty;
+    private string _getStartedLabel = string.Empty;
     private string _productNameText = string.Empty;
     private string _versionLabel = string.Empty;
     private string _versionText = string.Empty;
@@ -43,12 +44,13 @@ public sealed class AboutViewModel : ViewModelBase, IDisposable
     private string _diagnosticsCopiedLabel = string.Empty;
     private bool _hasCopiedNotice;
 
-    public AboutViewModel(ILocalizationService localization)
+    public AboutViewModel(ILocalizationService localization, OnboardingViewModel onboarding)
     {
         _localization = localization;
 
         CopyDiagnosticsCommand = new RelayCommand(CopyDiagnostics);
         OpenLogsCommand = new RelayCommand(OpenLogsFolder);
+        ShowGuideCommand = new RelayCommand(onboarding.Show);
 
         _localization.CultureChanged += OnCultureChanged;
         RefreshLocalizedStrings();
@@ -62,6 +64,14 @@ public sealed class AboutViewModel : ViewModelBase, IDisposable
     public ICommand CopyDiagnosticsCommand { get; }
 
     public ICommand OpenLogsCommand { get; }
+
+    public ICommand ShowGuideCommand { get; }
+
+    public string GetStartedLabel
+    {
+        get => _getStartedLabel;
+        private set => SetProperty(ref _getStartedLabel, value);
+    }
 
     public string AboutTitleLabel
     {
@@ -248,6 +258,7 @@ public sealed class AboutViewModel : ViewModelBase, IDisposable
     {
         AboutTitleLabel = _localization["AboutTitleLabel"];
         AboutDescriptionLabel = _localization["AboutDescriptionLabel"];
+        GetStartedLabel = _localization["GetStartedReopen"];
         ProductNameText = _localization["ProductNameLabel"];
         VersionLabel = _localization["VersionLabel"];
         RuntimeLabel = _localization["RuntimeLabel"];

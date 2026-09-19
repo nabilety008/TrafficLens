@@ -170,6 +170,8 @@ internal sealed class FakeSettingsService : ISettingsService
 
     public string Language { get; set; } = "en-US";
 
+    public bool SettingsFileExisted { get; set; } = true;
+
     public int SaveCalls { get; private set; }
 
     public string Get(string key, string defaultValue) =>

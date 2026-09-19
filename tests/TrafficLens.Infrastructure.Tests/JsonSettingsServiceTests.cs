@@ -36,6 +36,26 @@ public sealed class JsonSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void MissingFile_ReportsProfileDidNotExist()
+    {
+        var service = new JsonSettingsService(_filePath);
+
+        Assert.False(service.SettingsFileExisted);
+    }
+
+    [Fact]
+    public void ExistingFile_ReportsProfileExisted()
+    {
+        var first = new JsonSettingsService(_filePath);
+        first.Set(JsonSettingsService.LanguageKey, "en-US");
+        first.Save();
+
+        var second = new JsonSettingsService(_filePath);
+
+        Assert.True(second.SettingsFileExisted);
+    }
+
+    [Fact]
     public void MissingFile_LoadsVersionConstant()
     {
         var service = new JsonSettingsService(_filePath);

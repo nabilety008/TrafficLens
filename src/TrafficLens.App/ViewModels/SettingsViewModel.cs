@@ -59,13 +59,15 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     private string _cooldownRangeLabel = string.Empty;
     private string _saveLabel = string.Empty;
     private string _resetToDefaultsLabel = string.Empty;
+    private string _getStartedLabel = string.Empty;
 
     public SettingsViewModel(
         ILocalizationService localization,
         ISettingsService settings,
         IFloatingWidgetService floatingWidgetService,
         IAlertService alertService,
-        IStartupRegistrationService startupRegistration)
+        IStartupRegistrationService startupRegistration,
+        OnboardingViewModel onboarding)
     {
         _localization = localization;
         _settings = settings;
@@ -95,6 +97,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         ResetCommand = new RelayCommand(ResetWithConfirmation);
         ShowWidgetCommand = new RelayCommand(() => _floatingWidgetService.Show());
         HideWidgetCommand = new RelayCommand(() => _floatingWidgetService.Hide());
+        ShowGuideCommand = new RelayCommand(onboarding.Show);
 
         _language = "en-US";
         _minimizeToTray = true;
@@ -261,6 +264,14 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     public ICommand ShowWidgetCommand { get; }
 
     public ICommand HideWidgetCommand { get; }
+
+    public ICommand ShowGuideCommand { get; }
+
+    public string GetStartedLabel
+    {
+        get => _getStartedLabel;
+        private set => SetProperty(ref _getStartedLabel, value);
+    }
 
     public string SettingsTitle
     {
@@ -592,6 +603,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         CooldownRangeLabel = _localization["CooldownRangeLabel"];
         SaveLabel = _localization["SaveLabel"];
         ResetToDefaultsLabel = _localization["ResetToDefaultsLabel"];
+        GetStartedLabel = _localization["GetStartedReopen"];
 
         foreach (var rule in AlertRules)
         {

@@ -152,6 +152,79 @@ public sealed class DashboardViewModelTests : IDisposable
         Assert.Equal("متصل", _vm.ActiveAdapterStatusText);
     }
 
+    [Fact]
+    public void ActiveTunnelAdapter_ShowsTunnelHint()
+    {
+        _provider.SetAdapters(new[]
+        {
+            Adapter("wifi", "Wi-Fi", NetworkAdapterKind.Wireless, isUp: true, isDefault: true),
+            Adapter("tun", "OpenVPN DCO", NetworkAdapterKind.Tunnel, isUp: true)
+        });
+
+        Assert.True(_vm.HasTunnelAdapter);
+        Assert.Equal("System total excludes tunnel adapters to avoid double-counting.", _vm.TunnelAggregateHint);
+    }
+
+    [Fact]
+    public void NoTunnelAdapter_HidesTunnelHint()
+    {
+        _provider.SetAdapters(new[]
+        {
+            Adapter("eth", "Ethernet", NetworkAdapterKind.Ethernet, isUp: true),
+            Adapter("vnic", "Virtual", NetworkAdapterKind.Virtual, isUp: true)
+        });
+
+        Assert.False(_vm.HasTunnelAdapter);
+    }
+
+    [Fact]
+    public void TunnelAdapterDown_HidesTunnelHint()
+    {
+        _provider.SetAdapters(new[]
+        {
+            Adapter("tun", "OpenVPN DCO", NetworkAdapterKind.Tunnel, isUp: false)
+        });
+
+        Assert.False(_vm.HasTunnelAdapter);
+    }
+
+    [Fact]
+    public void TunnelStateChange_UpdatesHint()
+    {
+        _provider.SetAdapters(new[]
+        {
+            Adapter("tun", "OpenVPN DCO", NetworkAdapterKind.Tunnel, isUp: false)
+        });
+        Assert.False(_vm.HasTunnelAdapter);
+
+        _provider.SetAdapters(new[]
+        {
+            Adapter("tun", "OpenVPN DCO", NetworkAdapterKind.Tunnel, isUp: true)
+        });
+        Assert.True(_vm.HasTunnelAdapter);
+
+        _provider.SetAdapters(new[]
+        {
+            Adapter("wifi", "Wi-Fi", NetworkAdapterKind.Wireless, isUp: true)
+        });
+        Assert.False(_vm.HasTunnelAdapter);
+    }
+
+    [Fact]
+    public void TunnelHint_IsLocalizedInPersian()
+    {
+        _provider.SetAdapters(new[]
+        {
+            Adapter("tun", "OpenVPN DCO", NetworkAdapterKind.Tunnel, isUp: true)
+        });
+
+        _localization.SetCulture("fa-IR");
+
+        Assert.Equal(
+            "مجموع سیستم برای جلوگیری از شمارش مضاعف، آداپتورهای تونل را لحاظ نمی‌کند.",
+            _vm.TunnelAggregateHint);
+    }
+
     private static NetworkAdapterInfo Adapter(
         string id,
         string name,

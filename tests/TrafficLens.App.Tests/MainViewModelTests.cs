@@ -18,8 +18,9 @@ public class MainViewModelTests
         var connections = new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver());
         var history = new HistoryViewModel(new FakeHistoryService(), localization);
         var alerts = new AlertsViewModel(new FakeAlertService(), localization);
-        var settingsPage = new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService());
-        var about = new AboutViewModel(localization);
+        var onboarding = new OnboardingViewModel(localization, settings);
+        var settingsPage = new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService(), onboarding);
+        var about = new AboutViewModel(localization, onboarding);
 
         return new MainViewModel(
             localization,
@@ -31,7 +32,8 @@ public class MainViewModelTests
             alerts,
             settingsPage,
             about,
-            floatingWidget);
+            floatingWidget,
+            onboarding);
     }
 
     [Fact]
@@ -81,6 +83,7 @@ public class MainViewModelTests
 
         var settings = new FakeSettingsService();
         var floatingWidget = new FakeFloatingWidgetService();
+        var onboarding = new OnboardingViewModel(localization, settings);
 
         using var vm = new MainViewModel(
             localization,
@@ -90,9 +93,10 @@ public class MainViewModelTests
             new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver()),
             new HistoryViewModel(new FakeHistoryService(), localization),
             new AlertsViewModel(new FakeAlertService(), localization),
-            new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService()),
-            new AboutViewModel(localization),
-            floatingWidget);
+            new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService(), onboarding),
+            new AboutViewModel(localization, onboarding),
+            floatingWidget,
+            onboarding);
 
         Assert.Equal("About", vm.AboutNavLabel);
 
@@ -111,5 +115,38 @@ public class MainViewModelTests
         Assert.Equal("TrafficLens", vm.About.ProductNameText);
         Assert.False(string.IsNullOrWhiteSpace(vm.About.VersionText));
         Assert.Equal("About", vm.About.AboutTitleLabel);
+    }
+
+    [Fact]
+    public void FreshProfile_OnboardingIsShown()
+    {
+        var localization = new LocalizationService();
+        localization.SetCulture("en-US");
+        var settings = new FakeSettingsService { SettingsFileExisted = false };
+        var floatingWidget = new FakeFloatingWidgetService();
+        var onboarding = new OnboardingViewModel(localization, settings);
+
+        using var vm = new MainViewModel(
+            localization,
+            settings,
+            new DashboardViewModel(new FakeCollector(), new FakeAdapterProvider(), localization),
+            new ApplicationsViewModel(new FakeProcessCollector(), localization, new ProcessIconResolver()),
+            new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver()),
+            new HistoryViewModel(new FakeHistoryService(), localization),
+            new AlertsViewModel(new FakeAlertService(), localization),
+            new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService(), onboarding),
+            new AboutViewModel(localization, onboarding),
+            floatingWidget,
+            onboarding);
+
+        Assert.True(vm.Onboarding.IsVisible);
+    }
+
+    [Fact]
+    public void ExistingProfile_OnboardingIsNotAutoShown()
+    {
+        using var vm = CreateViewModel("en-US");
+
+        Assert.False(vm.Onboarding.IsVisible);
     }
 }

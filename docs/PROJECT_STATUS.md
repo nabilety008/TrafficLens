@@ -178,6 +178,88 @@ Diagnostics block, suite at 410 tests).
   - **Scope kept additive:** no schema change, no new index, no new timers, no
     change to write cadence/collectors/`lifetime_totals`, TL-017 optimizations
     untouched.
+- TL-019 (First-Run Get Started + Contextual Clarity, on `feature/tl019-get-started`):
+  - **First-run Get Started overlay:** Lightweight, dismissible panel that auto-shows
+    on a brand-new profile (no prior `settings.json`), explains TrafficLens in
+    concise skimmable sections (What TrafficLens does, Applications/Administrator
+    privilege, VPN & tunnels exclusion from system total, System tray behavior,
+    Floating widget, Alerts, Start with Windows, Language switcher), and persists
+    completion via existing `ISettingsService` (`HasCompletedOnboarding` key).
+    Manual reopen available from About ("Get Started") and Settings ("Get Started")
+    without resetting persisted state.
+  - **Contextual tunnel hint:** Small non-alarming hint near the Dashboard system
+    total ("System total excludes tunnel adapters to avoid double-counting.") that
+    appears only when an active tunnel adapter (`NetworkAdapterKind.Tunnel` with
+    `IsUp=true`) is present. Driven by existing `AdaptersChanged` events — no new
+    timers, no polling, no collector, no monitoring changes.
+  - **Administrator UX:** Onboarding explains Applications page requires elevation
+    (Windows ETW kernel provider); the app never auto-elevates, restarts elevated,
+    changes ETW session behavior, or fakes process data.
+  - **Localization (en-US + fa-IR):** Exact resource parity (18 new keys added to
+    both `Strings.resx` and `Strings.fa-IR.resx`, 180 total); RTL layout correct;
+    runtime language switch updates open onboarding panel.
+  - **Accessibility:** Keyboard navigation, focus order, Escape dismiss,
+    `AutomationProperties.Name` on all interactive elements; panel focuses
+    dismiss button on open.
+  - **Performance:** Zero continuous background cost — no new timers/polls/workers,
+    no duplicate subscriptions; reuses existing adapter events.
+  - **Tests (+23 → 455/455):** `OnboardingViewModelTests` (10), Dashboard tunnel
+    hint (5), About/Settings/MainViewModel reopen (6), `JsonSettingsService`
+    `SettingsFileExisted` (2), resource parity extended.
+  - **Verification:** Debug + Release 0 warnings / 0 errors; published single-file
+    build GUI verified (fresh profile auto-show, dismiss persistence, restart no
+    auto-show, About/Settings manual reopen, en/fa-IR/RTL, runtime language
+    switch, Dashboard/Applications/History/Alerts/Settings/Widget/Tray functional,
+    graceful exit, no orphan process).
+  - **Core (`TrafficLens.Core/History`):** `HourlyUsagePoint` (immutable record
+    struct: `StartUtc`, `EndUtcExclusive`, `LocalHour`, download/upload bytes)
+    and `HourlyHistoryBuilder` — a pure static builder that buckets
+    `TrafficHistoryBucket` samples into UTC-hour slots counted from the local
+    day's midnight-UTC (`MidnightUtc(DateOnly, TimeZoneInfo)` =
+    `ConvertTimeToUtc` of local `Unspecified` midnight). Slots are zero-filled,
+    slots whose start ≥ "now" are excluded, the current partial hour is clamped
+    to `EndUtcExclusive = nowUtc`, and slot labels use the local hour of the
+    UTC slot start. DST-correct by construction: spring-forward → 23 slots with
+    no skipped local label; fall-back → 25 slots whose duplicated local label
+    maps to two distinct UTC slots; half-hour-offset zones (e.g. +05:30) use
+    `Math.Floor((bucketStart − dayStart).TotalHours)` and produce 12 slots.
+  - **Repository:** `ITrafficHistoryRepository.QuerySamplesAsync(startUtcInclusive,
+    endUtcExclusive, ct)` added; `SqliteTrafficHistoryRepository` implements it as
+    one bounded query
+    (`WHERE bucket_start_utc >= $start AND bucket_start_utc < $end ORDER BY
+    bucket_start_utc`). `EXPLAIN QUERY PLAN` regression test proves the built-in
+    INTEGER PRIMARY KEY seek is used (no `SCAN`, no new index).
+  - **Snapshot:** `HistorySnapshot` gains a 9th positional member `TodayHourly`
+    (`IReadOnlyList<HourlyUsagePoint>`; `Unavailable` passes empty). The service
+    captures `nowUtc` once, computes `dayStartUtc` via `HourlyHistoryBuilder.
+    MidnightUtc`, runs the single bounded query, and builds the hourly series —
+    no extra queries, no SQL in the App/VM layers.
+  - **App:** `HistoryChartPoint` (label + bytes) replaced the daily-only point
+    model in `HistoryBarChartControl.Points`; `HistoryViewModel` maps daily
+    (`MM-dd` label) or hourly (`HH:00` label) series depending on the selected
+    range and the presence of hourly data, and a new `ChartTitleLabel`
+    ("Hourly Traffic" on Today, "Daily Traffic" otherwise) drives the chart
+    title (localized en + fa-IR `HistoryHourlyTrafficLabel`; resx parity now
+    162 keys each).
+  - **Tests (+16):** 8 `HourlyHistoryBuilderTests` (zero-fill to now, slot
+    attribution + partial-hour clamp, top-of-hour exclusion, local-midnight
+    empty, out-of-window ignored, spring-forward 23-slot with skipped local
+    label, fall-back 25-slot with duplicated label, +05:30 half-hour zone) using
+    fixed-zone helpers or the real
+    `TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time")`
+    (verified 2026 DST days: 23h spring / 25h fall); 3
+    `SqliteTrafficHistoryRepositoryTests` (half-open range returns only in-range
+    rows oldest-first, empty range returns none, query-plan avoids SCAN); 1
+    `TrafficHistoryServiceTests.HourlySeries_InSnapshot_ReflectsCommittedBuckets`;
+    `HistoryViewModelTests` rewritten to 10 (hourly labels, zero-hour bars,
+    chart-title data-independent switching, culture switch, HasData);
+    `AlertServiceTests`/`AlertEngineTests`/`LocalizationResourceTests` updated.
+  - **Verification:** **432/432 tests** (212 Network / 53 Infrastructure / 167
+    App), Debug + Release 0 warnings / 0 errors; the published single-file build
+    passed `scripts/tl018-verify.ps1` (see "Verified").
+  - **Scope kept additive:** no schema change, no new index, no new timers, no
+    change to write cadence/collectors/`lifetime_totals`, TL-017 optimizations
+    untouched.
 - TL-001: Solution and four projects; DI/MVVM; structured JSON logging; dark main
   window; localization (en + fa-IR, RTL-ready); required docs; git repo.
 - TL-002: Global network collector implemented end-to-end:
