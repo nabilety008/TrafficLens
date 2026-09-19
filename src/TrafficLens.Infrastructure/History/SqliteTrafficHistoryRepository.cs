@@ -14,6 +14,7 @@ namespace TrafficLens.Infrastructure.History;
 /// seconds. Source of truth; safe to compact because...</item>
 /// <item><c>daily_usage</c> — per-LOCAL-day rollup maintained in the same
 /// transaction, so Today/7d/30d/Lifetime never scan raw buckets. Kept forever.</item>
+/// <item><c>lifetime_totals</c> — single-row cache of lifetime download/upload bytes.</item>
 /// <item><c>PRAGMA user_version</c> — explicit schema version for migrations.</item>
 /// </list>
 ///
@@ -25,15 +26,21 @@ namespace TrafficLens.Infrastructure.History;
 /// Failures are recorded in <see cref="LastError"/> and never thrown at callers
 /// (initialization failures disable the repository instead).
 /// </summary>
-public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository
+public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository, IDisposable
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private const string DateFormat = "yyyy-MM-dd";
 
     private readonly string _connectionString;
     private readonly ILogger<SqliteTrafficHistoryRepository> _logger;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
+    private SqliteConnection? _writerConnection;
+    private SqliteCommand? _insertCmd;
+    private SqliteCommand? _changedCmd;
+    private SqliteCommand? _upsertDailyCmd;
+    private SqliteCommand? _updateLifetimeCmd;
+    private bool _commandsPrepared;
     private bool _disposed;
 
     public SqliteTrafficHistoryRepository(
@@ -86,58 +93,53 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository
         _writeGate.Wait(cancellationToken);
         try
         {
-            using var connection = Open();
-            using var transaction = connection.BeginTransaction();
+            EnsureWriterConnection();
+            PrepareCommands();
 
-            using var insert = connection.CreateCommand();
-            insert.Transaction = transaction;
-            insert.CommandText =
-                "INSERT OR IGNORE INTO traffic_samples " +
-                "(bucket_start_utc, bucket_duration_seconds, download_bytes, upload_bytes) " +
-                "VALUES ($start, $duration, $download, $upload);";
-            var startParameter = insert.Parameters.Add("$start", SqliteType.Integer);
-            var durationParameter = insert.Parameters.Add("$duration", SqliteType.Integer);
-            var downloadParameter = insert.Parameters.Add("$download", SqliteType.Integer);
-            var uploadParameter = insert.Parameters.Add("$upload", SqliteType.Integer);
+            using var transaction = _writerConnection!.BeginTransaction();
 
-            using var changed = connection.CreateCommand();
-            changed.Transaction = transaction;
-            changed.CommandText = "SELECT changes();";
-
-            using var upsertDaily = connection.CreateCommand();
-            upsertDaily.Transaction = transaction;
-            upsertDaily.CommandText =
-                "INSERT INTO daily_usage (local_date, download_bytes, upload_bytes) " +
-                "VALUES ($date, $download, $upload) " +
-                "ON CONFLICT(local_date) DO UPDATE SET " +
-                "download_bytes = download_bytes + excluded.download_bytes, " +
-                "upload_bytes = upload_bytes + excluded.upload_bytes;";
-            var dateParameter = upsertDaily.Parameters.Add("$date", SqliteType.Text);
-            var dailyDownload = upsertDaily.Parameters.Add("$download", SqliteType.Integer);
-            var dailyUpload = upsertDaily.Parameters.Add("$upload", SqliteType.Integer);
+            _insertCmd!.Transaction = transaction;
+            _changedCmd!.Transaction = transaction;
+            _upsertDailyCmd!.Transaction = transaction;
+            _updateLifetimeCmd!.Transaction = transaction;
 
             var stored = 0;
+            long totalDownload = 0;
+            long totalUpload = 0;
+
             foreach (var bucket in buckets)
             {
-                startParameter.Value = ToUnixSeconds(bucket.BucketStartUtc);
-                durationParameter.Value = bucket.DurationSeconds;
-                downloadParameter.Value = bucket.DownloadBytes;
-                uploadParameter.Value = bucket.UploadBytes;
-                insert.ExecuteNonQuery();
+                _insertCmd.Parameters["$start"].Value = ToUnixSeconds(bucket.BucketStartUtc);
+                _insertCmd.Parameters["$duration"].Value = bucket.DurationSeconds;
+                _insertCmd.Parameters["$download"].Value = bucket.DownloadBytes;
+                _insertCmd.Parameters["$upload"].Value = bucket.UploadBytes;
+                _insertCmd.ExecuteNonQuery();
 
-                var inserted = Convert.ToInt64(changed.ExecuteScalar(), CultureInfo.InvariantCulture);
+                var inserted = Convert.ToInt64(_changedCmd.ExecuteScalar(), CultureInfo.InvariantCulture);
                 if (inserted == 0)
                 {
                     continue;
                 }
 
-                dateParameter.Value = HistoryRangeCalculator
+                var date = HistoryRangeCalculator
                     .LocalDateOf(bucket.BucketStartUtc, timeZone)
                     .ToString(DateFormat, CultureInfo.InvariantCulture);
-                dailyDownload.Value = bucket.DownloadBytes;
-                dailyUpload.Value = bucket.UploadBytes;
-                upsertDaily.ExecuteNonQuery();
+
+                _upsertDailyCmd.Parameters["$date"].Value = date;
+                _upsertDailyCmd.Parameters["$download"].Value = bucket.DownloadBytes;
+                _upsertDailyCmd.Parameters["$upload"].Value = bucket.UploadBytes;
+                _upsertDailyCmd.ExecuteNonQuery();
+
+                totalDownload += bucket.DownloadBytes;
+                totalUpload += bucket.UploadBytes;
                 stored++;
+            }
+
+            if (stored > 0)
+            {
+                _updateLifetimeCmd.Parameters["$download"].Value = totalDownload;
+                _updateLifetimeCmd.Parameters["$upload"].Value = totalUpload;
+                _updateLifetimeCmd.ExecuteNonQuery();
             }
 
             transaction.Commit();
@@ -210,7 +212,7 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository
             using var connection = Open();
             using var command = connection.CreateCommand();
             command.CommandText =
-                "SELECT COALESCE(SUM(download_bytes), 0), COALESCE(SUM(upload_bytes), 0) FROM daily_usage;";
+                "SELECT COALESCE(download_bytes, 0), COALESCE(upload_bytes, 0) FROM lifetime_totals;";
             using var reader = command.ExecuteReader();
             if (reader.Read())
             {
@@ -270,6 +272,72 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository
 
         _disposed = true;
         _writeGate.Dispose();
+        _insertCmd?.Dispose();
+        _changedCmd?.Dispose();
+        _upsertDailyCmd?.Dispose();
+        _updateLifetimeCmd?.Dispose();
+        _writerConnection?.Dispose();
+    }
+
+    private void EnsureWriterConnection()
+    {
+        if (_writerConnection is not null)
+        {
+            return;
+        }
+
+        _writerConnection = new SqliteConnection(_connectionString);
+        _writerConnection.Open();
+
+        using var pragma = _writerConnection.CreateCommand();
+        pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+        pragma.ExecuteNonQuery();
+    }
+
+    private void PrepareCommands()
+    {
+        if (_commandsPrepared)
+        {
+            return;
+        }
+
+        var conn = _writerConnection!;
+
+        _insertCmd = conn.CreateCommand();
+        _insertCmd.CommandText =
+            "INSERT OR IGNORE INTO traffic_samples " +
+            "(bucket_start_utc, bucket_duration_seconds, download_bytes, upload_bytes) " +
+            "VALUES ($start, $duration, $download, $upload);";
+        _insertCmd.Parameters.Add("$start", SqliteType.Integer);
+        _insertCmd.Parameters.Add("$duration", SqliteType.Integer);
+        _insertCmd.Parameters.Add("$download", SqliteType.Integer);
+        _insertCmd.Parameters.Add("$upload", SqliteType.Integer);
+
+        _changedCmd = conn.CreateCommand();
+        _changedCmd.CommandText = "SELECT changes();";
+
+        _upsertDailyCmd = conn.CreateCommand();
+        _upsertDailyCmd.CommandText =
+            "INSERT INTO daily_usage (local_date, download_bytes, upload_bytes) " +
+            "VALUES ($date, $download, $upload) " +
+            "ON CONFLICT(local_date) DO UPDATE SET " +
+            "download_bytes = download_bytes + excluded.download_bytes, " +
+            "upload_bytes = upload_bytes + excluded.upload_bytes;";
+        _upsertDailyCmd.Parameters.Add("$date", SqliteType.Text);
+        _upsertDailyCmd.Parameters.Add("$download", SqliteType.Integer);
+        _upsertDailyCmd.Parameters.Add("$upload", SqliteType.Integer);
+
+        _updateLifetimeCmd = conn.CreateCommand();
+        _updateLifetimeCmd.CommandText =
+            "INSERT INTO lifetime_totals (id, download_bytes, upload_bytes) " +
+            "VALUES (1, $download, $upload) " +
+            "ON CONFLICT(id) DO UPDATE SET " +
+            "download_bytes = download_bytes + excluded.download_bytes, " +
+            "upload_bytes = upload_bytes + excluded.upload_bytes;";
+        _updateLifetimeCmd.Parameters.Add("$download", SqliteType.Integer);
+        _updateLifetimeCmd.Parameters.Add("$upload", SqliteType.Integer);
+
+        _commandsPrepared = true;
     }
 
     private void Migrate()
@@ -297,6 +365,24 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository
                 "local_date TEXT PRIMARY KEY, " +
                 "download_bytes INTEGER NOT NULL, " +
                 "upload_bytes INTEGER NOT NULL);");
+        }
+
+        if (version < 2)
+        {
+            Execute(connection, transaction,
+                "CREATE TABLE IF NOT EXISTS lifetime_totals (" +
+                "id INTEGER PRIMARY KEY CHECK (id = 1), " +
+                "download_bytes INTEGER NOT NULL DEFAULT 0, " +
+                "upload_bytes INTEGER NOT NULL DEFAULT 0);");
+
+            // Back-fill the lifetime cache from existing v1 history so an
+            // upgrade from schema v1 does not lose the pre-upgrade Lifetime
+            // total. daily_usage is never pruned and is the exact sum of all
+            // persisted buckets, so seeding id=1 from it is lossless.
+            Execute(connection, transaction,
+                "INSERT OR IGNORE INTO lifetime_totals (id, download_bytes, upload_bytes) " +
+                "SELECT 1, COALESCE(SUM(download_bytes), 0), COALESCE(SUM(upload_bytes), 0) " +
+                "FROM daily_usage;");
         }
 
         Execute(connection, transaction, $"PRAGMA user_version = {SchemaVersion};");

@@ -275,7 +275,7 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         RunOnUi(() =>
         {
             RefreshLocalizedStrings();
-            RefreshConnections(_connections);
+            RefreshConnections(_connections, force: true);
         });
 
     private void RunOnUi(Action action)
@@ -363,7 +363,7 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void RefreshConnections(IReadOnlyList<ConnectionInfo> connections)
+    private void RefreshConnections(IReadOnlyList<ConnectionInfo> connections, bool force = false)
     {
         _connections = connections;
         UpdateErrorState();
@@ -382,7 +382,7 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
 
             if (_displayStrings is not null)
             {
-                row.Update(connection, _culture, _displayStrings);
+                row.Update(connection, _culture, _displayStrings, force);
             }
         }
 
@@ -435,22 +435,77 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
             .OrderBy(c => c, ConnectionSort.Create(_sortKey))
             .ToList();
 
-        if (!force && SameKeys(ordered, _displayedKeys))
+        var orderedKeys = new ConnectionKey[ordered.Count];
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            orderedKeys[i] = ConnectionKey.From(ordered[i]);
+        }
+
+        if (!force && SameKeys(orderedKeys, _displayedKeys))
         {
             return;
         }
 
-        Connections.Clear();
-        _displayedKeys.Clear();
-        foreach (var connection in ordered)
+        ApplyDisplayKeys(ordered, orderedKeys);
+    }
+
+    private void ApplyDisplayKeys(
+        IReadOnlyList<ConnectionInfo> ordered,
+        IReadOnlyList<ConnectionKey> orderedKeys)
+    {
+        var target = new List<ConnectionRowViewModel>(ordered.Count);
+        var targetKeys = new List<ConnectionKey>(orderedKeys.Count);
+        for (var i = 0; i < ordered.Count; i++)
         {
-            var key = ConnectionKey.From(connection);
-            if (_rows.TryGetValue(key, out var row))
+            if (_rows.TryGetValue(orderedKeys[i], out var row))
             {
-                Connections.Add(row);
-                _displayedKeys.Add(key);
+                target.Add(row);
+                targetKeys.Add(orderedKeys[i]);
             }
         }
+
+        var present = new HashSet<ConnectionRowViewModel>(target);
+
+        for (var i = Connections.Count - 1; i >= 0; i--)
+        {
+            if (!present.Contains(Connections[i]))
+            {
+                Connections.RemoveAt(i);
+            }
+        }
+
+        var expected = 0;
+        foreach (var row in target)
+        {
+            var current = -1;
+            for (var j = expected; j < Connections.Count; j++)
+            {
+                if (ReferenceEquals(Connections[j], row))
+                {
+                    current = j;
+                    break;
+                }
+            }
+
+            if (current == -1)
+            {
+                Connections.Insert(expected, row);
+            }
+            else if (current != expected)
+            {
+                Connections.Move(current, expected);
+            }
+
+            expected++;
+        }
+
+        while (Connections.Count > target.Count)
+        {
+            Connections.RemoveAt(Connections.Count - 1);
+        }
+
+        _displayedKeys.Clear();
+        _displayedKeys.AddRange(targetKeys);
 
         IsEmpty = Connections.Count == 0;
         OnPropertyChanged(nameof(IsNotEmpty));
@@ -462,17 +517,17 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
             : connection.ProcessName;
 
     private static bool SameKeys(
-        IReadOnlyList<ConnectionInfo> connections,
-        IReadOnlyList<ConnectionKey> keys)
+        IReadOnlyList<ConnectionKey> keys,
+        IReadOnlyList<ConnectionKey> expected)
     {
-        if (connections.Count != keys.Count)
+        if (keys.Count != expected.Count)
         {
             return false;
         }
 
-        for (var i = 0; i < connections.Count; i++)
+        for (var i = 0; i < keys.Count; i++)
         {
-            if (!ConnectionKey.From(connections[i]).Equals(keys[i]))
+            if (!keys[i].Equals(expected[i]))
             {
                 return false;
             }

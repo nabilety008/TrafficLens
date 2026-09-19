@@ -1,6 +1,6 @@
 # TrafficLens — Database
 
-Status: **Implemented (TL-009).** Local SQLite database at
+Status: **Implemented (TL-009), schema v2 since TL-017.** Local SQLite database at
 `%LOCALAPPDATA%\TrafficLens\data\trafficlens.db` (`AppPaths.DatabaseFile`; the
 `data` directory is created on startup). WAL journal mode, `busy_timeout=5000`,
 `Pooling=false` (single deterministic connection per repository instance so no
@@ -13,7 +13,11 @@ file locks leak across scopes).
 - Future retention policies (e.g., delete data older than N days).
 - Local SQLite database, no external services.
 
-## Schema (v1, `PRAGMA user_version = 1`)
+## Schema (v2, `PRAGMA user_version = 2`)
+
+Schema v1 (`PRAGMA user_version = 1`, TL-009) is migrated to v2 on startup by
+TL-017. v2 only adds a Lifetime rollup table; every v1 table/column/semantic is
+unchanged.
 
 ### traffic_samples
 Per-UTC-minute aggregated SYSTEM/GLOBAL buckets (created from valid counter
@@ -36,9 +40,32 @@ Rollup of `traffic_samples` into local-date rows (bucketing via the service's
 | download_bytes | INTEGER | daily system download bytes |
 | upload_bytes | INTEGER | daily system upload bytes |
 
+### lifetime_totals (added in schema v2, TL-017)
+Single-row lifetime aggregate so the Lifetime / History-total view is an O(1)
+read instead of an O(n) sum over `traffic_samples`.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | INTEGER PK | constant row id (e.g. 1) |
+| download_bytes | INTEGER | lifetime system download bytes |
+| upload_bytes | INTEGER | lifetime system upload bytes |
+
+`lifetime_totals` is updated in the same transaction as the `traffic_samples`
+append (kept consistent with the 30 s flush). The Lifetime query reads this row.
+
 No separate indexes needed: INTEGER PK = rowid (table is its own index);
 `local_date` PK covers the date-range lookups used by the views.
 `traffic_samples` is append-only, one transaction per flush.
+
+## Migration (v1 → v2)
+
+On startup the repository checks `PRAGMA user_version`:
+- `0` (fresh) → creates the full v2 schema (`user_version = 2`).
+- `1` (v1) → creates `lifetime_totals`, back-fills it from the existing
+  `daily_usage` sum (`INSERT OR IGNORE id=1` with the totals), sets
+  `user_version = 2`. `daily_usage` is never pruned and is the exact sum of all
+  persisted buckets, so the pre-upgrade Lifetime total is preserved.
+- `2` → no-op.
 
 ## Idempotent appends (restart/crash safety)
 

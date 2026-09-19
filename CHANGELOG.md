@@ -2,6 +2,86 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — TL-017 (performance audit, M12)
+
+Branch `feature/tl017-performance` off master v0.1.1; ready to merge on approval.
+
+### Changed (TL-017)
+
+- **Connections page optimization (Phase 1).** In-place
+  `ConnectionRowViewModel` updates keyed by the stable `ConnectionKey`, delta
+  diffing over the native table snapshots, and a per-refresh icon budget — the
+  row collection is no longer rebuilt every poll when only counters change.
+  Dedicated 3-minute comparable probe: CPU avg **15.31% → 6.65%** (~57% lower),
+  CPU max **41.41% → 16.81%** (~59% lower), WS drift **+24.29 → +9.48
+  MB/3min** (~61% lower), Private drift **+23.26 → +8.00 MB/3min** (~66%
+  lower).
+- **Per-tick allocation reduction (Phase 2).** ~550 avoidable allocations per
+  poll tick removed (~450 short-lived per-row strings, ~101 `ConnectionKey`
+  records created twice per row update). GC capture: Gen0 0.20/s, Gen1/Gen2 0,
+  ~1.53 MB/s allocation, ~0.8% time in GC, bounded heap. No CPU improvement
+  claimed (within noise).
+- **Lazy page instantiation (Phase 3).** The six page Views are created on
+  first navigation instead of eagerly in `MainViewModel`/`MainWindow`; the
+  internal mainVM + 6-view block dropped ~170 ms → ~70 ms. Wall-clock launch is
+  **not** claimed faster (environment-dominated on this host).
+- **SQLite history optimization (Phase 4).** Persistent background writer with
+  prepared commands and a dedicated flush queue plus `lifetime_totals` schema
+  v2: flush avg **7.4 → 1.3 ms**, p95 **9 → 2 ms** (~5.7x), and the Lifetime
+  query is now O(1). `docs/DATABASE.md` updated for schema v2 + migration.
+- **Idle tray optimization (Phase 5).** `SetActive` gating so hidden
+  widget/tray surfaces stop re-rendering, and a widget dispose/recreate path.
+  Idle allocation ~2.2 → ~0.5–1.1 MB/s, WS drift +4.7 → +2.4 MB/5min, threads
+  16 → 15. Idle CPU avg 1.08% → 1.07% is explicitly within noise (not claimed).
+- **Soak harness (Phase 6)** — `scripts/tl017-soak.ps1`. 60-min idle tray:
+  CPU avg 0.97%, WS ~240 MB flat (**+0.2 MB** drift after warm-up), Private
+  ~120 MB, handles 468–496. 30-min Connections: WS +14.5 first 15min → +2.5
+  second 15min, Private +12.7 → +5.0 (deceleration). "No leak was observed
+  during the measured soak window" — 60/30-minute soak, not a 24h soak.
+
+### Added
+
+- `docs/PERFORMANCE_AFTER.md` — authoritative TL-017 BEFORE vs AFTER report
+  (measurement rules, per-phase results, summary table, correctness regression,
+  known limitations, remaining manual validation). Linked from
+  `docs/PERFORMANCE.md`.
+
+### Fixed (found during Phase 7 final verification)
+
+- **Schema v1→v2 migration lost the pre-upgrade Lifetime total (production
+  data-correctness).** `Migrate()` created `lifetime_totals` but never seeded
+  it, so upgrading a real v0.1.1 database (schema v1) reported a Lifetime
+  history of 0 until new buckets arrived. The migration now back-fills
+  `lifetime_totals` from the existing `daily_usage` sum (`INSERT OR IGNORE …
+  SELECT SUM(…) FROM daily_usage`). New regression test
+  `InitializeAsync_MigratesV1History_BackFillsLifetimeTotal`; `DATABASE.md`
+  describes the migration.
+- **`scripts/tl017-db-benchmark.ps1` (harness).** The generated benchmark
+  console project was never built before `dotnet run --no-build`, and the same
+  source was written to two files (`DbBenchmark.cs` + `Program.cs`), so a clean
+  run could not start `DbBenchmark.exe`. Removed the duplicate source write and
+  let `dotnet run` build the project; verified end-to-end (flush/query/prune).
+
+### Known limitations (TL-017)
+
+- **Elevated ETW long-run profiling was NOT measured** (non-elevated
+  environment; UAC not automatable). Only the `PermissionDenied` fallback,
+  stability, no-crash and no-orphan-session paths were verified. Documented as
+  remaining manual validation — ETW profiling is not marked complete.
+- Wall-clock startup and per-phase idle-CPU deltas are within environment/
+  run-to-run noise and are explicitly not claimed.
+
+### Verified (2026-09-19, branch source)
+
+- `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
+- **416/416 tests pass** (App 163 / Network 212 / Infrastructure 41).
+- `tl015-smoke.ps1` PASS, `tl016-verify.ps1` PASS, `tl017-connprobe.ps1` PASS
+  (on retry — first attempt was a transient UIA timing flake, diagnosed and
+  re-run clean).
+- `build-release.ps1` full packaging pipeline succeeds at version 0.1.1
+  (no tag created, no version bump).
+- All TL-017 benchmark harnesses remain runnable.
+
 ## [0.1.1] — 2026-09-17 (first release after TL-016)
 
 ### Changed

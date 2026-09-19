@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
+using Microsoft.Extensions.DependencyInjection;
+using TrafficLens.App.Infrastructure;
 using TrafficLens.App.Services;
 using TrafficLens.App.ViewModels;
 using TrafficLens.Core.Abstractions;
@@ -16,6 +18,7 @@ public partial class MainWindow : Window
     private readonly ISettingsService _settings;
     private readonly ApplicationExitCoordinator _exitCoordinator;
     private readonly MainViewModel _viewModel;
+    private readonly IServiceProvider _services;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -24,12 +27,7 @@ public partial class MainWindow : Window
         IFloatingWidgetService floatingWidgetService,
         ISettingsService settings,
         ApplicationExitCoordinator exitCoordinator,
-        ApplicationsView applicationsView,
-        ConnectionsView connectionsView,
-        HistoryView historyView,
-        AlertsView alertsView,
-        SettingsView settingsView,
-        AboutView aboutView)
+        IServiceProvider services)
     {
         _localization = localization;
         _trayService = trayService;
@@ -37,23 +35,90 @@ public partial class MainWindow : Window
         _settings = settings;
         _exitCoordinator = exitCoordinator;
         _viewModel = viewModel;
+        _services = services;
+        StartupTrace.Tick("mainwindow-ctor-begin");
         InitializeComponent();
+        StartupTrace.Tick("mainwindow-initializecomponent");
         DataContext = viewModel;
-        ApplicationsHost.Content = applicationsView;
-        ConnectionsHost.Content = connectionsView;
-        HistoryHost.Content = historyView;
-        AlertsHost.Content = alertsView;
-        SettingsHost.Content = settingsView;
-        AboutHost.Content = aboutView;
-        settingsView.DataContext = viewModel.Settings;
-        aboutView.DataContext = viewModel.About;
 
         _localization.CultureChanged += OnCultureChanged;
         UpdateFlowDirection();
+        viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        Loaded += (_, _) => StartupTrace.Tick("first-render-ready");
 
         Closing += OnWindowClosing;
         StateChanged += OnWindowStateChanged;
         _trayService.OpenRequested += OnTrayOpenRequested;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(MainViewModel.IsApplicationsVisible) when _viewModel.IsApplicationsVisible:
+                EnsurePage(PageSlot.Applications);
+                break;
+            case nameof(MainViewModel.IsConnectionsVisible) when _viewModel.IsConnectionsVisible:
+                EnsurePage(PageSlot.Connections);
+                break;
+            case nameof(MainViewModel.IsHistoryVisible) when _viewModel.IsHistoryVisible:
+                EnsurePage(PageSlot.History);
+                break;
+            case nameof(MainViewModel.IsAlertsVisible) when _viewModel.IsAlertsVisible:
+                EnsurePage(PageSlot.Alerts);
+                break;
+            case nameof(MainViewModel.IsSettingsVisible) when _viewModel.IsSettingsVisible:
+                EnsurePage(PageSlot.Settings);
+                break;
+            case nameof(MainViewModel.IsAboutVisible) when _viewModel.IsAboutVisible:
+                EnsurePage(PageSlot.About);
+                break;
+        }
+    }
+
+    private void EnsurePage(PageSlot slot)
+    {
+        var host = slot switch
+        {
+            PageSlot.Applications => ApplicationsHost,
+            PageSlot.Connections => ConnectionsHost,
+            PageSlot.History => HistoryHost,
+            PageSlot.Alerts => AlertsHost,
+            PageSlot.Settings => SettingsHost,
+            _ => AboutHost
+        };
+
+        if (host.Content is not null)
+        {
+            return;
+        }
+
+        switch (slot)
+        {
+            case PageSlot.Applications:
+                host.Content = _services.GetRequiredService<ApplicationsView>();
+                break;
+            case PageSlot.Connections:
+                host.Content = _services.GetRequiredService<ConnectionsView>();
+                break;
+            case PageSlot.History:
+                host.Content = _services.GetRequiredService<HistoryView>();
+                break;
+            case PageSlot.Alerts:
+                host.Content = _services.GetRequiredService<AlertsView>();
+                break;
+            case PageSlot.Settings:
+                var settingsView = _services.GetRequiredService<SettingsView>();
+                settingsView.DataContext = _viewModel.Settings;
+                host.Content = settingsView;
+                break;
+            case PageSlot.About:
+                var aboutView = _services.GetRequiredService<AboutView>();
+                aboutView.DataContext = _viewModel.About;
+                host.Content = aboutView;
+                break;
+        }
     }
 
     private void OnCultureChanged(object? sender, EventArgs e)
@@ -73,6 +138,7 @@ public partial class MainWindow : Window
             }
             _localization.CultureChanged -= OnCultureChanged;
             _trayService.OpenRequested -= OnTrayOpenRequested;
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             return;
         }
 
@@ -107,5 +173,15 @@ public partial class MainWindow : Window
         FlowDirection = _localization.IsRightToLeft
             ? System.Windows.FlowDirection.RightToLeft
             : System.Windows.FlowDirection.LeftToRight;
+    }
+
+    private enum PageSlot
+    {
+        Applications,
+        Connections,
+        History,
+        Alerts,
+        Settings,
+        About
     }
 }

@@ -35,6 +35,7 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
     private string _uploadText = "0 B/s";
     private string _totalText = "0 B/s";
     private bool _isPinned = true;
+    private bool _refreshPending;
 
     public FloatingWidgetViewModel(
         INetworkTrafficCollector collector,
@@ -137,12 +138,30 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
         _localization.CultureChanged -= OnCultureChanged;
     }
 
-    private void OnSpeedSample(object? sender, NetworkSpeedSample sample) =>
-        RunOnUi(() =>
+    private void OnSpeedSample(object? sender, NetworkSpeedSample sample) => CoalesceRefresh();
+
+    private void CoalesceRefresh()
+    {
+        if (_refreshPending)
         {
-            _samples = _collector.GetCurrentSamples();
+            return;
+        }
+
+        _refreshPending = true;
+
+        if (_dispatcher is null || _dispatcher.CheckAccess())
+        {
+            _refreshPending = false;
+            RefreshRates();
+            return;
+        }
+
+        _dispatcher.BeginInvoke(() =>
+        {
+            _refreshPending = false;
             RefreshRates();
         });
+    }
 
     private void OnAdaptersChanged(object? sender, EventArgs e) =>
         RunOnUi(() =>
@@ -182,6 +201,7 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
 
     private void RefreshRates()
     {
+        _samples = _collector.GetCurrentSamples();
         var aggregate = NetworkTrafficAggregator.AggregateRates(_samples, _adapters);
         var download = aggregate?.DownloadBytesPerSecond ?? 0;
         var upload = aggregate?.UploadBytesPerSecond ?? 0;

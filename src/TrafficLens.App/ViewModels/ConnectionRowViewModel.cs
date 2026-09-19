@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Windows.Media;
 using TrafficLens.Core.Conversion;
 using TrafficLens.Core.Models;
@@ -22,6 +23,17 @@ public sealed class ConnectionRowViewModel : ViewModelBase
     private string _localText = string.Empty;
     private string _remoteText = string.Empty;
     private ImageSource? _icon;
+    private bool _initialized;
+    private string? _processName;
+    private int _processId;
+    private ConnectionProtocol _protocol;
+    private ConnectionState _state;
+    private IPAddress? _localAddress;
+    private int _localPort;
+    private IPAddress? _remoteAddress;
+    private int? _remotePort;
+    private string? _executablePath;
+    private bool _iconAvailable;
 
     public ConnectionRowViewModel(ConnectionKey identity)
     {
@@ -78,8 +90,35 @@ public sealed class ConnectionRowViewModel : ViewModelBase
 
     public string DisplayName => Name;
 
-    public void Update(ConnectionInfo connection, CultureInfo culture, ConnectionDisplayStrings display)
+    public void Update(ConnectionInfo connection, CultureInfo culture, ConnectionDisplayStrings display, bool force = false)
     {
+        if (!force && _initialized
+            && string.Equals(_processName, connection.ProcessName, StringComparison.Ordinal)
+            && _processId == connection.ProcessId
+            && _protocol == connection.Protocol
+            && _state == connection.State
+            && Equals(_localAddress, connection.LocalAddress)
+            && _localPort == connection.LocalPort
+            && Equals(_remoteAddress, connection.RemoteAddress)
+            && _remotePort == connection.RemotePort
+            && string.Equals(_executablePath, connection.ExecutablePath, StringComparison.Ordinal)
+            && _iconAvailable == connection.IconAvailable)
+        {
+            return;
+        }
+
+        _initialized = true;
+        _processName = connection.ProcessName;
+        _processId = connection.ProcessId;
+        _protocol = connection.Protocol;
+        _state = connection.State;
+        _localAddress = connection.LocalAddress;
+        _localPort = connection.LocalPort;
+        _remoteAddress = connection.RemoteAddress;
+        _remotePort = connection.RemotePort;
+        _executablePath = connection.ExecutablePath;
+        _iconAvailable = connection.IconAvailable;
+
         Name = string.IsNullOrWhiteSpace(connection.ProcessName)
             ? display.UnknownProcessText
             : connection.ProcessName;

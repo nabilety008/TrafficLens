@@ -576,6 +576,46 @@
 - **Status: done**
 - **Commit:** (see `docs/PROJECT_STATUS.md` Git Commit section)
 
+### TL-017 Performance Audit (M12)
+- [x] Phase 0 — capture pre-optimization baselines (`docs/PERFORMANCE_BASELINE.md`, `c709e2a`)
+- [x] Phase 1 — Connections page optimization: in-place keyed row updates, delta
+      diffing, per-refresh icon budget; dedicated probe CPU avg 15.31% → 6.65%,
+      WS drift +24.29 → +9.48 MB/3min, Private drift +23.26 → +8.00 MB/3min
+      (`03c47a4`)
+- [x] Phase 2 — per-tick allocation reduction (~550 allocs/tick: ~450 row
+      strings, ~101 double `ConnectionKey`); GC capture Gen0 0.20/s,
+      ~1.53 MB/s alloc, ~0.8% time in GC, bounded heap; no CPU claim (`213a887`,
+      `303288e`)
+- [x] Phase 3 — lazy six page Views + startup stage instrumentation; internal
+      mainVM+6-view block ~170 → ~70 ms; wall-clock explicitly NOT claimed
+      (`cbc8aea`, `0db764e`)
+- [x] Phase 4 — SQLite persistent writer + prepared commands +
+      `lifetime_totals` schema v2; flush avg 7.4 → 1.3 ms / p95 9 → 2 ms;
+      QueryLifetime O(n) → O(1) (`737fb3f`)
+- [x] Phase 5 — `SetActive` gating for hidden widget/tray surfaces +
+      dispose/recreate; idle allocation ~2.2 → ~0.5–1.1 MB/s, WS drift
+      +4.7 → +2.4 MB/5min, threads 16 → 15; idle CPU avg 1.08 → 1.07 within
+      noise (`843f343`)
+- [x] Phase 6 — soak harness (`scripts/tl017-soak.ps1`, `abaf129`): 60-min idle
+      tray (CPU avg 0.97%, WS ~240 MB flat) + 30-min Connections (WS/Private
+      decelerating); "no leak observed in the measured window" (not a 24h soak)
+- [x] Correctness preserved: accuracy, byte accounting, tunnels, ETW identity,
+      history UTC/DST, alerts, polling intervals, payload policy, monitoring-only
+- [x] Elevated ETW long-run **not measured** (non-elevated env; documented as
+      remaining manual validation)
+- [x] Final verification (2026-09-19): 416/416 tests (App 163 / Network 212 /
+      Infrastructure 41), Debug+Release 0W/0E, republished exe, tl015-smoke +
+      tl016-verify + tl017-connprobe PASS, packaging pipeline OK at v0.1.1
+      (no tag/bump), all benchmark harnesses runnable
+- [x] Defects found + fixed during Phase 7: `tl017-db-benchmark.ps1` build-order
+      fix (harness); schema v1→v2 migration lost pre-upgrade Lifetime total
+      (production data-correctness) — back-fill from `daily_usage` + regression
+      test
+- [x] Docs: `docs/PERFORMANCE_AFTER.md`, PROJECT_STATUS, TASKS, CHANGELOG,
+      link from PERFORMANCE.md, DATABASE.md (schema v2 + migration)
+- **Status: done** (branch `feature/tl017-performance`, ready to merge on approval)
+- **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
+
 ## Milestones
 
 | Milestone | Title | Tasks | Status |
@@ -594,3 +634,4 @@
 | M11 | Full Persian localization | TL-016 | Done |
 | M11a | Product polish / branding & About | TL-016 continuation | Done |
 | R1 | Release v0.1.1 (first post-TL-016 release) | — | Done (tag `v0.1.1`) |
+| M12 | Performance audit (Connections, allocations, startup, SQLite, idle, soak) | TL-017 | Done (branch `feature/tl017-performance`, ready to merge on approval) |

@@ -73,18 +73,25 @@ public sealed class FloatingWidgetService : IFloatingWidgetService
         SaveEnabled(true);
     }
 
-    public void Hide()
-    {
-        if (_window is null)
+public void Hide()
         {
-            return;
-        }
+            if (_window is null)
+            {
+                return;
+            }
 
-        SavePosition();
-        _window.Hide();
-        IsVisible = false;
-        SaveEnabled(false);
-    }
+            SavePosition();
+            _window.Hide();
+            IsVisible = false;
+            SaveEnabled(false);
+
+            // Dispose view model to stop background event processing while hidden
+            if (_viewModel is not null)
+            {
+                DisposeWidgetViewModel(_viewModel);
+                _viewModel = null;
+            }
+        }
 
     public void Toggle()
     {

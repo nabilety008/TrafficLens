@@ -1,5 +1,10 @@
 # TrafficLens — Performance
 
+> **Related docs:** `docs/PERFORMANCE_BASELINE.md` (pre-TL-017 numbers) and
+> `docs/PERFORMANCE_AFTER.md` (TL-017 authoritative BEFORE vs AFTER report —
+> connections optimization, per-tick allocations, lazy startup, SQLite history,
+> idle tray, and long-run soak results).
+
 This document captures the idle-CPU optimization performed in TL-014, the
 measurement methodology behind it, and the resulting evidence. It exists so
 future work can (a) reproduce the measurements and (b) avoid regressing the
