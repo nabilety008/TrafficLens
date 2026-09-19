@@ -126,4 +126,69 @@ public class SqliteTrafficHistoryRepositoryTests : IDisposable
         var lifetime = await repo2.QueryLifetimeAsync(CancellationToken.None);
         Assert.Equal(50, lifetime.DownloadBytes);
     }
+
+    [Fact]
+    public async Task InitializeAsync_MigratesV1History_BackFillsLifetimeTotal()
+    {
+        // Create a throwaway DB holding a genuine schema-v1 layout exactly as
+        // v0.1.1 (released) would have left it: traffic_samples + daily_usage,
+        // PRAGMA user_version = 1, and NO lifetime_totals table.
+        var v1Path = Path.Combine(Path.GetTempPath(), $"tl_migrate_{Guid.NewGuid():N}.db");
+        try
+        {
+            using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={v1Path}"))
+            {
+                conn.Open();
+                using var tx = conn.BeginTransaction();
+                foreach (var sql in new[]
+                {
+                    "CREATE TABLE traffic_samples (" +
+                    "bucket_start_utc INTEGER PRIMARY KEY, " +
+                    "bucket_duration_seconds INTEGER NOT NULL, " +
+                    "download_bytes INTEGER NOT NULL, " +
+                    "upload_bytes INTEGER NOT NULL);",
+                    "CREATE TABLE daily_usage (" +
+                    "local_date TEXT PRIMARY KEY, " +
+                    "download_bytes INTEGER NOT NULL, " +
+                    "upload_bytes INTEGER NOT NULL);",
+                    "INSERT INTO daily_usage (local_date, download_bytes, upload_bytes) " +
+                    "VALUES ('2026-01-01', 100, 0);",
+                    "INSERT INTO daily_usage (local_date, download_bytes, upload_bytes) " +
+                    "VALUES ('2026-01-02', 0, 200);",
+                    "PRAGMA user_version = 1;"
+                })
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = tx;
+                    cmd.CommandText = sql;
+                    cmd.ExecuteNonQuery();
+                }
+                tx.Commit();
+            }
+
+            using var repo2 = new SqliteTrafficHistoryRepository(v1Path, NullLogger<SqliteTrafficHistoryRepository>.Instance);
+            await repo2.InitializeAsync(CancellationToken.None);
+            Assert.True(repo2.IsAvailable);
+
+            // daily_usage still contains the pre-upgrade rows.
+            var daily = await repo2.QueryDailyAsync(
+                new DateOnly(2026, 1, 1),
+                new DateOnly(2026, 1, 3),
+                CancellationToken.None);
+            Assert.Equal(100, daily[new DateOnly(2026, 1, 1)].DownloadBytes);
+            Assert.Equal(200, daily[new DateOnly(2026, 1, 2)].UploadBytes);
+
+            // Lifetime total was back-filled from daily_usage, not lost.
+            var lifetime = await repo2.QueryLifetimeAsync(CancellationToken.None);
+            Assert.Equal(100, lifetime.DownloadBytes);
+            Assert.Equal(200, lifetime.UploadBytes);
+        }
+        finally
+        {
+            foreach (var suffix in new[] { ".db", "-wal", "-shm" })
+            {
+                TryDelete(v1Path + suffix);
+            }
+        }
+    }
 }

@@ -374,6 +374,15 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository, 
                 "id INTEGER PRIMARY KEY CHECK (id = 1), " +
                 "download_bytes INTEGER NOT NULL DEFAULT 0, " +
                 "upload_bytes INTEGER NOT NULL DEFAULT 0);");
+
+            // Back-fill the lifetime cache from existing v1 history so an
+            // upgrade from schema v1 does not lose the pre-upgrade Lifetime
+            // total. daily_usage is never pruned and is the exact sum of all
+            // persisted buckets, so seeding id=1 from it is lossless.
+            Execute(connection, transaction,
+                "INSERT OR IGNORE INTO lifetime_totals (id, download_bytes, upload_bytes) " +
+                "SELECT 1, COALESCE(SUM(download_bytes), 0), COALESCE(SUM(upload_bytes), 0) " +
+                "FROM daily_usage;");
         }
 
         Execute(connection, transaction, $"PRAGMA user_version = {SchemaVersion};");
