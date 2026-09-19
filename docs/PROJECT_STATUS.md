@@ -1,39 +1,38 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-17
+Updated: 2026-09-19
 
 ## Current Milestone
 
-M10 (packaging/installer) shipped as **TL-015**: reproducible one-command release
-pipeline (`scripts/build-release.ps1`), self-contained single-file win-x64 publish
-(`TrafficLens.exe`, assembly name `TrafficLens`), Inno Setup 6 per-user installer
-with full install/uninstall/reinstall/upgrade verification and hash-identical
-user-data preservation (`%LOCALAPPDATA%\TrafficLens`). Baseline release version
-0.1.0 (previous 0.0.x entries are in-repo development milestones); artifacts and
-installer SHA-256 produced by the script and gitignored. **Released v0.1.1**
-(2026-09-17) as the first post-TL-016 release — same reproducible pipeline, now
-packaging the branding/About/Diagnostics work (see Git Commit / tag `v0.1.1`).
+M12 (TL-017 performance audit) is **complete on `feature/tl017-performance`**
+(not yet merged): an end-to-end measurement-driven optimization of the most
+expensive surfaces. Done under a branch off master v0.1.1 for easy review.
+See `docs/PERFORMANCE_AFTER.md` for the authoritative BEFORE vs AFTER report.
 
-M11 (TL-016 full Persian localization) is complete **and merged into `master`**
-(merge `9dc8335`): the UI is fully localized with no hard-coded user-facing
-strings. The graph "now" label is now data-bound (`NowLabel` on
-`TrafficGraphControl`, default "now"); status/error banners in the Applications,
-Connections and History views show localized detail text instead of raw English
-provider messages (raw detail remains in the app log); the History chart dates
-render with `CultureInfo.CurrentCulture` (Persian calendar under fa-IR); en +
-fa-IR resx stay at identical key sets. Runtime language switching (English ⇄
-فارسی) persists via settings and was already in place.
+Headline results (dedicated comparable probe, 3 min Connections visible):
+CPU avg **15.31% → 6.65%** (~57% lower), CPU max **41.41% → 16.81%** (~59%
+lower), WS drift **+24.29 → +9.48 MB/3min** (~61% lower), Private drift
+**+23.26 → +8.00 MB/3min** (~66% lower). Per-tick allocations cut ~550/tick;
+history flush avg/p95 **7.4/9 ms → 1.3/2 ms** (~5.7x); internal startup
+pre-render work ~170 ms → ~70 ms (wall-clock is environment-dominated and NOT
+claimed); long-run idle WS stabilizes flat at **~240 MB** after warm-up with no
+leak observed in the measured 60/30-minute soak windows.
 
-M11a (TL-016 continuation — product polish / branding foundation) is also
-complete on `master`: a replaceable icon pipeline (`scripts/generate-icons.ps1`
-→ `assets/branding/TrafficLens.ico` + PNGs) wired once in the csproj and consumed
-by the EXE/window/tray/widget/installer; a new localized **About page** (brand
-identity, version, runtime, OS, language, data/settings/logs paths); a
-copyable **Diagnostics** block (version read from
-`AssemblyInformationalVersionAttribute` — no single-file `Assembly.Location`);
-resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
-212 / Infrastructure 40) with 0 warnings / 0 errors on Debug + Release. See
-`docs/BRANDING.md` and ADR-025.
+**Optional:** TL-015 smoke (`scripts/tl015-smoke.ps1`), TL-016 verify
+(`scripts/tl016-verify.ps1`), and TL-017 connprobe all PASS on the final
+branch build. **416/416 tests** (212 Network / 41 Infrastructure / 163 App),
+Debug + Release 0 warnings / 0 errors. **Elevated ETW long-run profiling was
+NOT measured** and remains documented manual validation. The branch is ready to
+merge on user approval; no merge/tag/version-bump was performed as part of
+TL-017.
+
+Previous milestones (for context): **M10/M11/M11a** on `master` — TL-015
+reproducible packaging/installer pipeline and release v0.1.1 (tag `v0.1.1`);
+TL-016 full Persian localization (merged `9dc8335`, no hard-coded UI strings,
+graph "now" label data-bound, localized status/error detail surfaces, culture
+-aware History dates, en + fa-IR at 161 symmetric keys); TL-016 continuation
+branding foundation (icon pipeline → `assets/branding/`, About page,
+Diagnostics block, suite at 410 tests).
 
 ## Task IDs
 
@@ -55,9 +54,71 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 - TL-014 Stability & Performance Audit — **DONE**
 - TL-015 Packaging / Installer — **DONE**
 - TL-016 Localization / Persian UI — **DONE** (localization merged `9dc8335`; branding/About continuation done on `master`)
+- TL-017 Performance Audit — **DONE** (on `feature/tl017-performance`, ready to merge on approval)
 
 ## Completed
 
+- TL-017 (performance audit, M12, on `feature/tl017-performance`):
+  - **Phase 1 — Connections optimization** (commit `03c47a4`): in-place
+    `ConnectionRowViewModel` updates keyed by `ConnectionKey`, delta diffing
+    on native snapshots, per-refresh icon budget. Dedicated comparable probe
+    (3 min Connections visible): CPU avg **15.31% → 6.65%**, CPU max
+    **41.41% → 16.81%**, WS drift **+24.29 → +9.48 MB/3min**, Private drift
+    **+23.26 → +8.00 MB/3min** (~57–66% lower).
+  - **Phase 2 — Per-tick allocation reduction** (commits `213a887`, `303288e`):
+    ~550 avoidable allocations/tick removed (~450 short-lived row strings, ~101
+    double-created `ConnectionKey`); GC capture: Gen0 0.20/s, Gen1/Gen2 0,
+    ~1.53 MB/s allocation, ~0.8% time in GC, bounded heap. **No CPU improvement
+    claimed** (within noise).
+  - **Phase 3 — Lazy page instantiation** (commits `cbc8aea`, `0db764e`): six
+    page Views created on first navigation; internal mainVM+6-view block ~170 →
+    ~70 ms (~100 ms pre-render removed). **Wall-clock NOT claimed faster**
+    (environment-dominated; internal 830–875 ms / wall 1.36–1.39 s BEFORE vs
+    internal 1.6–2.3 s / wall 2.7–3.5 s AFTER).
+  - **Phase 4 — SQLite history optimization** (`737fb3f`): persistent background
+    writer + prepared commands + `lifetime_totals` schema v2; flush avg/p95
+    **7.4 ms/9 ms → 1.3 ms/2 ms** (~5.7x); QueryLifetime O(n)→O(1). **Migration
+    back-fill fixed during final verification** — see "Defects found and fixed"
+    below.
+  - **Phase 5 — Idle tray optimization** (`843f343`): `SetActive` gating for
+    hidden widget/hidden surfaces + dispose/recreate; allocation ~2.2 MB/s →
+    ~0.5–1.1 MB/s, WS drift +4.7 → +2.4 MB/5min, threads 16 → 15. **Idle CPU
+    avg 1.08% → 1.07% explicitly within noise — NOT claimed.**
+  - **Phase 6 — Long-run soak** (`abaf129`, soak harness `scripts/tl017-soak.ps1`):
+    60-min idle tray (CPU avg 0.97%, max 7.69%, WS ~240 MB flat +0.2 MB drift,
+    Private ~120 MB, threads 14–17, handles 468–496, heap 12–14 MB) + 30-min
+    Connections (CPU avg ~8.3%, WS +14.5 first 15m/+2.5 second 15m, Private
+    +12.7/+5, handles 751–760). **"No leak was observed during the measured
+    soak window"** — 60/30-minute soak, not a 24h soak.
+  - **Correctness preserved:** monitoring accuracy, byte accounting, tunnel
+    exclusion, ETW PID/start-time identity, history UTC timestamps, local-day/
+    DST, alert semantics, polling intervals, packet payload policy, monitoring-
+    only architecture all unchanged.
+  - **Elevated ETW NOT measured** (non-elevated env; UAC not automatable):
+    verified only `PermissionDenied` fallback, no crash, no orphan session.
+    Documented as remaining manual validation.
+  - **Final verification (2026-09-19):** 416/416 tests (212 Network / 41
+    Infrastructure / 163 App), Debug + Release 0 warnings/0 errors, published
+    single-file republished, `tl015-smoke.ps1` PASS, `tl016-verify.ps1` PASS,
+    `tl017-connprobe.ps1` PASS on retry (first attempt was a transient UIA
+    timing flake, diagnosed then re-run clean); packaging pipeline
+    (`build-release.ps1`) succeeds at version 0.1.1 with no tag/bump; all TL-017
+    benchmark harnesses runnable.
+  - **Defects found and fixed during final verification:**
+    1. `scripts/tl017-db-benchmark.ps1` (harness) — `dotnet run --no-build` on
+       an unbuilt generated project + duplicate source file write; fixed and
+       confirmed runnable (30×20 flush + query + prune).
+    2. Schema v1→v2 migration (production data-correctness) — `Migrate()`
+       created `lifetime_totals` but never seeded it, so upgrading a real
+       v0.1.1 (schema v1) database would report Lifetime history 0 until new
+       buckets arrived. Fixed by back-filling from the existing `daily_usage`
+       sum; regression test
+       `InitializeAsync_MigratesV1History_BackFillsLifetimeTotal`; `DATABASE.md`
+       updated. This is the only production-code change made during Phase 7 and
+       it was driven by a confirmed defect, not an optimization pass.
+  - Docs: `docs/PERFORMANCE_AFTER.md` (authoritative BEFORE vs AFTER report),
+    this status file, `TASKS.md`, `CHANGELOG.md`, link from
+    `docs/PERFORMANCE.md`, `docs/DATABASE.md` (schema v2 + migration).
 - TL-001: Solution and four projects; DI/MVVM; structured JSON logging; dark main
   window; localization (en + fa-IR, RTL-ready); required docs; git repo.
 - TL-002: Global network collector implemented end-to-end:
@@ -589,8 +650,16 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 410/410 passed (`TrafficLens.Network.Tests` 212,
-  `TrafficLens.App.Tests` 158, `TrafficLens.Infrastructure.Tests` 40).
+- **Automated tests:** 416/416 passed (`TrafficLens.Network.Tests` 212,
+  `TrafficLens.App.Tests` 163, `TrafficLens.Infrastructure.Tests` 41).
+- **TL-017 performance verification** (`feature/tl017-performance`, Release,
+  non-elevated): dedicated Connections 3-min probe BEFORE 15.31%→AFTER 6.65%
+  CPU avg (57%+ lower); WS drift +24.29→+9.48 MB/3min; Private drift
+  +23.26→+8.00 MB/3min. Benchmarks + GC counters + 60/30-min soak harnesses
+  all runnable. `tl015-smoke.ps1` PASS, `tl016-verify.ps1` PASS,
+  `tl017-connprobe.ps1` PASS (final). Full report: `docs/PERFORMANCE_AFTER.md`.
+- **Elevated ETW long-run profiling is NOT measured** — environment cannot
+  automate UAC; remains manual validation (see `docs/PERFORMANCE_AFTER.md`).
 - **TL-014 stability & performance harness** (`scripts/tl014-stability.ps1`,
   Release, real host, non-elevated):
   - **F1 warm-up + idle (60 s):** dashboard/connections/history/GC counts pass;
@@ -809,18 +878,20 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
   formatter cases, metadata-provider tests, the TL-008 connection parser /
   key / selection / endpoint-formatter suites, and the TL-014
   SingleInstanceGuard tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 145 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 163 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
   FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
   TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests,
   17 TL-012 AlertEngine tests + 3 alert-buffer tests, 10 AlertService tests,
   4 AlertsViewModel tests, 6 TL-014 regression tests for CPU optimizations,
+  the TL-017 Connections in-place-update / allocation regression tests,
   and resource keys).
-- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 40 tests, all passing (TL-009:
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 41 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider;
-  TL-014 FileLoggerProvider retention tests).
+  TL-014 FileLoggerProvider retention tests; TL-017 schema v1→v2 migration
+  back-fill regression test).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
   `-- --process` (per-process, elevated or non-elevated),
@@ -868,6 +939,17 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 
 ## Git Commit
 
+- TL-017 (performance audit) on `feature/tl017-performance` (not merged):
+  - `c709e2a` — baseline: capture pre-optimization performance files
+  - `03c47a4` — perf: optimize Connections page with in-place row updates and delta diffing (TL-017 Phase 1)
+  - `213a887` — perf: cut per-tick allocations in Connections rows (TL-017 Phase 2)
+  - `303288e` — test: Connections per-tick allocation regression tests (TL-017 Phase 2)
+  - `cbc8aea` — perf: lazy page Views + startup stage instrumentation (TL-017 Phase 3)
+  - `0db764e` — test: dashboard lazy-view regression test (TL-017 Phase 3)
+  - `737fb3f` — perf: persistent SQLite writer, prepared commands, lifetime_totals schema v2 (TL-017 Phase 4)
+  - `843f343` — perf: gate hidden-surface refresh on SetActive (TL-017 Phase 5)
+  - `abaf129` — chore: add TL-017 soak harness (TL-017 Phase 6)
+  - pending — final verification fix (schema v1→v2 migration back-fill + db-benchmark harness fix) and docs
 - TL-016 localization branch merged into `master`: `9dc8335` — `merge: feature/tl016-persian-localization into master (TL-016)` (`--no-ff`; `v0.1.0` tag remains at `c1f677a`).
 - TL-016 continuation (branding/About/Diagnostics): code `ce8f6b0` — `feat: complete TL-016 product polish with brand icon pipeline, About page and diagnostics support`; docs `8e7fa00`.
 - **v0.1.1 release (first post-TL-016):** version bump `f8d1b97` — `build: bump release version to 0.1.1 for the first post-TL-016 release`; docs `4fc21bf` — `docs: document v0.1.1 release (version bump, verification, upgrade results)`. Tag `v0.1.1` at `4fc21bf` (lightweight, same style as `v0.1.0` at `c1f677a`). Installer `TrafficLens-Setup-0.1.1-win-x64.exe`, SHA-256 `3FB5EE38238D497883755390C4659BFED5E3DDD8F9DD6F477FA776F29E68DE3B`.
@@ -890,9 +972,12 @@ resx grew to 161 symmetric keys; suite is now **410 tests** (App 158 / Network
 
 ## Next Recommended Task
 
-- **TL-017 is now the next task.** Defer to `TASKS.md` for its scope definition;
-  typical candidates for a fresh task ID: monitoring feature additions,
-  additional localization languages, or a UX surface. Do not rename existing IDs.
+- **TL-017 (performance audit) is complete on `feature/tl017-performance`** and
+  ready to merge into `master` on user approval (recall: no merge/tag/version
+  bump was performed as part of TL-017). Remaining manual validation: elevated
+  ETW long-run profiling and an optional 24-hour soak.
+- After TL-017 merges, typical candidates for a fresh task ID: monitoring
+  feature additions, additional localization languages, or a new UX surface. Do
+  not rename existing IDs.
 - Release v0.1.1 shipped (tag `v0.1.1`); the 0.1.x baseline is current, so no
-  further version bump is implied. Architecture work remains none-pending for
-  networking/collectors/ETW/SQLite unless TL-017 defines it.
+  further version bump is implied unless a post-TL-017 release is approved.
