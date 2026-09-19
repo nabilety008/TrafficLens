@@ -1024,8 +1024,8 @@ Diagnostics block, suite at 410 tests).
 
 - TL-018 (current-day hourly history) on `feature/tl018-hourly-history`
   (not merged):
-  - (pending) — `feat:` add current-day hourly history (TL-018)
-  - (pending) — `test:` hourly builder/repo/service/VM tests + `docs:` TL-018
+  - `7a972d1` — `feat: add current-day hourly history with DST-safe UTC hour aggregation (TL-018)`
+  - `90bd64b` — `docs: document TL-018 current-day hourly history and finalize TL-017 merge status`
 - TL-017 (performance audit): merged into `master` at `21dabb9`; the branch
   commits remain listed below for reference: <br>
   - `c709e2a` — baseline: capture pre-optimization performance files
