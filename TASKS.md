@@ -8,6 +8,43 @@
 
 ## Backlog
 
+### TL-018 Current-Day Hourly History — **DONE**
+- [x] `HourlyUsagePoint` (Core) — immutable record struct: `StartUtc`,
+      `EndUtcExclusive`, `LocalHour`, download/upload bytes + `TotalBytes`
+- [x] `HourlyHistoryBuilder` (Core, pure static) — buckets `TrafficHistoryBucket`
+      samples into UTC-hour slots counted from local-midnight-UTC
+      (`MidnightUtc(DateOnly, TimeZoneInfo)`); zero-filled slots, slots `start ≥
+      now` excluded, current partial hour clamped to `nowUtc`; labels use the
+      local hour of the UTC slot start; DST-safe (spring-forward 23 slots, no
+      skipped local label; fall-back 25 slots, duplicated local label; +05:30
+      half-hour zone → 12 slots via `Math.Floor` of elapsed hours)
+- [x] `ITrafficHistoryRepository.QuerySamplesAsync(startUtcInclusive,
+      endUtcExclusive, ct)` + `SqliteTrafficHistoryRepository` impl — one bounded
+      half-open UTC query over `traffic_samples` ordered by start; no new index
+- [x] `EXPLAIN QUERY PLAN` regression test → built-in INTEGER PRIMARY KEY seek
+      (no `SCAN`)
+- [x] `HistorySnapshot` 9th member `TodayHourly`; `BuildSnapshotAsync` builds it
+      from one bounded query (± no extra queries, no SQL in App/VM)
+- [x] App: `HistoryChartPoint` + `HistoryBarChartControl.Points` type refresh;
+      `HistoryViewModel` daily/hourly mapping (`MM-dd` vs `HH:00` labels),
+      `ChartTitleLabel` (hourly on Today, daily otherwise);
+      `HistoryView` title bound to `ChartTitleLabel`
+- [x] Localization: `HistoryHourlyTrafficLabel` en ("Hourly Traffic") + fa-IR
+      ("ترافیک ساعتی"), parity now 162 keys each; `RequiredKeys` extended
+- [x] Tests (+16 → **432/432**; App 167 / Network 212 / Infra 53):
+      `HourlyHistoryBuilderTests` (8, incl. real CE(S)T DST 23h/25h days),
+      repo range/empty/plan (3), service hourly-snapshot (1),
+      `HistoryViewModelTests` rewritten to 10; alerts fakes updated
+- [x] Build Debug + Release: **0 warnings / 0 errors**
+- [x] Real Windows GUI verification (`scripts/tl018-verify.ps1`, published
+      single-file build, blocks A–E): en-US hourly/daily titles + 5 range
+      buttons; resize; real-traffic data chain with **exact** daily/sample
+      reconciliation (138 samples, 164,317,489 B down / 28,456,609 B up);
+      fa-IR localized titles, no English leak; graceful exit, no orphans
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ROADMAP M13)
+- **Status: done**
+- **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section (feat + tests/docs)
+
 ### TL-011 System Tray — **DONE**
 - [x] Single WinForms `NotifyIcon` via `<FrameworkReference Include=
       "Microsoft.WindowsDesktop.App.WindowsForms" />` (no `UseWindowsForms`,
@@ -486,7 +523,7 @@
 
 ### TL-013 Settings
 - [ ] Settings UI and persistence
-- **Status: not started**
+- **Status: done** (see the completed block at the top)
 
 ### TL-014 Stability & Performance Audit — **DONE**
 - [x] Harness F1: warm-up + idle (60 s) — dashboard/connections/history/GC handles
@@ -613,7 +650,7 @@
       test
 - [x] Docs: `docs/PERFORMANCE_AFTER.md`, PROJECT_STATUS, TASKS, CHANGELOG,
       link from PERFORMANCE.md, DATABASE.md (schema v2 + migration)
-- **Status: done** (branch `feature/tl017-performance`, ready to merge on approval)
+- **Status: done** (merged into `master` at `21dabb9`)
 - **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
 
 ## Milestones
@@ -634,4 +671,5 @@
 | M11 | Full Persian localization | TL-016 | Done |
 | M11a | Product polish / branding & About | TL-016 continuation | Done |
 | R1 | Release v0.1.1 (first post-TL-016 release) | — | Done (tag `v0.1.1`) |
-| M12 | Performance audit (Connections, allocations, startup, SQLite, idle, soak) | TL-017 | Done (branch `feature/tl017-performance`, ready to merge on approval) |
+| M12 | Performance audit (Connections, allocations, startup, SQLite, idle, soak) | TL-017 | Done (merged into `master` at `21dabb9`) |
+| M13 | Current-day hourly history | TL-018 | Done (branch `feature/tl018-hourly-history`, ready to merge on approval) |

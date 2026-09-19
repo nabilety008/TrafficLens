@@ -288,6 +288,9 @@
   <data name="HistoryDailyTrafficLabel" xml:space="preserve">
     <value>ترافیک روزانه</value>
   </data>
+  <data name="HistoryHourlyTrafficLabel" xml:space="preserve">
+    <value>ترافیک ساعتی</value>
+  </data>
   <data name="TodayLabel" xml:space="preserve">
     <value>امروز</value>
   </data>

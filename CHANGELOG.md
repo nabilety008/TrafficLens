@@ -2,9 +2,53 @@
 
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — TL-018 (current-day hourly history, M13)
+
+Branch `feature/tl018-hourly-history` off master; ready to merge on approval.
+
+### Added (TL-018)
+
+- **Today renders an hourly bar series.** `HistoryViewModel` now maps a
+  per-hour series sourced from `HistorySnapshot.TodayHourly` when Today is
+  selected; the chart title switches between a new localized `HourlyTrafficLabel`
+  ("Hourly Traffic" / "ترافیک ساعتی") on Today and the existing
+  `HistoryDailyTrafficLabel` otherwise.
+- **`HourlyUsagePoint` + `HourlyHistoryBuilder` (Core).** Pure DST-safe UTC-slot
+  aggregation: slots are counted from local-midnight-UTC, zero-filled, clamped
+  to "now", and labelled by local hour. Spring-forward days yield 23 slots,
+  fall-back days 25 (duplicated local label over distinct UTC slots), half-hour
+  offset zones (e.g. +05:30) 12 slots.
+- **`QuerySamplesAsync` repository query.** One bounded half-open UTC range over
+  `traffic_samples` (built-in PK seek, no new index, verified by an
+  `EXPLAIN QUERY PLAN` test); the snapshot build issues exactly one such query.
+- **Tests (+16 → 432/432).** `HourlyHistoryBuilderTests` (8), repo range/empty/
+  query-plan (3), service hourly-snapshot integrity (1), `HistoryViewModelTests`
+  rewritten to 10.
+
+### Changed (TL-018)
+
+- `HistoryBarChartControl.Points` now carries `HistoryChartPoint` (label string +
+  bytes) so the same native control draws both daily (`MM-dd`) and hourly
+  (`HH:00`) labels; alerts fakes/tests updated for the extended snapshot.
+
+### Scope (TL-018)
+
+- Purely additive and read-time: no new timers (the flush-driven
+  `HistoryChanged` refresh is reused), no schema change, no migration, no new
+  collectors/write-path changes, `lifetime_totals` semantics untouched.
+
+### Verified (2026-09-19, branch source)
+
+- `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
+- **432/432 tests pass** (App 167 / Network 212 / Infrastructure 53).
+- `scripts/tl018-verify.ps1` PASS (en-US + fa-IR chart titles and range
+  buttons, resize, real-traffic data chain with exact daily/sample
+  reconciliation, graceful exit, no orphans).
+
 ## [Unreleased] — TL-017 (performance audit, M12)
 
-Branch `feature/tl017-performance` off master v0.1.1; ready to merge on approval.
+Branch `feature/tl017-performance` off master v0.1.1; **merged into `master` at
+`21dabb9`.** Verbatim changelog of the audit.
 
 ### Changed (TL-017)
 

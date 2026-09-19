@@ -204,6 +204,49 @@ public sealed class SqliteTrafficHistoryRepository : ITrafficHistoryRepository, 
         return Task.FromResult<IReadOnlyDictionary<DateOnly, TrafficUsage>>(result);
     }
 
+    public Task<IReadOnlyList<TrafficHistoryBucket>> QuerySamplesAsync(
+        DateTime startUtcInclusive,
+        DateTime endUtcExclusive,
+        CancellationToken cancellationToken)
+    {
+        var rows = new List<TrafficHistoryBucket>();
+        try
+        {
+            using var connection = Open();
+            using var command = connection.CreateCommand();
+            command.CommandText =
+                "SELECT bucket_start_utc, bucket_duration_seconds, download_bytes, upload_bytes " +
+                "FROM traffic_samples " +
+                "WHERE bucket_start_utc >= $start AND bucket_start_utc < $end " +
+                "ORDER BY bucket_start_utc;";
+            command.Parameters.AddWithValue("$start", ToUnixSeconds(startUtcInclusive));
+            command.Parameters.AddWithValue("$end", ToUnixSeconds(endUtcExclusive));
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                rows.Add(new TrafficHistoryBucket(
+                    DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(0)).UtcDateTime,
+                    checked((int)reader.GetInt64(1)),
+                    reader.GetInt64(2),
+                    reader.GetInt64(3)));
+            }
+
+            LastError = null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"Failed to read history: {ex.Message}";
+            _logger.LogError(ex, "Failed to query raw history samples");
+        }
+
+        return Task.FromResult<IReadOnlyList<TrafficHistoryBucket>>(rows);
+    }
+
     public Task<TrafficUsage> QueryLifetimeAsync(CancellationToken cancellationToken)
     {
         var usage = TrafficUsage.Empty;

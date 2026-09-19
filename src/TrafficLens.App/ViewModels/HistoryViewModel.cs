@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -22,7 +23,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     private readonly Dispatcher? _dispatcher;
 
     private HistoryRange _selectedRange = HistoryRange.Today;
-    private IReadOnlyList<DailyUsagePoint> _series = Array.Empty<DailyUsagePoint>();
+    private IReadOnlyList<HistoryChartPoint> _series = Array.Empty<HistoryChartPoint>();
     private long _scaleMax = 1;
     private bool _isUnavailable;
     private string _errorDetail = string.Empty;
@@ -31,6 +32,8 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
 
     private string _historyLabel = string.Empty;
     private string _dailyTrafficLabel = string.Empty;
+    private string _hourlyTrafficLabel = string.Empty;
+    private string _chartTitleLabel = string.Empty;
     private string _downloadLabel = string.Empty;
     private string _uploadLabel = string.Empty;
     private string _totalLabel = string.Empty;
@@ -85,6 +88,18 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     {
         get => _dailyTrafficLabel;
         private set => SetProperty(ref _dailyTrafficLabel, value);
+    }
+
+    public string HourlyTrafficLabel
+    {
+        get => _hourlyTrafficLabel;
+        private set => SetProperty(ref _hourlyTrafficLabel, value);
+    }
+
+    public string ChartTitleLabel
+    {
+        get => _chartTitleLabel;
+        private set => SetProperty(ref _chartTitleLabel, value);
     }
 
     public string DownloadLabel
@@ -165,7 +180,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _summaryTotalText, value);
     }
 
-    public IReadOnlyList<DailyUsagePoint> Series
+    public IReadOnlyList<HistoryChartPoint> Series
     {
         get => _series;
         private set => SetProperty(ref _series, value);
@@ -258,6 +273,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     {
         HistoryLabel = _localization["HistoryLabel"];
         DailyTrafficLabel = _localization["HistoryDailyTrafficLabel"];
+        HourlyTrafficLabel = _localization["HistoryHourlyTrafficLabel"];
         DownloadLabel = _localization["DownloadLabel"];
         UploadLabel = _localization["UploadLabel"];
         TotalLabel = _localization["TotalRateLabel"];
@@ -317,8 +333,11 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         SummaryUploadText = DataSizeFormatter.Format(usage.UploadBytes, culture);
         SummaryTotalText = DataSizeFormatter.Format(usage.TotalBytes, culture);
 
-        var series = SliceSeries(snapshot.DailySeries, _selectedRange);
+        var series = _selectedRange == HistoryRange.Today && snapshot.TodayHourly.Count > 0
+            ? MapHourly(snapshot.TodayHourly, culture)
+            : MapDaily(SliceSeries(snapshot.DailySeries, _selectedRange), culture);
         Series = series;
+        ChartTitleLabel = _selectedRange == HistoryRange.Today ? HourlyTrafficLabel : DailyTrafficLabel;
 
         long max = 1;
         foreach (var point in series)
@@ -357,4 +376,24 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
                 return series;
         }
     }
+
+    private static IReadOnlyList<HistoryChartPoint> MapDaily(
+        IReadOnlyList<DailyUsagePoint> points,
+        CultureInfo culture) =>
+        points
+            .Select(p => new HistoryChartPoint(
+                p.Date.ToString("MM-dd", culture),
+                p.DownloadBytes,
+                p.UploadBytes))
+            .ToArray();
+
+    private static IReadOnlyList<HistoryChartPoint> MapHourly(
+        IReadOnlyList<HourlyUsagePoint> points,
+        CultureInfo culture) =>
+        points
+            .Select(p => new HistoryChartPoint(
+                p.LocalHour.ToString("D2", culture) + ":00",
+                p.DownloadBytes,
+                p.UploadBytes))
+            .ToArray();
 }

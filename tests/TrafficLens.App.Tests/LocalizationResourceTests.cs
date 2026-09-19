@@ -94,6 +94,7 @@ public class LocalizationResourceTests
         "SortRemoteLabel",
         "HistoryLabel",
         "HistoryDailyTrafficLabel",
+        "HistoryHourlyTrafficLabel",
         "TodayLabel",
         "YesterdayLabel",
         "Last7DaysLabel",

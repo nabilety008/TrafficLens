@@ -245,7 +245,8 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
 
         try
         {
-            var today = HistoryRangeCalculator.LocalDateOf(_utcNow(), _timeZone);
+            var nowUtc = _utcNow();
+            var today = HistoryRangeCalculator.LocalDateOf(nowUtc, _timeZone);
 
             var thirtyDayRange = HistoryRangeCalculator.ToLocalDateRange(HistoryRange.Last30Days, today)!.Value;
             var daily = await _repository
@@ -258,6 +259,16 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
             var series = HistoryRangeCalculator.BuildDailySeries(
                 thirtyDayRange.Start, thirtyDayRange.EndExclusive, daily);
 
+            var dayStartUtc = HourlyHistoryBuilder.MidnightUtc(today, _timeZone);
+            IReadOnlyList<HourlyUsagePoint> todayHourly = Array.Empty<HourlyUsagePoint>();
+            if (nowUtc > dayStartUtc)
+            {
+                var samples = await _repository
+                    .QuerySamplesAsync(dayStartUtc, nowUtc, cancellationToken)
+                    .ConfigureAwait(false);
+                todayHourly = HourlyHistoryBuilder.Build(nowUtc, _timeZone, samples);
+            }
+
             return new HistorySnapshot(
                 true,
                 _repository.LastError,
@@ -266,7 +277,8 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
                 HistoryRangeCalculator.SumDaily(daily, today.AddDays(-6), today.AddDays(1)),
                 HistoryRangeCalculator.SumDaily(daily, thirtyDayRange.Start, thirtyDayRange.EndExclusive),
                 lifetime,
-                series);
+                series,
+                todayHourly);
         }
         catch (OperationCanceledException)
         {

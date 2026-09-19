@@ -4,27 +4,35 @@ Updated: 2026-09-19
 
 ## Current Milestone
 
-M12 (TL-017 performance audit) is **complete on `feature/tl017-performance`**
-(not yet merged): an end-to-end measurement-driven optimization of the most
-expensive surfaces. Done under a branch off master v0.1.1 for easy review.
-See `docs/PERFORMANCE_AFTER.md` for the authoritative BEFORE vs AFTER report.
+M13 (TL-018 current-day hourly history) is **complete on
+`feature/tl018-hourly-history`** (not yet merged): an additive, purely
+read-time refinement of the History page — Today now charts a DST-safe hourly
+series (UTC-hour slots counted from local-midnight UTC) derived on snapshot
+build from the existing minute-level `traffic_samples` table. No new
+collectors, no new timers (reuses the existing flush-driven `HistoryChanged`
+refresh), no schema change, and no new index: one bounded half-open UTC query
+`[localMidnightUtc, nowUtc)` over `traffic_samples` (built-in PK seek,
+verified by `EXPLAIN QUERY PLAN`), summed into `HourlyUsagePoint` buckets by
+`HourlyHistoryBuilder`, and rendered by the same `HistoryBarChartControl` via
+the new `HistoryChartPoint` label model. Spring-forward days show 23 UTC-hour
+slots (no skipped local label), fall-back days show 25 (duplicated local
+label); UTC buckets stay unambiguous.
 
-Headline results (dedicated comparable probe, 3 min Connections visible):
-CPU avg **15.31% → 6.65%** (~57% lower), CPU max **41.41% → 16.81%** (~59%
-lower), WS drift **+24.29 → +9.48 MB/3min** (~61% lower), Private drift
-**+23.26 → +8.00 MB/3min** (~66% lower). Per-tick allocations cut ~550/tick;
-history flush avg/p95 **7.4/9 ms → 1.3/2 ms** (~5.7x); internal startup
-pre-render work ~170 ms → ~70 ms (wall-clock is environment-dominated and NOT
-claimed); long-run idle WS stabilizes flat at **~240 MB** after warm-up with no
-leak observed in the measured 60/30-minute soak windows.
+Headline: History `Today` shows an "Hourly Traffic" title with up to 24
+zero-filled local-hour bars that balance **exactly** against the Today summary
+cards (both derive from the same committed `daily_usage`/`traffic_samples` rows).
+**432/432 tests** (212 Network / 53 Infrastructure / 167 App), Debug + Release
+0 warnings / 0 errors. Real-Windows GUI verification
+(`scripts/tl018-verify.ps1`) PASS on the published single-file build: en-US and
+fa-IR hourly/daily chart titles with range-button switching, all 5 range
+buttons, window resize, a real-traffic data chain with exact
+`daily_usage Today == Σ(today's traffic_samples)` reconciliation, graceful
+exit, and no orphan processes. Bar geometry is custom `OnRender` (no UIA tree,
+so rendered pixels are honestly not asserted; the DB chain + unit math are
+verified instead).
 
-**Optional:** TL-015 smoke (`scripts/tl015-smoke.ps1`), TL-016 verify
-(`scripts/tl016-verify.ps1`), and TL-017 connprobe all PASS on the final
-branch build. **416/416 tests** (212 Network / 41 Infrastructure / 163 App),
-Debug + Release 0 warnings / 0 errors. **Elevated ETW long-run profiling was
-NOT measured** and remains documented manual validation. The branch is ready to
-merge on user approval; no merge/tag/version-bump was performed as part of
-TL-017.
+**Prior:** M12 (TL-017 performance audit) completed and **merged into `master`**
+at `21dabb9` (see `docs/PERFORMANCE_AFTER.md` for the BEFORE vs AFTER report).
 
 Previous milestones (for context): **M10/M11/M11a** on `master` — TL-015
 reproducible packaging/installer pipeline and release v0.1.1 (tag `v0.1.1`);
@@ -54,11 +62,12 @@ Diagnostics block, suite at 410 tests).
 - TL-014 Stability & Performance Audit — **DONE**
 - TL-015 Packaging / Installer — **DONE**
 - TL-016 Localization / Persian UI — **DONE** (localization merged `9dc8335`; branding/About continuation done on `master`)
-- TL-017 Performance Audit — **DONE** (on `feature/tl017-performance`, ready to merge on approval)
+- TL-017 Performance Audit — **DONE** (merged into `master` at `21dabb9`)
+- TL-018 Current-Day Hourly History — **DONE** (on `feature/tl018-hourly-history`, ready to merge on approval)
 
 ## Completed
 
-- TL-017 (performance audit, M12, on `feature/tl017-performance`):
+- TL-017 (performance audit, M12, merged into `master` at `21dabb9`):
   - **Phase 1 — Connections optimization** (commit `03c47a4`): in-place
     `ConnectionRowViewModel` updates keyed by `ConnectionKey`, delta diffing
     on native snapshots, per-refresh icon budget. Dedicated comparable probe
@@ -119,6 +128,56 @@ Diagnostics block, suite at 410 tests).
   - Docs: `docs/PERFORMANCE_AFTER.md` (authoritative BEFORE vs AFTER report),
     this status file, `TASKS.md`, `CHANGELOG.md`, link from
     `docs/PERFORMANCE.md`, `docs/DATABASE.md` (schema v2 + migration).
+- TL-018 (current-day hourly history, M13, on `feature/tl018-hourly-history`):
+  - **Core (`TrafficLens.Core/History`):** `HourlyUsagePoint` (immutable record
+    struct: `StartUtc`, `EndUtcExclusive`, `LocalHour`, download/upload bytes)
+    and `HourlyHistoryBuilder` — a pure static builder that buckets
+    `TrafficHistoryBucket` samples into UTC-hour slots counted from the local
+    day's midnight-UTC (`MidnightUtc(DateOnly, TimeZoneInfo)` =
+    `ConvertTimeToUtc` of local `Unspecified` midnight). Slots are zero-filled,
+    slots whose start ≥ "now" are excluded, the current partial hour is clamped
+    to `EndUtcExclusive = nowUtc`, and slot labels use the local hour of the
+    UTC slot start. DST-correct by construction: spring-forward → 23 slots with
+    no skipped local label; fall-back → 25 slots whose duplicated local label
+    maps to two distinct UTC slots; half-hour-offset zones (e.g. +05:30) use
+    `Math.Floor((bucketStart − dayStart).TotalHours)` and produce 12 slots.
+  - **Repository:** `ITrafficHistoryRepository.QuerySamplesAsync(startUtcInclusive,
+    endUtcExclusive, ct)` added; `SqliteTrafficHistoryRepository` implements it as
+    one bounded query
+    (`WHERE bucket_start_utc >= $start AND bucket_start_utc < $end ORDER BY
+    bucket_start_utc`). `EXPLAIN QUERY PLAN` regression test proves the built-in
+    INTEGER PRIMARY KEY seek is used (no `SCAN`, no new index).
+  - **Snapshot:** `HistorySnapshot` gains a 9th positional member `TodayHourly`
+    (`IReadOnlyList<HourlyUsagePoint>`; `Unavailable` passes empty). The service
+    captures `nowUtc` once, computes `dayStartUtc` via `HourlyHistoryBuilder.
+    MidnightUtc`, runs the single bounded query, and builds the hourly series —
+    no extra queries, no SQL in the App/VM layers.
+  - **App:** `HistoryChartPoint` (label + bytes) replaced the daily-only point
+    model in `HistoryBarChartControl.Points`; `HistoryViewModel` maps daily
+    (`MM-dd` label) or hourly (`HH:00` label) series depending on the selected
+    range and the presence of hourly data, and a new `ChartTitleLabel`
+    ("Hourly Traffic" on Today, "Daily Traffic" otherwise) drives the chart
+    title (localized en + fa-IR `HistoryHourlyTrafficLabel`; resx parity now
+    162 keys each).
+  - **Tests (+16):** 8 `HourlyHistoryBuilderTests` (zero-fill to now, slot
+    attribution + partial-hour clamp, top-of-hour exclusion, local-midnight
+    empty, out-of-window ignored, spring-forward 23-slot with skipped local
+    label, fall-back 25-slot with duplicated label, +05:30 half-hour zone) using
+    fixed-zone helpers or the real
+    `TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time")`
+    (verified 2026 DST days: 23h spring / 25h fall); 3
+    `SqliteTrafficHistoryRepositoryTests` (half-open range returns only in-range
+    rows oldest-first, empty range returns none, query-plan avoids SCAN); 1
+    `TrafficHistoryServiceTests.HourlySeries_InSnapshot_ReflectsCommittedBuckets`;
+    `HistoryViewModelTests` rewritten to 10 (hourly labels, zero-hour bars,
+    chart-title data-independent switching, culture switch, HasData);
+    `AlertServiceTests`/`AlertEngineTests`/`LocalizationResourceTests` updated.
+  - **Verification:** **432/432 tests** (212 Network / 53 Infrastructure / 167
+    App), Debug + Release 0 warnings / 0 errors; the published single-file build
+    passed `scripts/tl018-verify.ps1` (see "Verified").
+  - **Scope kept additive:** no schema change, no new index, no new timers, no
+    change to write cadence/collectors/`lifetime_totals`, TL-017 optimizations
+    untouched.
 - TL-001: Solution and four projects; DI/MVVM; structured JSON logging; dark main
   window; localization (en + fa-IR, RTL-ready); required docs; git repo.
 - TL-002: Global network collector implemented end-to-end:
@@ -650,8 +709,31 @@ Diagnostics block, suite at 410 tests).
 ## Verified
 
 - `dotnet build TrafficLens.sln`: **Success, 0 warnings, 0 errors** (Debug and Release).
-- **Automated tests:** 416/416 passed (`TrafficLens.Network.Tests` 212,
-  `TrafficLens.App.Tests` 163, `TrafficLens.Infrastructure.Tests` 41).
+- **Automated tests:** 432/432 passed (`TrafficLens.Network.Tests` 212,
+  `TrafficLens.App.Tests` 167, `TrafficLens.Infrastructure.Tests` 53).
+- **TL-018 rewrite verification** (`scripts/tl018-verify.ps1`, published
+  single-file build, real host; settings.json backed up/restored; blocks A–E):
+  - **A) en-US History page:** default Today renders "Hourly Traffic" title; all
+    5 range buttons (Today/Yesterday/Last 7/30 Days/Lifetime) present; clicking
+    Yesterday switches the title to "Daily Traffic" with "Hourly Traffic"
+    absent; back to Today restores "Hourly Traffic".
+  - **C) Resize:** `MoveWindow` 1280×780 then 900×560 — app healthy, Today
+    hourly title survives, no crash.
+  - **D) Data chain:** ~40 s of real HTTP downloads (13–20 iterations); after a
+    completed minute + one 30 s flush and a graceful WM_CLOSE exit, a
+    read-only copy of `%LOCALAPPDATA%\TrafficLens\data\trafficlens.db` showed
+    138 `traffic_samples` rows within [local-midnight-UTC, nowUtc) and
+    **`daily_usage` Today == Σ(today's traffic_samples) exactly**
+    (164,317,489 B down / 28,456,609 B up) — the hourly-capable storage chain
+    reconciles.
+  - **B) fa-IR History page:** default Today shows the Persian hourly title;
+    5 localized range buttons; Yesterday shows the Persian daily title; **no
+    English chart titles leaked**.
+  - **E) Graceful exit:** WM_CLOSE exits both instances promptly; no orphan
+    process.
+  - **Honest coverage note:** hourly bar *pixels* (custom `OnRender`) have no
+    UIA tree and are not asserted; the hourly aggregation math is unit-tested
+    and the underlying data chain is verified exactly at the storage layer.
 - **TL-017 performance verification** (`feature/tl017-performance`, Release,
   non-elevated): dedicated Connections 3-min probe BEFORE 15.31%→AFTER 6.65%
   CPU avg (57%+ lower); WS drift +24.29→+9.48 MB/3min; Private drift
@@ -878,20 +960,21 @@ Diagnostics block, suite at 410 tests).
   formatter cases, metadata-provider tests, the TL-008 connection parser /
   key / selection / endpoint-formatter suites, and the TL-014
   SingleInstanceGuard tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 163 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 167 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
-  Connections-ViewModel tests, 6 TL-009 History-ViewModel tests, 8 TL-010
+  Connections-ViewModel tests, 10 TL-018 History-ViewModel tests, 8 TL-010
   FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
   TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests,
   17 TL-012 AlertEngine tests + 3 alert-buffer tests, 10 AlertService tests,
   4 AlertsViewModel tests, 6 TL-014 regression tests for CPU optimizations,
   the TL-017 Connections in-place-update / allocation regression tests,
   and resource keys).
-- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 41 tests, all passing (TL-009:
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 53 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider;
   TL-014 FileLoggerProvider retention tests; TL-017 schema v1→v2 migration
-  back-fill regression test).
+  back-fill regression test; **TL-018** `HourlyHistoryBuilder` DST/hourly suite +
+  `QuerySamplesAsync` range/plan tests + service hourly-snapshot test).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
   `-- --process` (per-process, elevated or non-elevated),
@@ -908,9 +991,9 @@ Diagnostics block, suite at 410 tests).
   system history follows that same policy, a **VPN-only host records ~zero history**
   (tunnel bytes are never attributed to the system totals). Documented in
   `docs/NETWORK_COLLECTION.md` + ADR-009/017.
-- History chart shows daily bars for 7/30/Lifetime; an hourly-or-finer view for the
-  current day is a documented future refinement (raw minute samples are retained
-  90 days, so it only needs a query + range).
+- History chart shows daily bars for 7/30/Lifetime; Today shows hourly bars
+  (TL-018); a finer-than-hourly view for the current day remains a possible
+  future refinement (raw minute samples are retained 90 days).
 - History records system/global totals only; per-process and per-connection history
   are out of scope (TL-007/TL-008 are live-only).
 - Active-connection state is live-only (no history) and report raw IP endpoints; no
@@ -939,7 +1022,12 @@ Diagnostics block, suite at 410 tests).
 
 ## Git Commit
 
-- TL-017 (performance audit) on `feature/tl017-performance` (not merged):
+- TL-018 (current-day hourly history) on `feature/tl018-hourly-history`
+  (not merged):
+  - `7a972d1` — `feat: add current-day hourly history with DST-safe UTC hour aggregation (TL-018)`
+  - `90bd64b` — `docs: document TL-018 current-day hourly history and finalize TL-017 merge status`
+- TL-017 (performance audit): merged into `master` at `21dabb9`; the branch
+  commits remain listed below for reference: <br>
   - `c709e2a` — baseline: capture pre-optimization performance files
   - `03c47a4` — perf: optimize Connections page with in-place row updates and delta diffing (TL-017 Phase 1)
   - `213a887` — perf: cut per-tick allocations in Connections rows (TL-017 Phase 2)
@@ -949,7 +1037,9 @@ Diagnostics block, suite at 410 tests).
   - `737fb3f` — perf: persistent SQLite writer, prepared commands, lifetime_totals schema v2 (TL-017 Phase 4)
   - `843f343` — perf: gate hidden-surface refresh on SetActive (TL-017 Phase 5)
   - `abaf129` — chore: add TL-017 soak harness (TL-017 Phase 6)
-  - pending — final verification fix (schema v1→v2 migration back-fill + db-benchmark harness fix) and docs
+  - `bee93bd` — fix: back-fill lifetime totals on schema v1 to v2 migration
+  - `e133866` — fix: repair TL-017 benchmark harnesses
+  - `6525f6f` — docs: finalize TL-017 performance results
 - TL-016 localization branch merged into `master`: `9dc8335` — `merge: feature/tl016-persian-localization into master (TL-016)` (`--no-ff`; `v0.1.0` tag remains at `c1f677a`).
 - TL-016 continuation (branding/About/Diagnostics): code `ce8f6b0` — `feat: complete TL-016 product polish with brand icon pipeline, About page and diagnostics support`; docs `8e7fa00`.
 - **v0.1.1 release (first post-TL-016):** version bump `f8d1b97` — `build: bump release version to 0.1.1 for the first post-TL-016 release`; docs `4fc21bf` — `docs: document v0.1.1 release (version bump, verification, upgrade results)`. Tag `v0.1.1` at `4fc21bf` (lightweight, same style as `v0.1.0` at `c1f677a`). Installer `TrafficLens-Setup-0.1.1-win-x64.exe`, SHA-256 `3FB5EE38238D497883755390C4659BFED5E3DDD8F9DD6F477FA776F29E68DE3B`.
@@ -972,12 +1062,14 @@ Diagnostics block, suite at 410 tests).
 
 ## Next Recommended Task
 
-- **TL-017 (performance audit) is complete on `feature/tl017-performance`** and
-  ready to merge into `master` on user approval (recall: no merge/tag/version
-  bump was performed as part of TL-017). Remaining manual validation: elevated
-  ETW long-run profiling and an optional 24-hour soak.
-- After TL-017 merges, typical candidates for a fresh task ID: monitoring
+- **TL-018 (current-day hourly history) is complete on
+  `feature/tl018-hourly-history`** (432/432 tests, Debug + Release 0W/0E,
+  `tl018-verify.ps1` PASS) and ready to merge into `master` on user approval.
+  **TL-017 (performance audit) is also complete on `feature/tl017-performance`**
+  and remains ready to merge on approval (recall: no merge/tag/version bump is
+  performed as part of any TL-XXX task).
+- After these merge, typical candidates for a fresh task ID: monitoring
   feature additions, additional localization languages, or a new UX surface. Do
   not rename existing IDs.
 - Release v0.1.1 shipped (tag `v0.1.1`); the 0.1.x baseline is current, so no
-  further version bump is implied unless a post-TL-017 release is approved.
+  further version bump is implied unless a post-TL-017/018 release is approved.

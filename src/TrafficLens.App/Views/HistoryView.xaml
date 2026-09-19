@@ -108,7 +108,7 @@
                 </Border>
             </Grid>
 
-            <TextBlock Text="{Binding DailyTrafficLabel}"
+            <TextBlock Text="{Binding ChartTitleLabel}"
                        FontSize="12" FontWeight="SemiBold"
                        Foreground="{StaticResource TextMutedBrush}"
                        Margin="0,18,0,8" />

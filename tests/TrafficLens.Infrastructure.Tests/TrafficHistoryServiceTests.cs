@@ -187,6 +187,68 @@ await svc1.StartAsync(CancellationToken.None);
         }
     }
 
+    [Fact]
+    public async Task HourlySeries_InSnapshot_ReflectsCommittedBuckets()
+    {
+        var now = Utc(2026, 6, 15, 9, 30);
+        var clock = now;
+        Func<DateTime> utcNow = () => clock;
+        var dbPath = Path.Combine(Path.GetTempPath(), $"tl_svc_hourly_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            var collector = new FakeCollector();
+            var adapterProvider = new FakeAdapterProvider();
+            adapterProvider.SetAdapters(new[]
+            {
+                new NetworkAdapterInfo("eth0", "Ethernet", "Desc", "00:00:00:00:00:00", NetworkAdapterKind.Ethernet, true, true)
+            });
+
+            using var repo = new SqliteTrafficHistoryRepository(dbPath, NullLogger<SqliteTrafficHistoryRepository>.Instance);
+            var svc = new TrafficHistoryService(
+                collector, adapterProvider, repo,
+                NullLogger<TrafficHistoryService>.Instance,
+                timeZone: TimeZoneInfo.Utc,
+                utcNow: utcNow);
+            await svc.StartAsync(CancellationToken.None);
+
+            collector.RaiseCounter("eth0", 1000, 500, now);
+            collector.RaiseCounter("eth0", 2000, 1000, now);
+            clock = Utc(2026, 6, 15, 10, 0);
+            collector.RaiseCounter("eth0", 3000, 1500, clock);
+            clock = Utc(2026, 6, 15, 10, 1);
+            await svc.StopAsync();
+
+            var snapshot = svc.GetSnapshot();
+            Assert.True(snapshot.IsAvailable);
+            Assert.Equal(new TrafficUsage(2000, 1000), snapshot.Today);
+
+            var slot9 = snapshot.TodayHourly.Single(p => p.LocalHour == 9);
+            Assert.Equal(new TrafficUsage(1000, 500), new TrafficUsage(slot9.DownloadBytes, slot9.UploadBytes));
+
+            var slot10 = snapshot.TodayHourly.Single(p => p.LocalHour == 10);
+            Assert.Equal(new TrafficUsage(1000, 500), new TrafficUsage(slot10.DownloadBytes, slot10.UploadBytes));
+            Assert.Equal(Utc(2026, 6, 15, 10, 1), slot10.EndUtcExclusive);
+            Assert.Equal(3000, snapshot.TodayHourly.Sum(p => p.TotalBytes));
+        }
+        finally
+        {
+            foreach (var suffix in new[] { ".db", "-wal", "-shm" })
+            {
+                try
+                {
+                    if (File.Exists(dbPath + suffix))
+                    {
+                        File.Delete(dbPath + suffix);
+                    }
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+    }
+
     #pragma warning disable CS0067
     private sealed class FakeCollector : INetworkTrafficCollector
     {
