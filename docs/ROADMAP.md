@@ -18,6 +18,8 @@
 | M11 | Full Persian localization + language switcher | Done (TL-016) |
 | M11a | Product polish / branding foundation + About / Diagnostics | Done (TL-016 continuation) |
 | R1 | Release v0.1.1 (first post-TL-016 build) | Released (tag `v0.1.1`) |
+| M12 | Performance audit (Connections, allocations, startup, SQLite, idle, soak) | Done (TL-017; merged into `master` at `21dabb9`) |
+| M13 | Current-day hourly history | Done (TL-018; branch `feature/tl018-hourly-history`, ready to merge on approval) |
 
 ## Guidance
 
