@@ -82,6 +82,7 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
     private string _processLabel = string.Empty;
     private bool _hasStatusDetail;
     private bool _isIdle;
+    private bool _isActive = true;
 
     public ApplicationsViewModel(
         IProcessTrafficCollector collector,
@@ -104,6 +105,22 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
         RefreshLocalizedStrings();
         UpdateStatus();
         RefreshSamples(_collector.GetCurrentSamples());
+    }
+
+    public void SetActive(bool active)
+    {
+        _isActive = active;
+        if (!active)
+        {
+            return;
+        }
+
+        // Refresh immediately when becoming active
+        RunOnUi(() =>
+        {
+            RefreshSamples(_collector.GetCurrentSamples());
+            UpdateStatus();
+        });
     }
 
     public ObservableCollection<ProcessRowViewModel> Processes { get; } = new();
@@ -335,18 +352,37 @@ public sealed class ApplicationsViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _processStateLabel, value);
     }
 
-    private void OnSamplesReady(object? sender, IReadOnlyList<ProcessTrafficSample> samples) =>
+    private void OnSamplesReady(object? sender, IReadOnlyList<ProcessTrafficSample> samples)
+    {
+        if (!_isActive)
+        {
+            return;
+        }
         RunOnUi(() => RefreshSamples(samples));
+    }
 
-    private void OnStatusChanged(object? sender, EventArgs e) => RunOnUi(UpdateStatus);
+    private void OnStatusChanged(object? sender, EventArgs e)
+    {
+        if (!_isActive)
+        {
+            return;
+        }
+        RunOnUi(UpdateStatus);
+    }
 
-    private void OnCultureChanged(object? sender, EventArgs e) =>
+    private void OnCultureChanged(object? sender, EventArgs e)
+    {
+        if (!_isActive)
+        {
+            return;
+        }
         RunOnUi(() =>
         {
             RefreshLocalizedStrings();
             RefreshSamples(_samples);
             UpdateStatus();
         });
+    }
 
     private void RunOnUi(Action action)
     {

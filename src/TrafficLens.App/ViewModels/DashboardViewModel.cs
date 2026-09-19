@@ -39,6 +39,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private bool _is1MinuteSelected;
     private bool _is5MinutesSelected;
     private bool _refreshPending;
+    private bool _isActive = true;
 
     private string _dashboardLabel = string.Empty;
     private string _downloadLabel = string.Empty;
@@ -101,6 +102,23 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RefreshAll();
         RefreshGraph();
         UpdateRangeSelectionFlags();
+    }
+
+    public void SetActive(bool active)
+    {
+        _isActive = active;
+        if (!active)
+        {
+            return;
+        }
+
+        // Refresh immediately when becoming active
+        RunOnUi(() =>
+        {
+            ReloadAdapters();
+            RefreshAll(force: true);
+            RefreshGraph();
+        });
     }
 
     public ObservableCollection<AdapterListItemViewModel> Adapters { get; } = new();
@@ -351,11 +369,18 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _graphUploadSeriesLabel, value);
     }
 
-    private void OnSpeedSample(object? sender, NetworkSpeedSample sample) => CoalesceRefresh();
+    private void OnSpeedSample(object? sender, NetworkSpeedSample sample)
+    {
+        if (!_isActive)
+        {
+            return;
+        }
+        CoalesceRefresh();
+    }
 
     private void CoalesceRefresh()
     {
-        if (_refreshPending)
+        if (!_isActive || _refreshPending)
         {
             return;
         }
@@ -372,13 +397,20 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _dispatcher.BeginInvoke(() =>
         {
             _refreshPending = false;
-            RefreshRates();
+            if (_isActive)
+            {
+                RefreshRates();
+            }
         });
     }
 
     private void OnAdaptersChanged(object? sender, EventArgs e) =>
         RunOnUi(() =>
         {
+            if (!_isActive)
+            {
+                return;
+            }
             ReloadAdapters();
             RefreshAll();
         });
@@ -386,6 +418,10 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private void OnCultureChanged(object? sender, EventArgs e) =>
         RunOnUi(() =>
         {
+            if (!_isActive)
+            {
+                return;
+            }
             RefreshLocalizedStrings();
             ReloadAdapters();
             RefreshAll(force: true);
