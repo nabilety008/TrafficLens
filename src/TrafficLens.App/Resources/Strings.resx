@@ -498,4 +498,55 @@
   <data name="OpenLogFolderLabel" xml:space="preserve">
     <value>Open logs folder</value>
   </data>
+  <data name="TunnelAggregateHintText" xml:space="preserve">
+    <value>System total excludes tunnel adapters to avoid double-counting.</value>
+  </data>
+  <data name="GetStartedTitle" xml:space="preserve">
+    <value>Get started with TrafficLens</value>
+  </data>
+  <data name="GetStartedIntro" xml:space="preserve">
+    <value>TrafficLens is a local, privacy-first network monitor for Windows. It shows how much each app downloads and uploads, right on your device - nothing leaves your computer.</value>
+  </data>
+  <data name="GetStartedApplicationsTitle" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="GetStartedApplicationsText" xml:space="preserve">
+    <value>See download and upload traffic per app (per process) on the Applications page. Per-process traffic requires running TrafficLens as Administrator, because Windows exposes it through an elevated ETW kernel provider. TrafficLens never raises its own privileges; the page explains the current runtime state if access is missing.</value>
+  </data>
+  <data name="GetStartedTunnelsTitle" xml:space="preserve">
+    <value>VPNs and tunnels</value>
+  </data>
+  <data name="GetStartedTunnelsText" xml:space="preserve">
+    <value>Tunnel adapters (WireGuard, OpenVPN and similar) are shown individually on the Dashboard, but the system total leaves them out to avoid counting the same bytes twice.</value>
+  </data>
+  <data name="GetStartedTrayTitle" xml:space="preserve">
+    <value>System tray</value>
+  </data>
+  <data name="GetStartedTrayText" xml:space="preserve">
+    <value>TrafficLens can keep running in the system tray. Depending on the Settings, closing or minimizing the window hides it instead of quitting.</value>
+  </data>
+  <data name="GetStartedWidgetTitle" xml:space="preserve">
+    <value>Floating widget</value>
+  </data>
+  <data name="GetStartedWidgetText" xml:space="preserve">
+    <value>A compact always-on-top panel showing live download and upload rates while you work in other windows. Toggle it from Settings or the button in the top-right corner.</value>
+  </data>
+  <data name="GetStartedAlertsTitle" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="GetStartedAlertsText" xml:space="preserve">
+    <value>Optional notifications for high speeds and daily download, upload or total limits, with a cooldown to avoid noise. Configure them in Settings.</value>
+  </data>
+  <data name="GetStartedLanguageTitle" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="GetStartedLanguageText" xml:space="preserve">
+    <value>Switch between English and Persian at any time using the buttons in the top-right corner or the Language option in Settings.</value>
+  </data>
+  <data name="GetStartedDismiss" xml:space="preserve">
+    <value>Got it</value>
+  </data>
+  <data name="GetStartedReopen" xml:space="preserve">
+    <value>Get Started</value>
+  </data>
 </root>

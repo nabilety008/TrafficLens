@@ -1,7 +1,63 @@
 # TrafficLens — CHANGELOG
-
+ 
 All notable changes are documented here in reverse chronological order.
-
+ 
+## [Unreleased] — TL-019 (first-run Get Started + contextual clarity)
+ 
+Branch `feature/tl019-get-started` off master; implementation complete.
+ 
+### Added (TL-019)
+ 
+- **First-run Get Started overlay.** A lightweight, dismissible panel that auto-shows
+  on a brand-new profile (no prior `settings.json`). Explains TrafficLens in concise
+  skimmable sections: What TrafficLens does, Applications/Administrator privilege
+  (ETW kernel provider requires elevation, no auto-elevation), VPN & tunnels
+  (tunnel adapters shown individually but excluded from system total to avoid
+  double-counting), System tray behavior, Floating widget, Alerts, Start with
+  Windows, Language switcher. Completion persisted via existing `ISettingsService`
+  (`HasCompletedOnboarding` key). Manual reopen from About ("Get Started") and
+  Settings ("Get Started") never resets persisted state.
+- **Contextual tunnel hint.** Small non-alarming hint near the Dashboard system
+  total ("System total excludes tunnel adapters to avoid double-counting.") that
+  appears only when an active tunnel adapter (`NetworkAdapterKind.Tunnel` with
+  `IsUp=true`) is present. Driven entirely by existing `AdaptersChanged` events —
+  no new timers, no polling, no collector, no monitoring/accounting changes.
+- **Localization (en-US + fa-IR).** Exact resource parity (18 new keys added to both
+  `Strings.resx` and `Strings.fa-IR.resx`, 180 total); RTL layout correct; runtime
+  language switch updates open onboarding panel.
+- **Accessibility.** Keyboard navigation, focus order, Escape dismiss,
+  `AutomationProperties.Name` on all interactive elements; panel focuses dismiss
+  button on open.
+- **Tests (+23 → 455/455).** `OnboardingViewModelTests` (10), Dashboard tunnel
+  hint (5), About/Settings/MainViewModel reopen (6), `JsonSettingsService`
+  `SettingsFileExisted` (2), resource parity extended.
+ 
+### Changed (TL-019)
+ 
+- `ISettingsService` + `JsonSettingsService`: added `SettingsFileExisted` property
+  to distinguish fresh profiles from upgrading ones.
+- `DashboardViewModel`: `HasTunnelAdapter` + `TunnelAggregateHint` properties
+  driven by existing adapter events.
+- `MainWindow.xaml`: onboarding overlay Grid with proper DataContext scoping,
+  Escape key binding to `Onboarding.DismissCommand`.
+- AboutView/SettingsView: "Get Started" / "راهنمای شروع" manual reopen buttons.
+ 
+### Scope (TL-019)
+ 
+- No new timers/polls/workers, no duplicate event subscriptions.
+- No monitoring/accounting behavior changes, no include-tunnels setting.
+- No auto-elevation, no ETW session changes, no fake process data.
+- Zero continuous background cost; reuses existing adapter events.
+ 
+### Verified (2026-09-20, branch source)
+ 
+- `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
+- **455/455 tests pass** (App 188 / Network 212 / Infrastructure 55).
+- Published single-file build GUI verified: fresh profile auto-show, dismiss
+  persistence, restart no auto-show, About/Settings manual reopen, en/fa-IR/RTL,
+  runtime language switch while panel open, Dashboard/Applications/History/Alerts/
+  Settings/Widget/Tray functional, graceful exit, no orphan process.
+ 
 ## [Unreleased] — TL-018 (current-day hourly history, M13)
 
 Branch `feature/tl018-hourly-history` off master; ready to merge on approval.

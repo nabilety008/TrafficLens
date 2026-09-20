@@ -17,7 +17,7 @@ public sealed class SettingsViewModelTests : IDisposable
     public SettingsViewModelTests()
     {
         _localization.SetCulture("en-US");
-        _vm = new SettingsViewModel(_localization, _settings, _widget, _alerts, _startup);
+        _vm = new SettingsViewModel(_localization, _settings, _widget, _alerts, _startup, new OnboardingViewModel(_localization, _settings));
     }
 
     public void Dispose() => _vm.Dispose();
@@ -52,7 +52,7 @@ public sealed class SettingsViewModelTests : IDisposable
         _settings.Set(JsonSettingsService.LanguageKey, "fa-IR");
         _settings.Set("MinimizeToTray", "False");
 
-        using var vm = new SettingsViewModel(_localization, _settings, _widget, _alerts, _startup);
+        using var vm = new SettingsViewModel(_localization, _settings, _widget, _alerts, _startup, new OnboardingViewModel(_localization, _settings));
 
         Assert.True(vm.StartWithWindows);
         Assert.True(vm.StartMinimized);
@@ -293,5 +293,26 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.Equal("False", _settings.Get(JsonSettingsService.StartWithWindowsKey, string.Empty));
         Assert.Equal(1, _startup.DisableCalls);
         Assert.Equal("300", _settings.Get("alerts.cooldownSeconds", string.Empty));
+    }
+
+    [Fact]
+    public void GetStartedLabel_IsLocalized()
+    {
+        Assert.Equal("Get Started", _vm.GetStartedLabel);
+
+        _localization.SetCulture("fa-IR");
+        Assert.Equal("راهنمای شروع", _vm.GetStartedLabel);
+    }
+
+    [Fact]
+    public void ShowGuideCommand_OpensOnboarding()
+    {
+        using var onboarding = new OnboardingViewModel(_localization, _settings);
+        using var vm = new SettingsViewModel(_localization, _settings, _widget, _alerts, _startup, onboarding);
+        Assert.False(onboarding.IsVisible);
+
+        vm.ShowGuideCommand.Execute(null);
+
+        Assert.True(onboarding.IsVisible);
     }
 }

@@ -9,7 +9,7 @@ public class AboutViewModelTests
     {
         var localization = new LocalizationService();
         localization.SetCulture(culture);
-        return new AboutViewModel(localization);
+        return new AboutViewModel(localization, new OnboardingViewModel(localization, new FakeSettingsService()));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class AboutViewModelTests
     {
         var localization = new LocalizationService();
         localization.SetCulture("en-US");
-        var vm = new AboutViewModel(localization);
+        var vm = new AboutViewModel(localization, new OnboardingViewModel(localization, new FakeSettingsService()));
 
         Assert.Equal("About", vm.AboutTitleLabel);
 
@@ -94,5 +94,36 @@ public class AboutViewModelTests
         vm.CopyDiagnosticsCommand.Execute(null);
 
         Assert.False(string.IsNullOrWhiteSpace(vm.ProductNameText));
+    }
+
+    [Fact]
+    public void GetStartedLabel_IsLocalized()
+    {
+        var vm = CreateViewModel("en-US");
+
+        Assert.Equal("Get Started", vm.GetStartedLabel);
+
+        var persian = new LocalizationService();
+        persian.SetCulture("fa-IR");
+        using var about = new AboutViewModel(persian, new OnboardingViewModel(persian, new FakeSettingsService()));
+
+        Assert.Equal("راهنمای شروع", about.GetStartedLabel);
+    }
+
+    [Fact]
+    public void ShowGuideCommand_OpensOnboarding_WithoutResettingState()
+    {
+        var localization = new LocalizationService();
+        localization.SetCulture("en-US");
+        var settings = new FakeSettingsService { SettingsFileExisted = false };
+        using var onboarding = new OnboardingViewModel(localization, settings);
+        onboarding.AutoShowIfRequired();
+        onboarding.DismissCommand.Execute(null);
+
+        using var vm = new AboutViewModel(localization, onboarding);
+        vm.ShowGuideCommand.Execute(null);
+
+        Assert.True(onboarding.IsVisible);
+        Assert.Equal("True", settings.Get(OnboardingSettings.CompletedKey, string.Empty));
     }
 }

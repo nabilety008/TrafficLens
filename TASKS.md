@@ -7,8 +7,22 @@
 - Task IDs are stable. Do not renumber existing IDs.
 
 ## Backlog
-
-### TL-018 Current-Day Hourly History — **DONE**
+ 
+### TL-019 First-Run Get Started + Contextual Clarity — **DONE**
+- [x] `ISettingsService.SettingsFileExisted` property + `JsonSettingsService` impl — captures file existence at construction for fresh-vs-existing profile distinction
+- [x] `OnboardingSettings` pure helper (App/Services) — `ShouldAutoShow` (fresh profile only), `IsCompleted`, `MarkCompleted` (`HasCompletedOnboarding` key)
+- [x] `OnboardingViewModel` — auto-show on fresh profile, dismiss → persist, manual reopen (`Show()`), localized strings (18 keys), keyboard/accessibility, no logic in code-behind
+- [x] `OnboardingView` (XAML + code-behind) — overlay panel with backdrop, 6 topic cards (What TrafficLens does, Applications/Admin, VPN & tunnels, System tray, Floating widget, Alerts/Startup/Language), dismiss button, focus on open, Escape dismiss
+- [x] `MainViewModel` wiring — `OnboardingViewModel` DI singleton, `AutoShowIfRequired()` called in ctor, `Onboarding` property exposed
+- [x] About/Settings manual reopen — `ShowGuideCommand` in both VMs bound to "Get Started" / "راهنمای شروع" buttons in AboutView and SettingsView
+- [x] `MainWindow.xaml` — overlay Grid with `Visibility` bound to `Onboarding.IsVisible` (fixed DataContext binding conflict), Escape `KeyBinding` → `Onboarding.DismissCommand`
+- [x] Dashboard tunnel hint — `HasTunnelAdapter` + `TunnelAggregateHint` in `DashboardViewModel`, driven by existing `AdaptersChanged`/`NetworkChanged` events, localized text, shown near Total card
+- [x] Localization — 18 new keys added to both `Strings.resx` and `Strings.fa-IR.resx` (parity 180 keys), runtime culture switch updates open panel, RTL layout correct
+- [x] Tests (+23 → 455/455): `OnboardingViewModelTests` (10), Dashboard tunnel hint (5), About/Settings/MainViewModel reopen (6), `JsonSettingsService` `SettingsFileExisted` (2), resource parity extended
+- [x] Build Debug + Release: **0 warnings / 0 errors**
+- [x] Real Windows GUI verification (published single-file): fresh profile auto-show, dismiss persistence, restart no auto-show, About/Settings manual reopen, en/fa-IR/RTL, runtime language switch, Dashboard/Applications/History/Alerts/Settings/Widget/Tray functional, graceful exit, no orphan process
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ROADMAP)
+- **Status: done**
 - [x] `HourlyUsagePoint` (Core) — immutable record struct: `StartUtc`,
       `EndUtcExclusive`, `LocalHour`, download/upload bytes + `TotalBytes`
 - [x] `HourlyHistoryBuilder` (Core, pure static) — buckets `TrafficHistoryBucket`

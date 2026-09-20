@@ -34,6 +34,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0"
@@ -61,6 +62,16 @@
                                   Content="{Binding StartMinimizedLabel}"
                                   IsChecked="{Binding StartMinimized, Mode=TwoWay}"
                                   Margin="0,0,0,2" />
+
+                        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                AutomationProperties.Name="SettingsGetStarted"
+                                Content="{Binding GetStartedLabel}"
+                                Command="{Binding ShowGuideCommand}"
+                                Background="{StaticResource SurfaceAltBrush}"
+                                Foreground="{StaticResource TextBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                Padding="10,4" Margin="0,6,0,0"
+                                HorizontalAlignment="Left" />
                     </Grid>
                 </StackPanel>
             </Border>

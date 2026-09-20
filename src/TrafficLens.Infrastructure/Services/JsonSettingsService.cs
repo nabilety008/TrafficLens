@@ -26,12 +26,15 @@ public sealed class JsonSettingsService : ISettingsService
     {
         _filePath = filePath;
         _values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        SettingsFileExisted = File.Exists(_filePath);
         Load();
         if (string.IsNullOrEmpty(Get(VersionKey, string.Empty)))
         {
             Set(VersionKey, SettingsVersion);
         }
     }
+
+    public bool SettingsFileExisted { get; }
 
     public string Language
     {

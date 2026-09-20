@@ -44,7 +44,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         AlertsViewModel alerts,
         SettingsViewModel settingsPage,
         AboutViewModel about,
-        IFloatingWidgetService floatingWidgetService)
+        IFloatingWidgetService floatingWidgetService,
+        OnboardingViewModel onboarding)
     {
         _localization = localization;
         _settings = settings;
@@ -56,6 +57,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         Settings = settingsPage;
         About = about;
         _floatingWidgetService = floatingWidgetService;
+        Onboarding = onboarding;
         StartupTrace.Tick("mainviewmodel-ctor-begin");
 
         _minimizeToTray = TrayBehavior.GetMinimizeToTray(_settings);
@@ -77,6 +79,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         ShowSettingsCommand = new RelayCommand(() => SelectPage(Page.Settings));
         ShowAboutCommand = new RelayCommand(() => SelectPage(Page.About));
         ToggleFloatingWidgetCommand = new RelayCommand(() => _floatingWidgetService.Toggle());
+
+        Onboarding.AutoShowIfRequired();
     }
 
     public void Dispose()
@@ -84,6 +88,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
         _floatingWidgetService.IsVisibleChanged -= OnIsVisibleChanged;
         About.Dispose();
         Settings.Dispose();
+        Onboarding.Dispose();
     }
 
     public DashboardViewModel Dashboard { get; }
@@ -99,6 +104,8 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
     public SettingsViewModel Settings { get; }
 
     public AboutViewModel About { get; }
+
+    public OnboardingViewModel Onboarding { get; }
 
     public string AboutNavLabel
     {

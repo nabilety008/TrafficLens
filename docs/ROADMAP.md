@@ -20,6 +20,7 @@
 | R1 | Release v0.1.1 (first post-TL-016 build) | Released (tag `v0.1.1`) |
 | M12 | Performance audit (Connections, allocations, startup, SQLite, idle, soak) | Done (TL-017; merged into `master` at `21dabb9`) |
 | M13 | Current-day hourly history | Done (TL-018; branch `feature/tl018-hourly-history`, ready to merge on approval) |
+| M14 | First-run Get Started + contextual tunnel hint | Done (TL-019; branch `feature/tl019-get-started`) |
 
 ## Guidance
 

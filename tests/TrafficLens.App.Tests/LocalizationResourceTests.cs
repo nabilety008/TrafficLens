@@ -163,7 +163,24 @@ public class LocalizationResourceTests
         "DiagnosticsHeaderLabel",
         "CopyDiagnosticsLabel",
         "DiagnosticsCopiedLabel",
-        "OpenLogFolderLabel"
+        "OpenLogFolderLabel",
+        "TunnelAggregateHintText",
+        "GetStartedTitle",
+        "GetStartedIntro",
+        "GetStartedApplicationsTitle",
+        "GetStartedApplicationsText",
+        "GetStartedTunnelsTitle",
+        "GetStartedTunnelsText",
+        "GetStartedTrayTitle",
+        "GetStartedTrayText",
+        "GetStartedWidgetTitle",
+        "GetStartedWidgetText",
+        "GetStartedAlertsTitle",
+        "GetStartedAlertsText",
+        "GetStartedLanguageTitle",
+        "GetStartedLanguageText",
+        "GetStartedDismiss",
+        "GetStartedReopen"
     };
 
     [Fact]
