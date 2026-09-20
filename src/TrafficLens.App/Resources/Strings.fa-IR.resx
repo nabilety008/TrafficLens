@@ -324,6 +324,21 @@
   <data name="HideFloatingWidgetLabel" xml:space="preserve">
     <value>مخفی کردن ابزارک شناور</value>
   </data>
+  <data name="HideListenersLabel" xml:space="preserve">
+    <value>پنهان کردن شنونده‌ها</value>
+  </data>
+  <data name="CopyLocalEndpointLabel" xml:space="preserve">
+    <value>کپی آدرس محلی</value>
+  </data>
+  <data name="CopyRemoteEndpointLabel" xml:space="preserve">
+    <value>کپی آدرس مقصد</value>
+  </data>
+  <data name="CopyRemoteIpLabel" xml:space="preserve">
+    <value>کپی آی‌پی مقصد</value>
+  </data>
+  <data name="CopyProcessNameLabel" xml:space="preserve">
+    <value>کپی نام فرآیند</value>
+  </data>
   <data name="OpenTrafficLensLabel" xml:space="preserve">
     <value>باز کردن ترافیک‌لنز</value>
   </data>
@@ -413,6 +428,9 @@
   </data>
   <data name="EnableFloatingWidgetLabel" xml:space="preserve">
     <value>فعال‌سازی ویجت شناور</value>
+  </data>
+  <data name="EnableReverseDnsLabel" xml:space="preserve">
+    <value>بررسی نام میزبان‌ها (DNS معکوس)</value>
   </data>
   <data name="AlertsLabel" xml:space="preserve">
     <value>هشدارها</value>

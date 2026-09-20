@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Net;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
+using TrafficLens.App.Commands;
 using TrafficLens.App.Services;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
@@ -27,6 +30,8 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private readonly ILocalizationService _localization;
     private readonly ProcessIconResolver _iconResolver;
     private readonly Dispatcher? _dispatcher;
+    private readonly ISettingsService _settings;
+    private readonly DnsResolverService _dnsResolver;
     private readonly Dictionary<ConnectionKey, ConnectionRowViewModel> _rows = new();
     private readonly List<ConnectionKey> _displayedKeys = new();
 
@@ -37,6 +42,12 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private ConnectionFilter _filter = ConnectionFilter.All;
     private ConnectionFilter _familyFilter = ConnectionFilter.All;
     private ConnectionSortKey _sortKey = ConnectionSortKey.Default;
+    private bool _hideListeners;
+
+    public const string HideListenersKey = "ConnectionsHideListeners";
+    public const string EnableReverseDnsKey = "ConnectionsEnableReverseDns";
+
+    private bool _enableReverseDns;
 
     private string _connectionsLabel = string.Empty;
     private string _protocolLabel = string.Empty;
@@ -50,11 +61,17 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private string _noActiveConnectionsText = string.Empty;
     private string _errorTitle = string.Empty;
     private string _errorDetail = string.Empty;
-    private string _connectionErrorDetailText = string.Empty;
-    private bool _hasError;
-    private string _processLabel = string.Empty;
-    private string _pidLabel = string.Empty;
-    private string _unknownProcessText = string.Empty;
+private string _connectionErrorDetailText = string.Empty;
+        private bool _hasError;
+        private string _hideListenersLabel = string.Empty;
+        private string _processLabel = string.Empty;
+private string _pidLabel = string.Empty;
+        private string _copyLocalEndpointLabel = string.Empty;
+        private string _copyRemoteEndpointLabel = string.Empty;
+        private string _copyRemoteIpLabel = string.Empty;
+        private string _copyProcessNameLabel = string.Empty;
+        private string _enableReverseDnsLabel = string.Empty;
+        private string _unknownProcessText = string.Empty;
     private string _tcpText = string.Empty;
     private string _udpText = string.Empty;
     private ConnectionDisplayStrings? _displayStrings;
@@ -66,13 +83,20 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     public ConnectionsViewModel(
         IConnectionProvider provider,
         ILocalizationService localization,
-        ProcessIconResolver iconResolver)
+        ProcessIconResolver iconResolver,
+        ISettingsService settings,
+        DnsResolverService dnsResolver)
     {
         _provider = provider;
         _localization = localization;
         _iconResolver = iconResolver;
+        _settings = settings;
+        _dnsResolver = dnsResolver;
         _dispatcher = Application.Current?.Dispatcher;
         _culture = localization.CurrentCulture;
+
+        _hideListeners = GetBool(_settings, HideListenersKey, defaultValue: false);
+        _enableReverseDns = GetBool(_settings, EnableReverseDnsKey, defaultValue: false);
 
         _provider.ConnectionsChanged += OnConnectionsChanged;
         _localization.CultureChanged += OnCultureChanged;
@@ -152,6 +176,44 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _hasError, value);
     }
 
+    public bool HideListeners
+    {
+        get => _hideListeners;
+        set
+        {
+            if (SetProperty(ref _hideListeners, value))
+            {
+                _settings.Set(HideListenersKey, value.ToString());
+                _settings.Save();
+                RebuildDisplayList(force: true);
+            }
+        }
+    }
+
+    public bool EnableReverseDns
+    {
+        get => _enableReverseDns;
+        set
+        {
+            if (SetProperty(ref _enableReverseDns, value))
+            {
+                _settings.Set(EnableReverseDnsKey, value.ToString());
+                _settings.Save();
+                // When enabled/disabled, we may need to refresh the display
+                if (value)
+                {
+                    // Trigger DNS resolution for visible rows
+                    RefreshDnsForVisibleRows();
+                }
+                else
+                {
+                    // Clear resolved hostnames when disabled
+                    ClearResolvedHostnames();
+                }
+            }
+        }
+    } // End of EnableReverseDns setter
+
     public string ErrorTitle
     {
         get => _errorTitle;
@@ -206,6 +268,36 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _pidLabel, value);
     }
 
+    public string CopyLocalEndpointLabel
+    {
+        get => _copyLocalEndpointLabel;
+        private set => SetProperty(ref _copyLocalEndpointLabel, value);
+    }
+
+    public string CopyRemoteEndpointLabel
+    {
+        get => _copyRemoteEndpointLabel;
+        private set => SetProperty(ref _copyRemoteEndpointLabel, value);
+    }
+
+    public string CopyRemoteIpLabel
+    {
+        get => _copyRemoteIpLabel;
+        private set => SetProperty(ref _copyRemoteIpLabel, value);
+    }
+
+    public string CopyProcessNameLabel
+    {
+        get => _copyProcessNameLabel;
+        private set => SetProperty(ref _copyProcessNameLabel, value);
+    }
+
+    public string EnableReverseDnsLabel
+    {
+        get => _enableReverseDnsLabel;
+        private set => SetProperty(ref _enableReverseDnsLabel, value);
+    }
+
     public string ShowLabel
     {
         get => _showLabel;
@@ -222,6 +314,12 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     {
         get => _sortByLabel;
         private set => SetProperty(ref _sortByLabel, value);
+    }
+
+    public string HideListenersLabel
+    {
+        get => _hideListenersLabel;
+        private set => SetProperty(ref _hideListenersLabel, value);
     }
 
     public string SearchPlaceholder
@@ -300,6 +398,10 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         RemoteEndpointLabel = _localization["RemoteEndpointLabel"];
         ProcessLabel = _localization["ProcessLabel"];
         PidLabel = _localization["PidLabel"];
+        CopyLocalEndpointLabel = _localization["CopyLocalEndpointLabel"];
+        CopyRemoteEndpointLabel = _localization["CopyRemoteEndpointLabel"];
+        CopyRemoteIpLabel = _localization["CopyRemoteIpLabel"];
+        CopyProcessNameLabel = _localization["CopyProcessNameLabel"];
         ShowLabel = _localization["ShowLabel"];
         AddressFamilyLabel = _localization["AddressFamilyLabel"];
         SortByLabel = _localization["SortByLabel"];
@@ -310,6 +412,8 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         _unknownProcessText = _localization["UnknownProcessLabel"];
         _tcpText = _localization["TcpLabel"];
         _udpText = _localization["UdpLabel"];
+        _hideListenersLabel = _localization["HideListenersLabel"];
+        _enableReverseDnsLabel = _localization["EnableReverseDnsLabel"];
 
         _stateTexts[ConnectionState.Closed] = _localization["StateClosedLabel"];
         _stateTexts[ConnectionState.Listen] = _localization["StateListenLabel"];
@@ -330,12 +434,13 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
             _udpText,
             state => _stateTexts.TryGetValue(state, out var text) ? text : string.Empty);
 
-        FilterOptions.Clear();
+FilterOptions.Clear();
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.All, _localization["AllLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Established, _localization["EstablishedLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Listening, _localization["ListeningLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Tcp, _localization["TcpLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Udp, _localization["UdpLabel"]));
+FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _localization["HideListenersLabel"]));
 
         FamilyFilterOptions.Clear();
         FamilyFilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.All, _localization["AllLabel"]));
@@ -396,6 +501,12 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
 
         ResolveIcons();
         RebuildDisplayList(force: false);
+
+        // Trigger DNS resolution for visible rows if enabled
+        if (_enableReverseDns)
+        {
+            RefreshDnsForVisibleRows();
+        }
     }
 
     private void ResolveIcons()
@@ -534,5 +645,52 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
         }
 
         return true;
+    }
+
+    private static bool GetBool(ISettingsService settings, string key, bool defaultValue)
+    {
+        var value = settings.Get(key, string.Empty);
+        return string.IsNullOrEmpty(value) ? defaultValue : bool.TryParse(value, out var parsed) && parsed;
+    }
+
+    private void RefreshDnsForVisibleRows()
+    {
+        if (!_enableReverseDns || _dnsResolver is null)
+        {
+            return;
+        }
+
+        foreach (var connection in _connections)
+        {
+            if (connection.RemoteAddress is not null &&
+                !connection.RemoteAddress.Equals(IPAddress.Any) &&
+                !connection.RemoteAddress.Equals(IPAddress.IPv6Any))
+            {
+                var key = ConnectionKey.From(connection);
+                if (_rows.TryGetValue(key, out var row))
+                {
+                    // Start DNS resolution for this IP
+                    _dnsResolver.GetOrResolve(connection.RemoteAddress, hostname =>
+                    {
+                        // Update the row on UI thread
+                        RunOnUi(() =>
+                        {
+                            if (_rows.TryGetValue(key, out var currentRow))
+                            {
+                                currentRow.SetResolvedHostname(hostname ?? string.Empty);
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    }
+
+    private void ClearResolvedHostnames()
+    {
+        foreach (var row in _rows.Values)
+        {
+            row.SetResolvedHostname(string.Empty);
+        }
     }
 }

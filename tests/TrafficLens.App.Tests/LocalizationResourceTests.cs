@@ -180,7 +180,13 @@ public class LocalizationResourceTests
         "GetStartedLanguageTitle",
         "GetStartedLanguageText",
         "GetStartedDismiss",
-        "GetStartedReopen"
+        "GetStartedReopen",
+        "HideListenersLabel",
+        "CopyLocalEndpointLabel",
+        "CopyRemoteEndpointLabel",
+        "CopyRemoteIpLabel",
+        "CopyProcessNameLabel",
+        "EnableReverseDnsLabel"
     };
 
     [Fact]

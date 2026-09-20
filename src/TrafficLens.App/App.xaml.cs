@@ -227,6 +227,7 @@ public partial class App : Application
         services.AddSingleton<MainWindow>();
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
+        services.AddSingleton<DnsResolverService>();
         services.AddSingleton<ApplicationExitCoordinator>();
     }
 }

@@ -11,16 +11,23 @@ public sealed class ConnectionsViewModelTests : IDisposable
     private readonly FakeConnectionProvider _provider = new();
     private readonly LocalizationService _localization = new();
     private readonly ProcessIconResolver _icons = new();
+    private readonly FakeSettingsService _settings = new();
+    private readonly DnsResolverService _dnsResolver;
     private readonly ConnectionsViewModel _vm;
 
     public ConnectionsViewModelTests()
     {
         _localization.SetCulture("en-US");
-        _vm = new ConnectionsViewModel(_provider, _localization, _icons);
+        _dnsResolver = new DnsResolverService(Microsoft.Extensions.Logging.Abstractions.NullLogger<DnsResolverService>.Instance);
+        _vm = new ConnectionsViewModel(_provider, _localization, _icons, _settings, _dnsResolver);
         _vm.SetActive(true);
     }
 
-    public void Dispose() => _vm.Dispose();
+    public void Dispose()
+    {
+        _vm.Dispose();
+        _dnsResolver.Dispose();
+    }
 
     private static ConnectionInfo Tcp(
         string local,
@@ -36,6 +43,17 @@ public sealed class ConnectionsViewModelTests : IDisposable
     private static ConnectionInfo Udp(string local, int localPort, int pid, string name) =>
         new(pid, name, ConnectionProtocol.Udp, ConnectionAddressFamily.Ipv4,
             IPAddress.Parse(local), localPort, null, null, ConnectionState.Unknown);
+
+    private static ConnectionInfo Udp(
+        string local,
+        int localPort,
+        string? remote,
+        int? remotePort,
+        int pid,
+        string? name) =>
+        new(pid, name, ConnectionProtocol.Udp, ConnectionAddressFamily.Ipv4,
+            IPAddress.Parse(local), localPort,
+            remote is null ? null : IPAddress.Parse(remote), remotePort, ConnectionState.Unknown);
 
     private static ConnectionInfo UdpIpv6(int pid, string name) =>
         new(pid, name, ConnectionProtocol.Udp, ConnectionAddressFamily.Ipv6,
@@ -227,5 +245,49 @@ public sealed class ConnectionsViewModelTests : IDisposable
         _localization.SetCulture("fa-IR");
 
         Assert.Equal("فرآیند ناشناخته", Assert.Single(_vm.Connections).Name);
+    }
+
+    [Fact]
+    public void Filter_HideListeners_HidesTcpListenersAndUnconnectedUdp()
+    {
+        _provider.Publish(
+            Tcp("1", 1, "2", 2, ConnectionState.Established, 1, "a"),
+            Tcp("1", 1, "0.0.0.0", 0, ConnectionState.Listen, 1, "b"),
+            Udp("1", 1, 1, "c"),  // UDP no remote
+            Udp("1", 2, "2", 2, 2, "d")); // UDP with remote
+
+        _vm.Filter = ConnectionFilter.HideListeners;
+
+        Assert.Equal(2, _vm.Connections.Count);
+        Assert.Contains(_vm.Connections, r => r.Name == "a");
+        Assert.Contains(_vm.Connections, r => r.Name == "d");
+    }
+
+    [Fact]
+    public void HideListeners_Setting_PersistsAndRestores()
+    {
+        _vm.HideListeners = true;
+        _vm.HideListeners = false;
+        Assert.False(_vm.HideListeners);
+
+        var saveCalls = _settings.SaveCalls;
+        _vm.HideListeners = true;
+        Assert.True(_vm.HideListeners);
+        Assert.Equal(saveCalls + 1, _settings.SaveCalls);
+    }
+
+    [Fact]
+    public void EnableReverseDns_DefaultFalse_PersistsAndRestores()
+    {
+        Assert.False(_vm.EnableReverseDns);
+
+        var saveCalls = _settings.SaveCalls;
+        _vm.EnableReverseDns = true;
+        Assert.True(_vm.EnableReverseDns);
+        Assert.Equal(saveCalls + 1, _settings.SaveCalls);
+
+        _vm.EnableReverseDns = false;
+        Assert.False(_vm.EnableReverseDns);
+        Assert.Equal(saveCalls + 2, _settings.SaveCalls);
     }
 }

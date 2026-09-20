@@ -11,7 +11,8 @@ public enum ConnectionFilter
     Tcp,
     Udp,
     Ipv4,
-    Ipv6
+    Ipv6,
+    HideListeners
 }
 
 public enum ConnectionSortKey
@@ -48,6 +49,11 @@ public static class ConnectionFiltering
             ConnectionFilter.Udp => connection.Protocol == ConnectionProtocol.Udp,
             ConnectionFilter.Ipv4 => connection.AddressFamily == ConnectionAddressFamily.Ipv4,
             ConnectionFilter.Ipv6 => connection.AddressFamily == ConnectionAddressFamily.Ipv6,
+            // HideListeners: hide TCP listeners and unconnected UDP (local-only entries).
+            // "Local-only" means TCP in Listen state, or UDP with no remote endpoint.
+            ConnectionFilter.HideListeners =>
+                !(connection.Protocol == ConnectionProtocol.Tcp && connection.State == ConnectionState.Listen) &&
+                !(connection.Protocol == ConnectionProtocol.Udp && connection.RemoteAddress is null),
             _ => true
         };
 
