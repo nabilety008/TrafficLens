@@ -11,5 +11,6 @@ public enum HistoryRange
     Yesterday,
     Last7Days,
     Last30Days,
-    Lifetime
+    Lifetime,
+    ThisMonth
 }

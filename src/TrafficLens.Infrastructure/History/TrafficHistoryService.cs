@@ -249,6 +249,7 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
             var today = HistoryRangeCalculator.LocalDateOf(nowUtc, _timeZone);
 
             var thirtyDayRange = HistoryRangeCalculator.ToLocalDateRange(HistoryRange.Last30Days, today)!.Value;
+            var monthRange = HistoryRangeCalculator.ToLocalDateRange(HistoryRange.ThisMonth, today)!.Value;
             var daily = await _repository
                 .QueryDailyAsync(thirtyDayRange.Start, thirtyDayRange.EndExclusive, cancellationToken)
                 .ConfigureAwait(false);
@@ -261,12 +262,18 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
 
             var dayStartUtc = HourlyHistoryBuilder.MidnightUtc(today, _timeZone);
             IReadOnlyList<HourlyUsagePoint> todayHourly = Array.Empty<HourlyUsagePoint>();
+            double dayFraction = 0;
             if (nowUtc > dayStartUtc)
             {
                 var samples = await _repository
                     .QuerySamplesAsync(dayStartUtc, nowUtc, cancellationToken)
                     .ConfigureAwait(false);
                 todayHourly = HourlyHistoryBuilder.Build(nowUtc, _timeZone, samples);
+                var nextDayUtc = dayStartUtc.AddDays(1);
+                var spanTicks = (nextDayUtc - dayStartUtc).Ticks;
+                dayFraction = spanTicks > 0
+                    ? Math.Clamp((double)(nowUtc.Ticks - dayStartUtc.Ticks) / spanTicks, 0, 1)
+                    : 0;
             }
 
             return new HistorySnapshot(
@@ -278,7 +285,9 @@ public sealed class TrafficHistoryService : ITrafficHistoryService
                 HistoryRangeCalculator.SumDaily(daily, thirtyDayRange.Start, thirtyDayRange.EndExclusive),
                 lifetime,
                 series,
-                todayHourly);
+                todayHourly,
+                HistoryRangeCalculator.SumDaily(daily, monthRange.Start, monthRange.EndExclusive),
+                dayFraction);
         }
         catch (OperationCanceledException)
         {

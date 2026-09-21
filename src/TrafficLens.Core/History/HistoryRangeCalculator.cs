@@ -23,7 +23,8 @@ public static class HistoryRangeCalculator
     /// The half-open LOCAL date range [Start, EndExclusive) for a range, or null
     /// for <see cref="HistoryRange.Lifetime"/> (which has no lower bound). "Last 7
     /// days" and "Last 30 days" are inclusive of today (today plus the preceding
-    /// 6/29 local days).
+    /// 6/29 local days). "This Month" spans from the first day of the current
+    /// local calendar month through the day after today.
     /// </summary>
     public static (DateOnly Start, DateOnly EndExclusive)? ToLocalDateRange(
         HistoryRange range,
@@ -33,6 +34,7 @@ public static class HistoryRangeCalculator
         HistoryRange.Yesterday => (today.AddDays(-1), today),
         HistoryRange.Last7Days => (today.AddDays(-(Last7DayCount - 1)), today.AddDays(1)),
         HistoryRange.Last30Days => (today.AddDays(-(Last30DayCount - 1)), today.AddDays(1)),
+        HistoryRange.ThisMonth => (new DateOnly(today.Year, today.Month, 1), today.AddDays(1)),
         _ => null
     };
 

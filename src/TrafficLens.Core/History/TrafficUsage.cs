@@ -36,7 +36,9 @@ public sealed record HistorySnapshot(
     TrafficUsage Last30Days,
     TrafficUsage Lifetime,
     IReadOnlyList<DailyUsagePoint> DailySeries,
-    IReadOnlyList<HourlyUsagePoint> TodayHourly)
+    IReadOnlyList<HourlyUsagePoint> TodayHourly,
+    TrafficUsage ThisMonth,
+    double DayFraction)
 {
     public static HistorySnapshot Unavailable(string? error) => new(
         false,
@@ -47,7 +49,9 @@ public sealed record HistorySnapshot(
         TrafficUsage.Empty,
         TrafficUsage.Empty,
         Array.Empty<DailyUsagePoint>(),
-        Array.Empty<HourlyUsagePoint>());
+        Array.Empty<HourlyUsagePoint>(),
+        TrafficUsage.Empty,
+        0);
 
     public TrafficUsage For(HistoryRange range) => range switch
     {
@@ -56,6 +60,7 @@ public sealed record HistorySnapshot(
         HistoryRange.Last7Days => Last7Days,
         HistoryRange.Last30Days => Last30Days,
         HistoryRange.Lifetime => Lifetime,
+        HistoryRange.ThisMonth => ThisMonth,
         _ => TrafficUsage.Empty
     };
 }
