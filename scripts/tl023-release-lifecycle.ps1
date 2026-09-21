@@ -537,6 +537,13 @@ try {
         Fail "9.9: Persian language" "not found in ISS"
     }
 
+    # Check AppVerName uses full version (not AppVersionShort which strips the patch)
+    if ($issContent -match 'AppVerName=\{#AppName\}\s+\{#AppVersion\}') {
+        Pass "9.10: AppVerName uses full AppVersion (not AppVersionShort)"
+    } else {
+        Fail "9.10: AppVerName" "should use {#AppVersion}, not {#AppVersionShort}"
+    }
+
     # ====================================================================
     # 10. FINAL ORPHAN CHECK
     # ====================================================================

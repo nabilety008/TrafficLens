@@ -36,7 +36,7 @@
 AppId={#AppId}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppVerName={#AppName} {#AppVersionShort}
+AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppCopyright=Copyright (C) 2026 TrafficLens Contributors
 ; Embedded product metadata for the Setup executable.
