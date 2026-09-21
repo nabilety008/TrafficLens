@@ -505,13 +505,36 @@ try {
         Fail "9.4: Version consistency" "ProductVersion='$productVer' FileVersion='$fileVer'"
     }
 
-    # Check for placeholder URLs (known limitation)
+    # Check for placeholder URLs — must be absent now (TL-024)
     $issContent = Get-Content (Join-Path $repoRoot "packaging\TrafficLens.iss") -Raw
-    if ($issContent -match 'AppPublisherURL=https://github\.com/$') {
-        Info "9.4: AppPublisherURL is placeholder (known limitation)"
+    if ($issContent -match 'AppPublisherURL=') {
+        Fail "9.5: AppPublisherURL" "should be absent (placeholder removed)"
+    } else {
+        Pass "9.5: AppPublisherURL absent (no placeholder)"
     }
-    if ($issContent -match 'AppSupportURL=https://github\.com/$') {
-        Info "9.5: AppSupportURL is placeholder (known limitation)"
+    if ($issContent -match 'AppSupportURL=') {
+        Fail "9.6: AppSupportURL" "should be absent (placeholder removed)"
+    } else {
+        Pass "9.6: AppSupportURL absent (no placeholder)"
+    }
+
+    # Check stable AppId
+    if ($issContent -match '\{\{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D\}\}') {
+        Pass "9.7: Stable AppId unchanged"
+    } else {
+        Fail "9.7: AppId" "unexpected value"
+    }
+
+    # Check installer has English and Persian language support
+    if ($issContent -match 'Name:\s*"english"') {
+        Pass "9.8: English installer language present"
+    } else {
+        Fail "9.8: English language" "not found in ISS"
+    }
+    if ($issContent -match 'Name:\s*"persian"') {
+        Pass "9.9: Persian installer language present"
+    } else {
+        Fail "9.9: Persian language" "not found in ISS"
     }
 
     # ====================================================================
