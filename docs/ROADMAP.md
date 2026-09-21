@@ -23,6 +23,7 @@
 | M14 | Connections Readability & Usability | Done (TL-020; branch `feature/tl020-connections-readability`) |
 | M14 | First-run Get Started + contextual tunnel hint | Done (TL-019; branch `feature/tl019-get-started`) |
 | M15 | History insights + CSV export | Done (TL-022; branch `feature/tl022-history-insights`) |
+| M16 | Release hardening & clean-machine validation | Done (TL-023; branch `feature/tl023-release-hardening`) |
 
 ## Guidance
 
