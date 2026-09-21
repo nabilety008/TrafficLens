@@ -2,6 +2,31 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — TL-022 (History This Month + Today vs Yesterday + CSV Export)
+
+Branch `feature/tl022-history-insights` off master; implementation complete.
+
+### Added (TL-022)
+
+- **This Month history range** — New `HistoryRange.ThisMonth` using local calendar month semantics (first day of current month through current local time). NOT rolling 30 days. Half-open `[monthStart, today+1)` date range. Daily chart series filtered to current month.
+
+- **Today vs Yesterday comparison** — Compares Today's usage so far against Yesterday's usage scaled to the equivalent elapsed local-day interval via `DayFraction`. Shows Today total, Yesterday-at-this-time equivalent, absolute difference, and percentage. Safe zero-denominator handling. Hidden when no comparison data available.
+
+- **CSV export** — Export CSV button on History page. Uses `SaveFileDialog`. UTF-8 with BOM, header row (`Period,DownloadBytes,UploadBytes,TotalBytes`), invariant numeric values, deterministic column order. Hourly data for Today range, daily data for all other ranges. IO errors surfaced as localized non-crashing message.
+
+- **Localization** — 9 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (ThisMonthLabel, TodayVsYesterdayLabel, YesterdayAtThisTimeLabel, DifferenceLabel, ExportCsvLabel, ExportSuccessfulLabel, ExportFailedLabel, NoComparisonDataLabel).
+
+- **Tests (+14 → 509/509)** — `HistoryRangeCalculatorTests` (+4: ThisMonth range semantics), `HistoryViewModelTests` (+10: ThisMonth selection, comparison positive/negative/equal/zero-yesterday/hidden/day-fraction-scaling, localization).
+
+### Constraints (TL-022)
+
+- No new timers/polling/ETW sessions
+- No new DB queries or schema changes
+- No monitoring/accounting changes
+- Reuses existing `TrafficHistoryService` snapshot pipeline
+
+---
+
 ## [Unreleased] — TL-021 (Dashboard Insights: Today + Top App)
 
 Branch `feature/tl021-dashboard-insights` off master; implementation complete.

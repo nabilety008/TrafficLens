@@ -8,6 +8,24 @@
 
 ## Backlog
 
+### TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE**
+- [x] `HistoryRange.ThisMonth` enum value added — local calendar month semantics (first day of current month through current time), not rolling 30 days
+- [x] `HistoryRangeCalculator.ToLocalDateRange` handles `ThisMonth` — half-open `[monthStart, today+1)` using local calendar
+- [x] `HistorySnapshot` extended with `ThisMonth` (`TrafficUsage`) and `DayFraction` (`double`) — `For(HistoryRange)` handles `ThisMonth`
+- [x] `TrafficHistoryService.BuildSnapshotAsync` computes `ThisMonth` via bounded `SumDaily` over month range; computes `DayFraction` from local midnight UTC span
+- [x] **This Month range** in HistoryViewModel — selection, daily series slicing by month/year, chart renders monthly data
+- [x] **Today vs Yesterday comparison** — compares Today's usage against Yesterday's usage scaled to equivalent elapsed local-day interval via `DayFraction`; shows absolute difference + percentage; safe zero-denominator handling; hidden when no comparison data
+- [x] **CSV export** — `SaveFileDialog`, UTF-8 with BOM, header row (`Period,DownloadBytes,UploadBytes,TotalBytes`), invariant numeric values, deterministic column order; uses same data as selected range (hourly for Today, daily for other ranges); async file IO; IO error surfaces as localized non-crashing message
+- [x] Localization — 9 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (ThisMonthLabel, TodayVsYesterdayLabel, YesterdayAtThisTimeLabel, DifferenceLabel, ExportCsvLabel, ExportSuccessfulLabel, ExportFailedLabel, NoComparisonDataLabel)
+- [x] HistoryView.xaml — This Month button in range bar, comparison border below chart, Export CSV button with `AutomationProperties.Name`
+- [x] Tests (+14 → 509/509): `HistoryRangeCalculatorTests` (+4: ThisMonth range semantics, first-day, end-of-year, not-rolling-30), `HistoryViewModelTests` (+10: ThisMonth selection/series, comparison positive/negative/equal/zero-yesterday/hidden-when-no-data/day-fraction-scaling, localization)
+- [x] Build Debug + Release: **0 warnings / 0 errors**
+- [x] GUI verification: This Month visible/selectable, comparison values correct, CSV export working, en-US/fa-IR/RTL verified, TL-021/TL-020 regressions verified
+- [x] No new timers/polling/ETW sessions — zero hits in HistoryViewModel
+- [x] TL-017 through TL-021 regression-free — full test suite 509/509 PASS
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG)
+- **Status: done**
+
 ### TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE**
 - [x] `DashboardViewModel` — added optional `ITrafficHistoryService?` and `IProcessTrafficCollector?` constructor parameters (backward-compatible, null-safe)
 - [x] "Today at a Glance" section — reads `HistorySnapshot.Today` (`TrafficUsage.DownloadBytes`/`UploadBytes`/`TotalBytes`), formatted via `DataSizeFormatter.Format()`; reuses existing `HistoryChanged` event, no new polling

@@ -603,4 +603,28 @@
   <data name="TopAppUploadLabel" xml:space="preserve">
     <value>آپلود</value>
   </data>
+  <data name="ThisMonthLabel" xml:space="preserve">
+    <value>این ماه</value>
+  </data>
+  <data name="TodayVsYesterdayLabel" xml:space="preserve">
+    <value>امروز در مقابل دیروز</value>
+  </data>
+  <data name="YesterdayAtThisTimeLabel" xml:space="preserve">
+    <value>دیروز در این ساعت</value>
+  </data>
+  <data name="DifferenceLabel" xml:space="preserve">
+    <value>تفاوت</value>
+  </data>
+  <data name="ExportCsvLabel" xml:space="preserve">
+    <value>خروجی CSV</value>
+  </data>
+  <data name="ExportSuccessfulLabel" xml:space="preserve">
+    <value>خروجی CSV با موفقیت ذخیره شد</value>
+  </data>
+  <data name="ExportFailedLabel" xml:space="preserve">
+    <value>خطا در ذخیره خروجی CSV. لطفاً مجوز فایل را بررسی کنید و دوباره تلاش کنید.</value>
+  </data>
+  <data name="NoComparisonDataLabel" xml:space="preserve">
+    <value>داده مقایسه‌ای موجود نیست</value>
+  </data>
 </root>

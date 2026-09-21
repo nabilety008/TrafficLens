@@ -134,7 +134,8 @@ public sealed class AlertServiceTests
                 new TrafficUsage((long)(12 * OneGb), 0),
                 TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
                 Array.Empty<DailyUsagePoint>(),
-                Array.Empty<HourlyUsagePoint>())
+                Array.Empty<HourlyUsagePoint>(),
+                TrafficUsage.Empty, 0)
         };
         var settings = new FakeSettingsService();
         SetupDailyTotal(settings);
@@ -187,7 +188,8 @@ public sealed class AlertServiceTests
                 new TrafficUsage((long)(12 * OneGb), 0),
                 TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
                 Array.Empty<DailyUsagePoint>(),
-                Array.Empty<HourlyUsagePoint>())
+                Array.Empty<HourlyUsagePoint>(),
+                TrafficUsage.Empty, 0)
         };
 
         using var service = CreateService(

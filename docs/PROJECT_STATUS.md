@@ -66,6 +66,7 @@ Diagnostics block, suite at 410 tests).
 - TL-018 Current-Day Hourly History — **DONE** (on `feature/tl018-hourly-history`, ready to merge on approval)
 - TL-020 Connections Readability & Usability — **DONE** (on `feature/tl020-connections-readability`, ready to merge on approval)
 - TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE** (on `feature/tl021-dashboard-insights`)
+- TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE** (on `feature/tl022-history-insights`)
 
 ## Completed
 
@@ -77,6 +78,16 @@ Diagnostics block, suite at 410 tests).
   - **Localization**: 12 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (TodayAtGlanceLabel, DownloadTodayLabel, UploadTodayLabel, TotalTodayLabel, TopAppNowLabel, TopAppApplicationLabel, TopAppCurrentLabel, TopAppNoDataLabel, TopAppPermissionDeniedLabel, TopAppUnavailableLabel, TopAppDownloadLabel, TopAppUploadLabel).
   - **Tests (+22 → 495/495)**: `DashboardInsightTests` — 7 Today tests, 11 Top App tests, 4 Lifecycle tests. All use `FakeHistoryService`, `FakeProcessCollector`, no live DNS or DB.
   - **Constraints respected**: No new timers/polling/ETW sessions/history polling; no new DB queries; no per-process metadata in hot path; no schema changes. All data from existing event pipelines.
+
+- TL-022 (History This Month + Today vs Yesterday + CSV Export, on `feature/tl022-history-insights`):
+  - **This Month range**: New `HistoryRange.ThisMonth` enum value using local calendar month semantics (first day of current month through current time, NOT rolling 30 days). `HistoryRangeCalculator.ToLocalDateRange` handles it with half-open `[monthStart, today+1)` using local calendar. `TrafficHistoryService` computes via bounded `SumDaily` over month range.
+  - **Today vs Yesterday comparison**: Compares Today's usage against Yesterday's usage scaled to equivalent elapsed local-day interval via `DayFraction` (ratio of current time through local day). Shows Today total, Yesterday-at-this-time equivalent, absolute difference, and percentage. Safe zero-denominator handling. Hidden when no comparison data (yesterday zero, day fraction zero, or not Today range).
+  - **CSV export**: `SaveFileDialog`, UTF-8 with BOM, header row (`Period,DownloadBytes,UploadBytes,TotalBytes`), invariant numeric values, deterministic column order. Uses same data as selected range (hourly for Today, daily for other ranges). Async file IO; IO error surfaces as localized non-crashing message box.
+  - **HistoryViewModel**: Extended with ThisMonth selection, comparison properties, export command. `ApplySnapshot` handles ThisMonth chart slicing, `UpdateComparison` computes scaled yesterday equivalent.
+  - **HistoryView.xaml**: This Month button in range bar, comparison border below chart (Today/Yesterday-at-this-time/Difference), Export CSV button with `AutomationProperties.Name`.
+  - **Localization**: 9 new keys in both `Strings.resx` and `Strings.fa-IR.resx`.
+  - **Tests (+14 → 509/509)**: `HistoryRangeCalculatorTests` (+4: ThisMonth range semantics), `HistoryViewModelTests` (+10: ThisMonth selection, comparison positive/negative/equal/zero-yesterday/hidden/day-fraction-scaling, localization).
+  - **Constraints respected**: No new timers/polling/ETW sessions; no new DB queries or schema changes; no monitoring/accounting changes.
 
 - TL-020 (Connections Readability & Usability, on `feature/tl020-connections-readability`):
   - **Hide Listeners filter** (`ConnectionsFilter.HideListeners`): Hides TCP listeners (`State == Listen`) and unconnected UDP entries (no remote endpoint) from the Connections list. Persisted via `ISettingsService` (`ConnectionsHideListeners` key), default `false`. Checkbox added to Connections page toolbar.
@@ -1062,7 +1073,7 @@ Diagnostics block, suite at 410 tests).
   formatter cases, metadata-provider tests, the TL-008 connection parser /
   key / selection / endpoint-formatter suites, and the TL-014
   SingleInstanceGuard tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 228 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 237 tests, all passing
   (incl. 6 dashboard-graph tests, 11 dashboard-insight tests (TL-021), 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests (+3 for HideListeners/EnableReverseDns), 10 TL-018
   History-ViewModel tests, 8 TL-010 FloatingWidget-ViewModel tests, 10 TL-010
@@ -1072,13 +1083,14 @@ Diagnostics block, suite at 410 tests).
   4 AlertsViewModel tests, 6 TL-014 regression tests for CPU optimizations,
   the TL-017 Connections in-place-update / allocation regression tests,
   and resource keys).
-- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 55 tests, all passing (TL-009:
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 60 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider;
   TL-014 FileLoggerProvider retention tests; TL-017 schema v1→v2 migration
   back-fill regression test; **TL-018** `HourlyHistoryBuilder` DST/hourly suite +
   `QuerySamplesAsync` range/plan tests + service hourly-snapshot test;
-  **TL-020** `DnsResolverService` bounded cache/concurrency/failure tests).
+  **TL-020** `DnsResolverService` bounded cache/concurrency/failure tests;
+  **TL-022** `HistoryRangeCalculator` ThisMonth range semantics suite).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
   `-- --process` (per-process, elevated or non-elevated),

@@ -58,7 +58,13 @@
                         Background="{StaticResource SurfaceAltBrush}"
                         Foreground="{StaticResource TextBrush}"
                         BorderBrush="{StaticResource BorderBrush}"
-                        Padding="10,4" Margin="6,0,0,0" />
+                        Padding="10,4" Margin="6,0" />
+                <Button Content="{Binding ThisMonthLabel}"
+                        Command="{Binding SelectRangeCommand}" CommandParameter="5"
+                        Background="{StaticResource SurfaceAltBrush}"
+                        Foreground="{StaticResource TextBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        Padding="10,4" Margin="6,0" />
             </StackPanel>
 
             <Grid>
@@ -139,6 +145,52 @@
                                Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
                 </Grid>
             </Border>
+
+            <Border Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1" Padding="14,12" Margin="0,12,0,0"
+                    Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding TodayVsYesterdayLabel}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,10" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding TodayLabel}" FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding ComparisonTodayText}" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" FlowDirection="LeftToRight" Margin="12,0">
+                            <TextBlock Text="{Binding YesterdayAtThisTimeLabel}" FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding ComparisonYesterdayText}" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" FlowDirection="LeftToRight">
+                            <TextBlock Text="{Binding DifferenceLabel}" FontSize="11"
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding ComparisonDifferenceText}" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="{Binding ComparisonPercentageText}" FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Button Content="{Binding ExportCsvLabel}"
+                    Command="{Binding ExportCsvCommand}"
+                    Background="{StaticResource SurfaceAltBrush}"
+                    Foreground="{StaticResource TextBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    Padding="14,6" Margin="0,12,0,0"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.Name="{Binding ExportCsvLabel}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

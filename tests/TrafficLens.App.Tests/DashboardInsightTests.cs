@@ -310,7 +310,9 @@ public sealed class DashboardInsightTests : IDisposable
         Last30Days: TrafficUsage.Empty,
         Lifetime: TrafficUsage.Empty,
         DailySeries: Array.Empty<DailyUsagePoint>(),
-        TodayHourly: Array.Empty<HourlyUsagePoint>());
+        TodayHourly: Array.Empty<HourlyUsagePoint>(),
+        ThisMonth: TrafficUsage.Empty,
+        DayFraction: 0);
 
     private static ProcessTrafficSample ProcessSample(
         int pid,

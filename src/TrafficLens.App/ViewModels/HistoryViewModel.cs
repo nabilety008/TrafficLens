@@ -1,7 +1,10 @@
 using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using TrafficLens.App.Commands;
 using TrafficLens.Core.Conversion;
 using TrafficLens.Core.History;
@@ -44,6 +47,14 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     private string _last7DaysLabel = string.Empty;
     private string _last30DaysLabel = string.Empty;
     private string _lifetimeLabel = string.Empty;
+    private string _thisMonthLabel = string.Empty;
+    private string _todayVsYesterdayLabel = string.Empty;
+    private string _yesterdayAtThisTimeLabel = string.Empty;
+    private string _differenceLabel = string.Empty;
+    private string _exportCsvLabel = string.Empty;
+    private string _exportSuccessfulLabel = string.Empty;
+    private string _exportFailedLabel = string.Empty;
+    private string _noComparisonDataLabel = string.Empty;
 
     private string _summaryDownloadText = "0 B";
     private string _summaryUploadText = "0 B";
@@ -54,6 +65,13 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
     private bool _isLast7DaysSelected;
     private bool _isLast30DaysSelected;
     private bool _isLifetimeSelected;
+    private bool _isThisMonthSelected;
+
+    private bool _hasComparison;
+    private string _comparisonTodayText = "0 B";
+    private string _comparisonYesterdayText = "0 B";
+    private string _comparisonDifferenceText = string.Empty;
+    private string _comparisonPercentageText = string.Empty;
 
     public HistoryViewModel(ITrafficHistoryService history, ILocalizationService localization)
     {
@@ -65,12 +83,14 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         _localization.CultureChanged += OnCultureChanged;
 
         SelectRangeCommand = new RelayCommand(ExecuteSelectRange);
+        ExportCsvCommand = new RelayCommand(ExecuteExportCsv);
 
         RefreshLocalizedStrings();
         ApplySnapshot(_history.GetSnapshot());
     }
 
     public ICommand SelectRangeCommand { get; }
+    public ICommand ExportCsvCommand { get; }
 
     public void Dispose()
     {
@@ -162,6 +182,54 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _lifetimeLabel, value);
     }
 
+    public string ThisMonthLabel
+    {
+        get => _thisMonthLabel;
+        private set => SetProperty(ref _thisMonthLabel, value);
+    }
+
+    public string TodayVsYesterdayLabel
+    {
+        get => _todayVsYesterdayLabel;
+        private set => SetProperty(ref _todayVsYesterdayLabel, value);
+    }
+
+    public string YesterdayAtThisTimeLabel
+    {
+        get => _yesterdayAtThisTimeLabel;
+        private set => SetProperty(ref _yesterdayAtThisTimeLabel, value);
+    }
+
+    public string DifferenceLabel
+    {
+        get => _differenceLabel;
+        private set => SetProperty(ref _differenceLabel, value);
+    }
+
+    public string ExportCsvLabel
+    {
+        get => _exportCsvLabel;
+        private set => SetProperty(ref _exportCsvLabel, value);
+    }
+
+    public string ExportSuccessfulLabel
+    {
+        get => _exportSuccessfulLabel;
+        private set => SetProperty(ref _exportSuccessfulLabel, value);
+    }
+
+    public string ExportFailedLabel
+    {
+        get => _exportFailedLabel;
+        private set => SetProperty(ref _exportFailedLabel, value);
+    }
+
+    public string NoComparisonDataLabel
+    {
+        get => _noComparisonDataLabel;
+        private set => SetProperty(ref _noComparisonDataLabel, value);
+    }
+
     public string SummaryDownloadText
     {
         get => _summaryDownloadText;
@@ -248,6 +316,42 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _isLifetimeSelected, value);
     }
 
+    public bool IsThisMonthSelected
+    {
+        get => _isThisMonthSelected;
+        private set => SetProperty(ref _isThisMonthSelected, value);
+    }
+
+    public bool HasComparison
+    {
+        get => _hasComparison;
+        private set => SetProperty(ref _hasComparison, value);
+    }
+
+    public string ComparisonTodayText
+    {
+        get => _comparisonTodayText;
+        private set => SetProperty(ref _comparisonTodayText, value);
+    }
+
+    public string ComparisonYesterdayText
+    {
+        get => _comparisonYesterdayText;
+        private set => SetProperty(ref _comparisonYesterdayText, value);
+    }
+
+    public string ComparisonDifferenceText
+    {
+        get => _comparisonDifferenceText;
+        private set => SetProperty(ref _comparisonDifferenceText, value);
+    }
+
+    public string ComparisonPercentageText
+    {
+        get => _comparisonPercentageText;
+        private set => SetProperty(ref _comparisonPercentageText, value);
+    }
+
     private void OnHistoryChanged(object? sender, EventArgs e) =>
         RunOnUi(() => ApplySnapshot(_history.GetSnapshot()));
 
@@ -285,6 +389,14 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         Last7DaysLabel = _localization["Last7DaysLabel"];
         Last30DaysLabel = _localization["Last30DaysLabel"];
         LifetimeLabel = _localization["LifetimeLabel"];
+        ThisMonthLabel = _localization["ThisMonthLabel"];
+        TodayVsYesterdayLabel = _localization["TodayVsYesterdayLabel"];
+        YesterdayAtThisTimeLabel = _localization["YesterdayAtThisTimeLabel"];
+        DifferenceLabel = _localization["DifferenceLabel"];
+        ExportCsvLabel = _localization["ExportCsvLabel"];
+        ExportSuccessfulLabel = _localization["ExportSuccessfulLabel"];
+        ExportFailedLabel = _localization["ExportFailedLabel"];
+        NoComparisonDataLabel = _localization["NoComparisonDataLabel"];
     }
 
     private void ExecuteSelectRange(object? parameter)
@@ -318,6 +430,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         IsLast7DaysSelected = _selectedRange == HistoryRange.Last7Days;
         IsLast30DaysSelected = _selectedRange == HistoryRange.Last30Days;
         IsLifetimeSelected = _selectedRange == HistoryRange.Lifetime;
+        IsThisMonthSelected = _selectedRange == HistoryRange.ThisMonth;
     }
 
     private void ApplySnapshot(HistorySnapshot snapshot)
@@ -333,9 +446,12 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         SummaryUploadText = DataSizeFormatter.Format(usage.UploadBytes, culture);
         SummaryTotalText = DataSizeFormatter.Format(usage.TotalBytes, culture);
 
-        var series = _selectedRange == HistoryRange.Today && snapshot.TodayHourly.Count > 0
-            ? MapHourly(snapshot.TodayHourly, culture)
-            : MapDaily(SliceSeries(snapshot.DailySeries, _selectedRange), culture);
+        var series = _selectedRange switch
+        {
+            HistoryRange.Today when snapshot.TodayHourly.Count > 0 => MapHourly(snapshot.TodayHourly, culture),
+            HistoryRange.ThisMonth => MapDaily(SliceSeries(snapshot.DailySeries, _selectedRange), culture),
+            _ => MapDaily(SliceSeries(snapshot.DailySeries, _selectedRange), culture)
+        };
         Series = series;
         ChartTitleLabel = _selectedRange == HistoryRange.Today ? HourlyTrafficLabel : DailyTrafficLabel;
 
@@ -350,6 +466,40 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
 
         ScaleMax = max;
         HasData = snapshot.Lifetime.TotalBytes > 0;
+
+        UpdateComparison(snapshot);
+    }
+
+    private void UpdateComparison(HistorySnapshot snapshot)
+    {
+        if (_selectedRange != HistoryRange.Today || snapshot.DayFraction <= 0 || snapshot.Yesterday.TotalBytes == 0)
+        {
+            HasComparison = false;
+            return;
+        }
+
+        HasComparison = true;
+        var culture = _localization.CurrentCulture;
+        var fraction = snapshot.DayFraction;
+        var yesterdayEquivalent = new TrafficUsage(
+            (long)Math.Round(snapshot.Yesterday.DownloadBytes * fraction),
+            (long)Math.Round(snapshot.Yesterday.UploadBytes * fraction));
+
+        ComparisonTodayText = DataSizeFormatter.Format(snapshot.Today.TotalBytes, culture);
+        ComparisonYesterdayText = DataSizeFormatter.Format(yesterdayEquivalent.TotalBytes, culture);
+
+        var diff = snapshot.Today.TotalBytes - yesterdayEquivalent.TotalBytes;
+        ComparisonDifferenceText = (diff >= 0 ? "+" : "−") + DataSizeFormatter.Format(Math.Abs(diff), culture);
+
+        if (yesterdayEquivalent.TotalBytes > 0)
+        {
+            var pct = (double)diff / yesterdayEquivalent.TotalBytes * 100;
+            ComparisonPercentageText = (pct >= 0 ? "+" : "") + pct.ToString("0.#", culture) + "%";
+        }
+        else
+        {
+            ComparisonPercentageText = diff > 0 ? "+" + DataSizeFormatter.Format(diff, culture) : "—";
+        }
     }
 
     private static IReadOnlyList<DailyUsagePoint> SliceSeries(
@@ -372,6 +522,8 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
                 return series.Where(p => p.Date == yesterday).ToList();
             case HistoryRange.Last7Days:
                 return series.Skip(Math.Max(0, series.Count - HistoryRangeCalculator.Last7DayCount)).ToList();
+            case HistoryRange.ThisMonth:
+                return series.Where(p => p.Date.Month == today.Month && p.Date.Year == today.Year).ToList();
             default:
                 return series;
         }
@@ -396,4 +548,64 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
                 p.DownloadBytes,
                 p.UploadBytes))
             .ToArray();
+
+    private void ExecuteExportCsv()
+    {
+        var snapshot = _history.GetSnapshot();
+        var series = _selectedRange switch
+        {
+            HistoryRange.Today when snapshot.TodayHourly.Count > 0 => Array.Empty<DailyUsagePoint>(),
+            _ => SliceSeries(snapshot.DailySeries, _selectedRange)
+        };
+
+        if (_selectedRange == HistoryRange.Today && snapshot.TodayHourly.Count > 0)
+        {
+            var hourlyPoints = snapshot.TodayHourly;
+            var lines = new List<string> { "Period,DownloadBytes,UploadBytes,TotalBytes" };
+            foreach (var p in hourlyPoints)
+            {
+                lines.Add($"{p.LocalHour:D2}:00,{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
+            }
+            WriteCsvFile(lines);
+        }
+        else
+        {
+            var lines = new List<string> { "Period,DownloadBytes,UploadBytes,TotalBytes" };
+            foreach (var p in series)
+            {
+                lines.Add($"{p.Date:yyyy-MM-dd},{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
+            }
+            WriteCsvFile(lines);
+        }
+    }
+
+    private void WriteCsvFile(List<string> lines)
+    {
+        var defaultName = $"TrafficLens-History-{DateTime.Now:yyyy-MM-dd}.csv";
+        var dialog = new SaveFileDialog
+        {
+            Filter = "CSV files (*.csv)|*.csv",
+            DefaultExt = ".csv",
+            FileName = defaultName
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var csv = string.Join("\n", lines);
+            File.WriteAllText(dialog.FileName, csv, new UTF8Encoding(true));
+        }
+        catch (Exception)
+        {
+            var msgBoxResult = MessageBox.Show(
+                ExportFailedLabel,
+                ExportCsvLabel,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
 }
