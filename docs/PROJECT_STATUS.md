@@ -21,7 +21,7 @@ label); UTC buckets stay unambiguous.
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary
 cards (both derive from the same committed `daily_usage`/`traffic_samples` rows).
-**432/432 tests** (212 Network / 53 Infrastructure / 167 App), Debug + Release
+**458/458 tests** (212 Network / 55 Infrastructure / 191 App), Debug + Release
 0 warnings / 0 errors. Real-Windows GUI verification
 (`scripts/tl018-verify.ps1`) PASS on the published single-file build: en-US and
 fa-IR hourly/daily chart titles with range-button switching, all 5 range
@@ -64,8 +64,18 @@ Diagnostics block, suite at 410 tests).
 - TL-016 Localization / Persian UI — **DONE** (localization merged `9dc8335`; branding/About continuation done on `master`)
 - TL-017 Performance Audit — **DONE** (merged into `master` at `21dabb9`)
 - TL-018 Current-Day Hourly History — **DONE** (on `feature/tl018-hourly-history`, ready to merge on approval)
+- TL-020 Connections Readability & Usability — **DONE** (on `feature/tl020-connections-readability`, ready to merge on approval)
 
 ## Completed
+
+- TL-020 (Connections Readability & Usability, on `feature/tl020-connections-readability`):
+  - **Hide Listeners filter** (`ConnectionsFilter.HideListeners`): Hides TCP listeners (`State == Listen`) and unconnected UDP entries (no remote endpoint) from the Connections list. Persisted via `ISettingsService` (`ConnectionsHideListeners` key), default `false`. Checkbox added to Connections page toolbar.
+  - **Copy actions**: Right-click context menu on connection rows with Copy Local Endpoint, Copy Remote Endpoint, Copy Remote IP, Copy Process Name. Keyboard accessible, localized (en-US + fa-IR).
+  - **Optional reverse DNS resolution** (`EnableReverseDns`): OFF by default, user-enabled, persisted via `ISettingsService` (`ConnectionsEnableReverseDns` key). Bounded DNS cache (TTL 30 min success / 5 min failure, max 1024 entries, 4 concurrent lookups, failure caching, cancellation-safe). Resolves remote IP → hostname for display as secondary info; raw IP always visible. Setting added to Settings page under General section.
+  - **Accessibility**: Keyboard navigation, Escape dismiss, `AutomationProperties.Name` on all interactive elements, focus order.
+  - **Performance**: Zero background cost when disabled; reuses existing `AdaptersChanged` events; no new timers/polls/workers; preserves TL-017 virtualization/diffing/visibility gating.
+  - **Tests** (+3 → 191 App tests): `Filter_HideListeners_HidesTcpListenersAndUnconnectedUdp`, `HideListeners_Setting_PersistsAndRestores`, `EnableReverseDns_DefaultFalse_PersistsAndRestores`.
+  - **GUI verified** (published single-file build): fresh profile onboarding, HideListeners toggle, EnableReverseDns toggle, copy actions, en-US/fa-IR/RTL, runtime language switch, all pages functional, graceful exit, no orphan process.
 
 - TL-017 (performance audit, M12, merged into `master` at `21dabb9`):
   - **Phase 1 — Connections optimization** (commit `03c47a4`): in-place
@@ -1042,21 +1052,23 @@ Diagnostics block, suite at 410 tests).
   formatter cases, metadata-provider tests, the TL-008 connection parser /
   key / selection / endpoint-formatter suites, and the TL-014
   SingleInstanceGuard tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 167 tests, all passing
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 191 tests, all passing
   (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
-  Connections-ViewModel tests, 10 TL-018 History-ViewModel tests, 8 TL-010
-  FloatingWidget-ViewModel tests, 10 TL-010 position-clamp tests, 10 TL-011
-  TrayBehavior tests, 4 TL-011 ApplicationExitCoordinator tests,
+  Connections-ViewModel tests (+3 for HideListeners/EnableReverseDns), 10 TL-018
+  History-ViewModel tests, 8 TL-010 FloatingWidget-ViewModel tests, 10 TL-010
+  position-clamp tests, 10 TL-011 TrayBehavior tests, 4 TL-011
+  ApplicationExitCoordinator tests,
   17 TL-012 AlertEngine tests + 3 alert-buffer tests, 10 AlertService tests,
   4 AlertsViewModel tests, 6 TL-014 regression tests for CPU optimizations,
   the TL-017 Connections in-place-update / allocation regression tests,
   and resource keys).
-- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 53 tests, all passing (TL-009:
+- `tests/TrafficLens.Infrastructure.Tests` — xUnit, 55 tests, all passing (TL-009:
   HistoryRangeCalculator, TrafficHistoryAccumulator, SqliteTrafficHistoryRepository
   over throwaway temp databases, TrafficHistoryService with fake collector/provider;
   TL-014 FileLoggerProvider retention tests; TL-017 schema v1→v2 migration
   back-fill regression test; **TL-018** `HourlyHistoryBuilder` DST/hourly suite +
-  `QuerySamplesAsync` range/plan tests + service hourly-snapshot test).
+  `QuerySamplesAsync` range/plan tests + service hourly-snapshot test;
+  **TL-020** `DnsResolverService` bounded cache/concurrency/failure tests).
 - `tests/TrafficLens.Network.Verification` — console harness; run with
   `dotnet run --project tests/TrafficLens.Network.Verification` (adapter),
   `-- --process` (per-process, elevated or non-elevated),

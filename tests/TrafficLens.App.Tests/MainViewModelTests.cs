@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using TrafficLens.App.Services;
 using TrafficLens.App.ViewModels;
 
@@ -12,10 +13,11 @@ public class MainViewModelTests
 
         var settings = new FakeSettingsService();
         var floatingWidget = new FakeFloatingWidgetService();
+        var dnsResolver = new DnsResolverService(NullLogger<DnsResolverService>.Instance);
 
         var dashboard = new DashboardViewModel(new FakeCollector(), new FakeAdapterProvider(), localization);
         var applications = new ApplicationsViewModel(new FakeProcessCollector(), localization, new ProcessIconResolver());
-        var connections = new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver());
+        var connections = new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver(), settings, dnsResolver);
         var history = new HistoryViewModel(new FakeHistoryService(), localization);
         var alerts = new AlertsViewModel(new FakeAlertService(), localization);
         var onboarding = new OnboardingViewModel(localization, settings);
@@ -83,6 +85,7 @@ public class MainViewModelTests
 
         var settings = new FakeSettingsService();
         var floatingWidget = new FakeFloatingWidgetService();
+        var dnsResolver = new DnsResolverService(NullLogger<DnsResolverService>.Instance);
         var onboarding = new OnboardingViewModel(localization, settings);
 
         using var vm = new MainViewModel(
@@ -90,7 +93,7 @@ public class MainViewModelTests
             settings,
             new DashboardViewModel(new FakeCollector(), new FakeAdapterProvider(), localization),
             new ApplicationsViewModel(new FakeProcessCollector(), localization, new ProcessIconResolver()),
-            new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver()),
+            new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver(), settings, dnsResolver),
             new HistoryViewModel(new FakeHistoryService(), localization),
             new AlertsViewModel(new FakeAlertService(), localization),
             new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService(), onboarding),
@@ -124,6 +127,7 @@ public class MainViewModelTests
         localization.SetCulture("en-US");
         var settings = new FakeSettingsService { SettingsFileExisted = false };
         var floatingWidget = new FakeFloatingWidgetService();
+        var dnsResolver = new DnsResolverService(NullLogger<DnsResolverService>.Instance);
         var onboarding = new OnboardingViewModel(localization, settings);
 
         using var vm = new MainViewModel(
@@ -131,7 +135,7 @@ public class MainViewModelTests
             settings,
             new DashboardViewModel(new FakeCollector(), new FakeAdapterProvider(), localization),
             new ApplicationsViewModel(new FakeProcessCollector(), localization, new ProcessIconResolver()),
-            new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver()),
+            new ConnectionsViewModel(new FakeConnectionProvider(), localization, new ProcessIconResolver(), settings, dnsResolver),
             new HistoryViewModel(new FakeHistoryService(), localization),
             new AlertsViewModel(new FakeAlertService(), localization),
             new SettingsViewModel(localization, settings, floatingWidget, new FakeAlertService(), new FakeStartupRegistrationService(), onboarding),

@@ -1,7 +1,48 @@
 # TrafficLens — CHANGELOG
- 
+  
 All notable changes are documented here in reverse chronological order.
- 
+
+## [Unreleased] — TL-020 (Connections Readability & Usability)
+
+Branch `feature/tl020-connections-readability` off master; implementation complete.
+
+### Added (TL-020)
+
+- **Hide Listeners filter** (`ConnectionFilter.HideListeners`). Hides TCP listeners (`State == Listen`) and unconnected UDP entries (no remote endpoint) from the Connections list. Pure function, no provider changes. Toggle via new toolbar checkbox in Connections view; persisted via `ISettingsService` (`ConnectionsHideListeners` key, default `false`).
+
+- **Copy actions** (local endpoint, remote endpoint, remote IP, process name). Right-click context menu on connection rows with keyboard-accessible copy commands. Localized (en-US + fa-IR).
+
+- **Optional reverse DNS resolution** (`EnableReverseDns` setting). OFF by default, user-enabled, persisted via `ISettingsService` (`ConnectionsEnableReverseDns` key). Bounded DNS cache (TTL 30 min success / 5 min failure, max 1024 entries, 4 concurrent lookups, failure caching, cancellation-safe). Resolves remote IP → hostname for display as secondary info; raw IP always visible. Setting in Settings page under General section. `DnsResolverService` with bounded cache, concurrency limiting, failure caching, cancellation safety.
+
+- **Localization (en-US + fa-IR).** Exact resource parity (new keys for HideListeners, Copy actions, EnableReverseDns); RTL layout correct; runtime language switch updates UI.
+
+- **Accessibility.** Keyboard navigation, focus order, Escape dismiss, `AutomationProperties.Name` on context menu items and checkboxes.
+
+- **Tests (+3 → 191 App tests).** `Filter_HideListeners_HidesTcpListenersAndUnconnectedUdp`, `HideListeners_Setting_PersistsAndRestores`, `EnableReverseDns_DefaultFalse_PersistsAndRestores`.
+
+### Changed (TL-020)
+
+- `ConnectionFilter` + `ConnectionFiltering.Matches`: added `HideListeners` filter (excludes TCP listeners + unconnected UDP).
+- `ConnectionsViewModel`: added `HideListeners` + `EnableReverseDns` properties (persisted via `ISettingsService`), `RefreshDnsForVisibleRows` + `ClearResolvedHostnames` for DNS integration.
+- `ConnectionRowViewModel`: added `ResolvedHostname` property + `SetResolvedHostname` method + copy commands (`CopyLocalEndpoint`, `CopyRemoteEndpoint`, `CopyRemoteIp`, `CopyProcessName`).
+- `ConnectionsView.xaml`: added context menu with copy actions, HideListeners checkbox, EnableReverseDns checkbox.
+- `SettingsViewModel` + `SettingsView.xaml`: added `EnableReverseDns` checkbox in General section (persisted via `ISettingsService`).
+- `DnsResolverService` (new): bounded DNS cache with TTL, concurrency limiting, failure caching, cancellation safety.
+- `SettingsViewModel.RefreshFromSettings`: loads `EnableReverseDns` from settings.
+
+### Scope (TL-020)
+
+- No new timers/polls/workers, no duplicate event subscriptions (reuses existing `AdaptersChanged`).
+- No monitoring/accounting behavior changes, no include-tunnels setting.
+- No auto-elevation, no ETW session changes, no fake process data.
+- Zero continuous background cost when disabled; reuses existing adapter events.
+
+### Verified (2026-09-20, branch source)
+
+- `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
+- **458/458 tests pass** (App 191 / Network 212 / Infrastructure 55).
+- Published single-file build GUI verified: fresh profile onboarding, HideListeners toggle, EnableReverseDns toggle, copy actions, en-US/fa-IR/RTL, runtime language switch, all pages functional, graceful exit, no orphan process.
+
 ## [Unreleased] — TL-019 (first-run Get Started + contextual clarity)
  
 Branch `feature/tl019-get-started` off master; implementation complete.
@@ -52,7 +93,7 @@ Branch `feature/tl019-get-started` off master; implementation complete.
 ### Verified (2026-09-20, branch source)
  
 - `dotnet build TrafficLens.sln` Debug + Release: **0 warnings / 0 errors**.
-- **455/455 tests pass** (App 188 / Network 212 / Infrastructure 55).
+- **458/458 tests pass** (App 191 / Network 212 / Infrastructure 55).
 - Published single-file build GUI verified: fresh profile auto-show, dismiss
   persistence, restart no auto-show, About/Settings manual reopen, en/fa-IR/RTL,
   runtime language switch while panel open, Dashboard/Applications/History/Alerts/

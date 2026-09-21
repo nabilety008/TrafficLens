@@ -324,6 +324,21 @@
   <data name="HideFloatingWidgetLabel" xml:space="preserve">
     <value>Hide Floating Widget</value>
   </data>
+  <data name="HideListenersLabel" xml:space="preserve">
+    <value>Hide listeners</value>
+  </data>
+  <data name="CopyLocalEndpointLabel" xml:space="preserve">
+    <value>Copy local endpoint</value>
+  </data>
+  <data name="CopyRemoteEndpointLabel" xml:space="preserve">
+    <value>Copy remote endpoint</value>
+  </data>
+  <data name="CopyRemoteIpLabel" xml:space="preserve">
+    <value>Copy remote IP</value>
+  </data>
+  <data name="CopyProcessNameLabel" xml:space="preserve">
+    <value>Copy process name</value>
+  </data>
   <data name="OpenTrafficLensLabel" xml:space="preserve">
     <value>Open TrafficLens</value>
   </data>
@@ -413,6 +428,9 @@
   </data>
   <data name="EnableFloatingWidgetLabel" xml:space="preserve">
     <value>Enable Floating Widget</value>
+  </data>
+  <data name="EnableReverseDnsLabel" xml:space="preserve">
+    <value>Resolve remote hostnames (reverse DNS)</value>
   </data>
   <data name="AlertsLabel" xml:space="preserve">
     <value>Alerts</value>

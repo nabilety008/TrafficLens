@@ -8,6 +8,21 @@
 
 ## Backlog
  
+### TL-020 Connections Readability & Usability — **DONE**
+- [x] `ConnectionFilter.HideListeners` (Core/Selection) — hides TCP `Listen` + unconnected UDP (`RemoteAddress` is null); pure function, no provider changes
+- [x] `HideListeners` filter option in `ConnectionsViewModel` + persisted via `ISettingsService` (`ConnectionsHideListeners` key, default `false`); toolbar checkbox in Connections view
+- [x] Copy actions (local endpoint, remote endpoint, remote IP, process name) via right-click context menu on connection rows; keyboard accessible, localized (en-US + fa-IR)
+- [x] `EnableReverseDns` setting (OFF by default, persisted via `ISettingsService` key `ConnectionsEnableReverseDns`); bounded DNS cache (TTL 30 min success / 5 min failure, max 1024 entries, 4 concurrent lookups, failure caching, cancellation-safe); DNS resolver service integrated into `ConnectionsViewModel`
+- [x] Settings page: EnableReverseDns checkbox in General section (persisted via existing `ISettingsService`; `ConnectionsEnableReverseDns` key)
+- [x] Localization: en-US + fa-IR parity for all new strings (HideListeners, Copy actions, EnableReverseDns); RTL layout correct; runtime culture switch updates UI
+- [x] Accessibility: keyboard nav, focus order, Escape dismiss, `AutomationProperties.Name` on context menu items and checkboxes
+- [x] Performance: zero background cost when disabled; reuses existing `AdaptersChanged` events; no new timers/polls/workers; preserves TL-017 virtualization/diffing/visibility gating
+- [x] Tests (+3 → 191 App tests): `Filter_HideListeners_HidesTcpListenersAndUnconnectedUdp`, `HideListeners_Setting_PersistsAndRestores`, `EnableReverseDns_DefaultFalse_PersistsAndRestores`
+- [x] Build Debug + Release: **0 warnings / 0 errors**
+- [x] Real Windows GUI verification (published single-file): fresh profile onboarding, HideListeners toggle, EnableReverseDns toggle, copy actions, en-US/fa-IR/RTL, runtime language switch, all pages functional, graceful exit, no orphan process
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG, ROADMAP)
+- **Status: done**
+
 ### TL-019 First-Run Get Started + Contextual Clarity — **DONE**
 - [x] `ISettingsService.SettingsFileExisted` property + `JsonSettingsService` impl — captures file existence at construction for fresh-vs-existing profile distinction
 - [x] `OnboardingSettings` pure helper (App/Services) — `ShouldAutoShow` (fresh profile only), `IsCompleted`, `MarkCompleted` (`HasCompletedOnboarding` key)

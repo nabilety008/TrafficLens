@@ -60,6 +60,11 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     private string _saveLabel = string.Empty;
     private string _resetToDefaultsLabel = string.Empty;
     private string _getStartedLabel = string.Empty;
+    private string _enableReverseDnsLabel = string.Empty;
+
+    public const string EnableReverseDnsKey = "ConnectionsEnableReverseDns";
+
+    private bool _enableReverseDns;
 
     public SettingsViewModel(
         ILocalizationService localization,
@@ -211,6 +216,18 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public bool EnableReverseDns
+    {
+        get => _enableReverseDns;
+        set
+        {
+            if (SetProperty(ref _enableReverseDns, value))
+            {
+                IsDirty = true;
+            }
+        }
+    }
+
     public string CooldownText
     {
         get => _cooldownText;
@@ -271,6 +288,12 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
     {
         get => _getStartedLabel;
         private set => SetProperty(ref _getStartedLabel, value);
+    }
+
+    public string EnableReverseDnsLabel
+    {
+        get => _enableReverseDnsLabel;
+        private set => SetProperty(ref _enableReverseDnsLabel, value);
     }
 
     public string SettingsTitle
@@ -538,6 +561,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _loadedStartMinimized = GetBool(JsonSettingsService.StartMinimizedKey, defaultValue: false);
         _loadedWidgetEnabled = GetBool(FloatingWidgetSettings.EnabledKey, defaultValue: false);
         _loadedWidgetAlwaysOnTop = GetBool(FloatingWidgetSettings.AlwaysOnTopKey, defaultValue: true);
+        _enableReverseDns = GetBool(ConnectionsViewModel.EnableReverseDnsKey, defaultValue: false);
 
         _language = language;
         _startWithWindows = _loadedStartWithWindows;
@@ -546,6 +570,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         _closeToTray = TrayBehavior.GetCloseToTray(_settings);
         _widgetEnabled = _loadedWidgetEnabled;
         _widgetAlwaysOnTop = _loadedWidgetAlwaysOnTop;
+        _enableReverseDns = GetBool(ConnectionsViewModel.EnableReverseDnsKey, defaultValue: false);
 
         _languageIndex = language.Equals("fa-IR", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
         OnPropertyChanged(nameof(LanguageIndex));
@@ -556,6 +581,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CloseToTray));
         OnPropertyChanged(nameof(WidgetEnabled));
         OnPropertyChanged(nameof(WidgetAlwaysOnTop));
+        OnPropertyChanged(nameof(EnableReverseDns));
 
         var config = AlertSettings.Load(_settings);
         _cooldownText = ((int)config.Cooldown.TotalMinutes).ToString(CultureInfo.InvariantCulture);
@@ -604,6 +630,7 @@ public sealed class SettingsViewModel : ViewModelBase, IDisposable
         SaveLabel = _localization["SaveLabel"];
         ResetToDefaultsLabel = _localization["ResetToDefaultsLabel"];
         GetStartedLabel = _localization["GetStartedReopen"];
+        EnableReverseDnsLabel = _localization["EnableReverseDnsLabel"];
 
         foreach (var rule in AlertRules)
         {

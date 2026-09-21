@@ -14,6 +14,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -75,7 +77,19 @@
                       MinWidth="160" Margin="6,0,16,0" />
         </Grid>
 
-        <Grid Grid.Row="3" Margin="0,0,0,8">
+        <CheckBox Grid.Row="3" Margin="0,8,0,0"
+                  Content="{Binding HideListenersLabel}"
+                  IsChecked="{Binding HideListeners}"
+                  AutomationProperties.Name="ConnectionsHideListeners"
+                  VerticalAlignment="Center" />
+
+        <CheckBox Grid.Row="4" Margin="0,8,0,0"
+                  Content="{Binding EnableReverseDnsLabel}"
+                  IsChecked="{Binding EnableReverseDns}"
+                  AutomationProperties.Name="ConnectionsEnableReverseDns"
+                  VerticalAlignment="Center" />
+
+        <Grid Grid.Row="6" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -92,7 +106,7 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="4" Background="{StaticResource SurfaceBrush}"
+        <Border Grid.Row="6" Background="{StaticResource SurfaceBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                 Padding="14,12" Margin="0,0,0,0"
                 Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
@@ -100,7 +114,7 @@
                        Foreground="{StaticResource TextMutedBrush}" />
         </Border>
 
-        <Grid Grid.Row="4"
+        <Grid Grid.Row="6"
               Visibility="{Binding IsNotEmpty, Converter={StaticResource BoolToVis}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -149,6 +163,22 @@
                                     BorderBrush="{StaticResource BorderBrush}"
                                     BorderThickness="1" Padding="8,6,8,6" Margin="0,0,0,6"
                                     AutomationProperties.Name="{Binding Name}">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{Binding Path=DataContext.CopyLocalEndpointLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Command="{Binding CopyLocalEndpointCommand}"
+                                                  AutomationProperties.Name="CopyLocalEndpoint" />
+                                        <MenuItem Header="{Binding Path=DataContext.CopyRemoteEndpointLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Command="{Binding CopyRemoteEndpointCommand}"
+                                                  AutomationProperties.Name="CopyRemoteEndpoint" />
+                                        <MenuItem Header="{Binding Path=DataContext.CopyRemoteIpLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Command="{Binding CopyRemoteIpCommand}"
+                                                  AutomationProperties.Name="CopyRemoteIp" />
+                                        <MenuItem Header="{Binding Path=DataContext.CopyProcessNameLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  Command="{Binding CopyProcessNameCommand}"
+                                                  AutomationProperties.Name="CopyProcessName" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="26" />
