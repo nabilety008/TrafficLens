@@ -39,9 +39,6 @@ AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersionShort}
 AppPublisher={#AppPublisher}
 AppCopyright=Copyright (C) 2026 TrafficLens Contributors
-; Placeholder project URLs — marketing/final branding will provide real ones.
-AppPublisherURL=https://github.com/
-AppSupportURL=https://github.com/
 ; Embedded product metadata for the Setup executable.
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription={#AppName} Network Monitor Setup
@@ -74,6 +71,7 @@ Uninstallable=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "persian"; MessagesFile: "Persian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
@@ -93,6 +91,10 @@ Filename: "{app}\{#AppExe}"; Description: "Launch {#AppName}"; Flags: nowait pos
 ; Only remove the empty install-dir shell (files themselves are removed by
 ; uninstaller). Nothing under %LOCALAPPDATA%\TrafficLens is ever deleted.
 Type: dirifempty; Name: "{app}"
+
+[CustomMessages]
+english.AppRunningWarning=TrafficLens is currently running. Please close it before continuing so the new files can be installed safely.%n%n(Your settings and history are never affected by an upgrade.)
+persian.AppRunningWarning=TrafficLens در حال حاضر در حال اجراست. لطفاً قبل از ادامه آن را ببندید تا پرونده‌های جدید به صورت ایمن نصب شوند.%n%n(تنظیمات و تاریخچه شما تحت تأثیر ارتقا قرار نمی‌گیرند.)
 
 [Code]
 // ---- Run check ------------------------------------------------------------
@@ -123,9 +125,7 @@ begin
   if (CurPageID = wpReady) and TrafficLensIsRunning() then
   begin
     MsgBox(
-      'TrafficLens is currently running. Please close it before continuing ' +
-      'so the new files can be installed safely.' + #13#10#13#10 +
-      '(Your settings and history are never affected by an upgrade.) ',
+      CustomMessage('AppRunningWarning'),
       mbInformation, MB_OK);
   end;
 end;
