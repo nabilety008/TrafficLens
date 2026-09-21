@@ -489,15 +489,20 @@ try {
     } else {
         Fail "9.1: Installer ProductName" "'$productName'"
     }
-    if ($productVer -match '^0\.1') {
+    if ($productVer -eq '0.1.1') {
         Pass "9.2: Installer ProductVersion = $productVer"
     } else {
-        Fail "9.2: Installer ProductVersion" "'$productVer'"
+        Fail "9.2: Installer ProductVersion" "'$productVer' (expected 0.1.1)"
     }
     if ($fileVer -eq '0.1.1') {
         Pass "9.3: Installer FileVersion = $fileVer"
     } else {
         Fail "9.3: Installer FileVersion" "'$fileVer'"
+    }
+    if ($productVer -eq $fileVer) {
+        Pass "9.4: ProductVersion matches FileVersion"
+    } else {
+        Fail "9.4: Version consistency" "ProductVersion='$productVer' FileVersion='$fileVer'"
     }
 
     # Check for placeholder URLs (known limitation)
