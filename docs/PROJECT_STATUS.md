@@ -4,19 +4,18 @@ Updated: 2026-09-21
 
 ## Current Milestone
 
-M13 (TL-018 current-day hourly history) is **complete on
-`feature/tl018-hourly-history`** (not yet merged): an additive, purely
-read-time refinement of the History page — Today now charts a DST-safe hourly
-series (UTC-hour slots counted from local-midnight UTC) derived on snapshot
-build from the existing minute-level `traffic_samples` table. No new
-collectors, no new timers (reuses the existing flush-driven `HistoryChanged`
-refresh), no schema change, and no new index: one bounded half-open UTC query
-`[localMidnightUtc, nowUtc)` over `traffic_samples` (built-in PK seek,
-verified by `EXPLAIN QUERY PLAN`), summed into `HourlyUsagePoint` buckets by
-`HourlyHistoryBuilder`, and rendered by the same `HistoryBarChartControl` via
-the new `HistoryChartPoint` label model. Spring-forward days show 23 UTC-hour
-slots (no skipped local label), fall-back days show 25 (duplicated local
-label); UTC buckets stay unambiguous.
+M16 (TL-023 release hardening) is **complete on
+`feature/tl023-release-hardening`**: a non-feature release-validation task
+that proves the current product can be built, installed, launched, exited,
+uninstalled, reinstalled, and verified safely as a release candidate.
+31-point deterministic lifecycle validation covers: SHA256 checksum, clean
+install, first launch, settings/DB initialization, graceful exit, no orphan
+processes/ETW, startup registration behavior, uninstall with user data
+preservation, reinstall with data loading, portable build, and installer
+metadata. Release pipeline (`build-release.ps1`) produces installer (69 MB),
+portable ZIP (68.6 MB), and SHA256 sidecar — all verified. 509/509 tests
+pass, Debug + Release 0 warnings/0 errors. Known limitations: unsigned build,
+installer English-only, placeholder project URLs.
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary
@@ -67,8 +66,16 @@ Diagnostics block, suite at 410 tests).
 - TL-020 Connections Readability & Usability — **DONE** (on `feature/tl020-connections-readability`, ready to merge on approval)
 - TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE** (on `feature/tl021-dashboard-insights`)
 - TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE** (on `feature/tl022-history-insights`)
+- TL-023 Release Hardening & Clean-Machine Validation — **DONE** (on `feature/tl023-release-hardening`)
 
 ## Completed
+
+- TL-023 (Release Hardening & Clean-Machine Validation, on `feature/tl023-release-hardening`):
+  - **Release lifecycle validation** (`scripts/tl023-release-lifecycle.ps1`): 31-point deterministic validation covering the full install → launch → exit → startup registration → uninstall → data preservation → reinstall → portable → checksum lifecycle. Uses isolated temp directories; cleans up after itself; preserves developer's real user data.
+  - **Results**: 31/31 PASS — SHA256 verified, clean install (exit 0, directory created, Start Menu present), first launch (window renders, settings/DB initialize), graceful exit (WM_CLOSE, no orphans, no ETW), startup registration (default-off, write/read, no duplicate on reinstall), uninstall (binaries removed, Start Menu removed, settings.json preserved, trafficlens.db preserved), reinstall (data loads, settings intact, app launches), portable build (extracts, launches, uses shared LocalAppData, no orphans), installer metadata (ProductName, ProductVersion, FileVersion correct).
+  - **Release pipeline**: `build-release.ps1` produces installer (69 MB), portable ZIP (68.6 MB), SHA256 sidecar — all verified. 509/509 tests pass, Debug + Release 0 warnings/0 errors.
+  - **Known limitations**: unsigned build, installer English-only, placeholder project URLs, WDAC blocks installed copy in enterprise environments (published build works).
+  - **Constraints respected**: zero new product polling loops, zero new collectors, zero new ETW sessions, zero DB/schema changes, zero monitoring/accounting changes, TL-017 optimizations untouched.
 
 - TL-021 (Dashboard "Today at a Glance" + "Top App Now", on `feature/tl021-dashboard-insights`):
   - **Today at a Glance**: Three-card grid on Dashboard showing Download/Upload/Total bytes used today, reading from `ITrafficHistoryService.HistoryChanged` → `HistorySnapshot.Today` (`TrafficUsage`). Formatted via `DataSizeFormatter.Format()`. No new polling; reuses existing History pipeline. Handles unavailable history service and unavailable snapshots (shows "0 B").

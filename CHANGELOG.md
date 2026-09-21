@@ -2,7 +2,36 @@
   
 All notable changes are documented here in reverse chronological order.
 
-## [Unreleased] — TL-022 (History This Month + Today vs Yesterday + CSV Export)
+## [Unreleased] — TL-023 (Release Hardening & Clean-Machine Validation)
+
+### Added (TL-023)
+
+- **Release lifecycle validation script** (`scripts/tl023-release-lifecycle.ps1`) — deterministic 32-point validation covering: SHA256 checksum verification, clean install, first launch, settings/DB initialization, graceful exit, no orphan processes/ETW sessions, startup registration behavior (default-off, write/read, no-duplicate-on-reinstall), uninstall with user data preservation, reinstall with data loading, portable build validation, installer metadata verification (ProductName, ProductVersion, FileVersion, version consistency assertion).
+
+- **Full release lifecycle verified**: install → launch → exit → startup registration → uninstall (data preserved) → reinstall (data loads) → portable build → checksum — all 32 checks pass.
+
+### Fixed (TL-023)
+
+- **Installer ProductVersion metadata** — `VersionInfoProductVersion` in `packaging/TrafficLens.iss` was set to `AppVersionShort` (which strips `0.1.1` → `0.1`). Changed to use `AppVersion` (`0.1.1`) so installer PE metadata consistently represents the full version. Added lifecycle test assertion (9.4) to verify ProductVersion matches FileVersion.
+
+### Known Limitations (TL-023)
+
+- **Installer placeholder URLs**: `AppPublisherURL` and `AppSupportURL` in `packaging/TrafficLens.iss` are `https://github.com/` (no specific repo). Marketing/final branding will provide real URLs. Not a release blocker.
+- **Installer English-only**: The Inno Setup installer UI is English-only. Persian installer language file is a separate task (TL-024).
+- **Unsigned build**: No code signing certificate. The installer and executable are unsigned. Real code signing is a future release-checklist item.
+- **WDAC enterprise environments**: The installed copy (from Inno Setup) may be blocked by enterprise Application Control policies on unsigned executables. The published build from the artifacts directory works normally. This is an environment constraint, not a product defect.
+- **Clean-VM not tested**: No disposable clean Windows VM available. Lifecycle validation approximates clean-machine behavior using isolated temp directories.
+
+### Constraints (TL-023)
+
+- Zero new product polling loops
+- Zero new collectors
+- Zero new ETW sessions
+- Zero DB/schema changes
+- Zero monitoring/accounting changes
+- No TL-017 optimizations modified
+
+---
 
 Branch `feature/tl022-history-insights` off master; implementation complete.
 

@@ -8,6 +8,23 @@
 
 ## Backlog
 
+### TL-023 Release Hardening & Clean-Machine Validation — **DONE**
+- [x] Release lifecycle validation script (`scripts/tl023-release-lifecycle.ps1`) — 31-point deterministic validation
+- [x] SHA256 checksum verification — computed hash matches sidecar file
+- [x] Clean install — installer exits 0, install directory created, Start Menu shortcut present
+- [x] First launch — installed app launches, window renders, settings directory initializes, database initializes
+- [x] Graceful exit — WM_CLOSE terminates process, no orphan processes, no orphan ETW sessions
+- [x] Startup registration — no entry by default, write/read with --minimized works, no duplicate on reinstall
+- [x] Uninstall + data preservation — program binaries removed, Start Menu removed, settings.json preserved, trafficlens.db preserved
+- [x] Reinstall + data loading — reinstall succeeds, settings intact, app launches with existing data
+- [x] Portable build — extracted, launches, uses shared LocalAppData settings, no orphan on exit
+- [x] Installer metadata — ProductName, ProductVersion, FileVersion correct; placeholder URLs documented
+- [x] Release pipeline — build-release.ps1 succeeds: 509/509 tests, 0 warnings/0 errors, installer 69 MB, portable 68.6 MB, SHA256 verified
+- [x] Regression tests — 509/509 PASS (212 Network + 60 Infrastructure + 237 App)
+- [x] Debug + Release builds — 0 warnings / 0 errors
+- [x] Docs updated (TASKS, PROJECT_STATUS, CHANGELOG, ROADMAP)
+- **Status: done**
+
 ### TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE**
 - [x] `HistoryRange.ThisMonth` enum value added — local calendar month semantics (first day of current month through current time), not rolling 30 days
 - [x] `HistoryRangeCalculator.ToLocalDateRange` handles `ThisMonth` — half-open `[monthStart, today+1)` using local calendar
