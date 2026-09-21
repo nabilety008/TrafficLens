@@ -7,7 +7,24 @@
 - Task IDs are stable. Do not renumber existing IDs.
 
 ## Backlog
- 
+
+### TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE**
+- [x] `DashboardViewModel` — added optional `ITrafficHistoryService?` and `IProcessTrafficCollector?` constructor parameters (backward-compatible, null-safe)
+- [x] "Today at a Glance" section — reads `HistorySnapshot.Today` (`TrafficUsage.DownloadBytes`/`UploadBytes`/`TotalBytes`), formatted via `DataSizeFormatter.Format()`; reuses existing `HistoryChanged` event, no new polling
+- [x] "Top App Now" section — reads `ProcessSampleSelection.TopConsumer()` from `IProcessTrafficCollector` snapshots; reuses existing `SamplesReady` event; shows app name, total rate, download/upload rates; idle/permission-denied/unavailable states
+- [x] `MainWindow.xaml` — three-card Today grid + Top App card between tunnel hint and Active Adapter section; all numeric content `FlowDirection="LeftToRight"` for RTL compatibility
+- [x] Localization — 12 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (TodayAtGlanceLabel, DownloadTodayLabel, UploadTodayLabel, TotalTodayLabel, TopAppNowLabel, TopAppApplicationLabel, TopAppCurrentLabel, TopAppNoDataLabel, TopAppPermissionDeniedLabel, TopAppUnavailableLabel, TopAppDownloadLabel, TopAppUploadLabel)
+- [x] `RefreshToday()` — checks `_historyService.IsAvailable` and `snapshot.IsAvailable` before reading usage data; zero-fills on unavailable
+- [x] `RefreshTopApp()` — sets `TopAppStatusText = TopAppNoDataLabel` on idle; clears rate/name text on permission-denied/unavailable; updates from samples on `SamplesReady`
+- [x] Event wiring — `HistoryChanged`, `SamplesReady`, `StatusChanged` subscriptions in constructor, unsubscribed in `Dispose()`; gated by `_isActive` for event-driven updates
+- [x] Tests (+22 → 495/495): `DashboardInsightTests` — 7 Today tests (A-F: formatted bytes, empty, unavailable, snapshot unavailable, history changed event, localization, medium size), 11 Top App tests (G-P: active process, idle, empty, permission denied, failed, stopped, samples ready event, top consumer selection, recovery, localization, no service), 4 Lifecycle tests (Q-T: set-active gating, dispose unsubscribe, no-history constructor)
+- [x] Build Debug + Release: **0 warnings / 0 errors**
+- [x] GUI verification: Dashboard layout correct, Today/Top App sections visible, en-US/fa-IR/RTL verified, runtime language switching correct, PermissionDenied/unavailable states verified
+- [x] No new timers/polling/ETW sessions/history polling — all data from existing event pipelines
+- [x] TL-017 through TL-020 regression-free — full test suite 495/495 PASS
+- [x] Docs updated (PROJECT_STATUS, TASKS, CHANGELOG)
+- **Status: done**
+
 ### TL-020 Connections Readability & Usability — **DONE**
 - [x] `ConnectionFilter.HideListeners` (Core/Selection) — hides TCP `Listen` + unconnected UDP (`RemoteAddress` is null); pure function, no provider changes
 - [x] `HideListeners` filter option in `ConnectionsViewModel` + persisted via `ISettingsService` (`ConnectionsHideListeners` key, default `false`); toolbar checkbox in Connections view

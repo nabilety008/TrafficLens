@@ -1,6 +1,6 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-19
+Updated: 2026-09-21
 
 ## Current Milestone
 
@@ -65,8 +65,18 @@ Diagnostics block, suite at 410 tests).
 - TL-017 Performance Audit — **DONE** (merged into `master` at `21dabb9`)
 - TL-018 Current-Day Hourly History — **DONE** (on `feature/tl018-hourly-history`, ready to merge on approval)
 - TL-020 Connections Readability & Usability — **DONE** (on `feature/tl020-connections-readability`, ready to merge on approval)
+- TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE** (on `feature/tl021-dashboard-insights`)
 
 ## Completed
+
+- TL-021 (Dashboard "Today at a Glance" + "Top App Now", on `feature/tl021-dashboard-insights`):
+  - **Today at a Glance**: Three-card grid on Dashboard showing Download/Upload/Total bytes used today, reading from `ITrafficHistoryService.HistoryChanged` → `HistorySnapshot.Today` (`TrafficUsage`). Formatted via `DataSizeFormatter.Format()`. No new polling; reuses existing History pipeline. Handles unavailable history service and unavailable snapshots (shows "0 B").
+  - **Top App Now**: Card below Today showing the process with highest current throughput (`ProcessSampleSelection.TopConsumer()`). Reads from `IProcessTrafficCollector.SamplesReady` event. Shows app name, total rate, download/upload rates. Idle state (no active traffic) shows localized "No active traffic" text. Permission-denied and unavailable states handled with appropriate localized warnings.
+  - **DashboardViewModel**: Constructor extended with optional `ITrafficHistoryService?` and `IProcessTrafficCollector?` parameters (backward-compatible, DI-resolved). Event subscriptions (`HistoryChanged`, `SamplesReady`, `StatusChanged`) in constructor, unsubscribed in `Dispose()`. All updates gated by `_isActive`.
+  - **MainWindow.xaml**: New sections inserted between tunnel hint and Active Adapter section. Three-card Today grid (Download/Upload/Total) + Top App card. All numeric content `FlowDirection="LeftToRight"` for RTL compatibility. `AutomationProperties.Name` on all cards.
+  - **Localization**: 12 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (TodayAtGlanceLabel, DownloadTodayLabel, UploadTodayLabel, TotalTodayLabel, TopAppNowLabel, TopAppApplicationLabel, TopAppCurrentLabel, TopAppNoDataLabel, TopAppPermissionDeniedLabel, TopAppUnavailableLabel, TopAppDownloadLabel, TopAppUploadLabel).
+  - **Tests (+22 → 495/495)**: `DashboardInsightTests` — 7 Today tests, 11 Top App tests, 4 Lifecycle tests. All use `FakeHistoryService`, `FakeProcessCollector`, no live DNS or DB.
+  - **Constraints respected**: No new timers/polling/ETW sessions/history polling; no new DB queries; no per-process metadata in hot path; no schema changes. All data from existing event pipelines.
 
 - TL-020 (Connections Readability & Usability, on `feature/tl020-connections-readability`):
   - **Hide Listeners filter** (`ConnectionsFilter.HideListeners`): Hides TCP listeners (`State == Listen`) and unconnected UDP entries (no remote endpoint) from the Connections list. Persisted via `ISettingsService` (`ConnectionsHideListeners` key), default `false`. Checkbox added to Connections page toolbar.
@@ -1052,8 +1062,8 @@ Diagnostics block, suite at 410 tests).
   formatter cases, metadata-provider tests, the TL-008 connection parser /
   key / selection / endpoint-formatter suites, and the TL-014
   SingleInstanceGuard tests).
-- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 191 tests, all passing
-  (incl. 6 dashboard-graph tests, 16 Applications-ViewModel tests, the TL-008
+- `tests/TrafficLens.App.Tests` — xUnit (net8.0-windows, WPF), 228 tests, all passing
+  (incl. 6 dashboard-graph tests, 11 dashboard-insight tests (TL-021), 16 Applications-ViewModel tests, the TL-008
   Connections-ViewModel tests (+3 for HideListeners/EnableReverseDns), 10 TL-018
   History-ViewModel tests, 8 TL-010 FloatingWidget-ViewModel tests, 10 TL-010
   position-clamp tests, 10 TL-011 TrayBehavior tests, 4 TL-011
