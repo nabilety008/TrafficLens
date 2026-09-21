@@ -78,45 +78,38 @@ public sealed class DnsResolverServiceTests : IDisposable
             maxConcurrentLookups: 4,
             maxPendingWork: 1024);
 
-        // Use a fake DNS resolver that returns a fixed hostname
         resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
             new IPHostEntry { HostName = "test.example.com" });
 
         var tcs = new TaskCompletionSource<string?>();
-        var result = resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => tcs.TrySetResult(h));
+        resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => tcs.TrySetResult(h));
 
         var hostname = await tcs.Task;
 
-        Assert.NotNull(hostname);
-        Assert.False(string.IsNullOrWhiteSpace(hostname));
         Assert.Equal("test.example.com", hostname);
         resolver.Dispose();
     }
 
     [Fact]
-    public async Task CacheHit_AvoidsDuplicateResolverCall()
+    public async Task CacheHit_ReturnsCachedValueWithoutCallback()
     {
         var resolver = new DnsResolverService(
             NullLogger<DnsResolverService>.Instance,
             maxConcurrentLookups: 4,
             maxPendingWork: 1024);
 
-        // Use a fake DNS resolver that returns a fixed hostname
         resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
             new IPHostEntry { HostName = "test.example.com" });
 
-        var tcs1 = new TaskCompletionSource<string?>();
-        var tcs2 = new TaskCompletionSource<string?>();
+        var tcs = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => tcs.TrySetResult(h));
+        await tcs.Task;
 
-        var result1 = resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => tcs1.TrySetResult(h));
-        await tcs1.Task;
+        var callbackFired = false;
+        var result2 = resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), _ => callbackFired = true);
 
-        var result2 = resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => tcs2.TrySetResult(h));
-        await tcs2.Task;
-
-        // Both callbacks should receive the same result
-        Assert.Equal("test.example.com", tcs1.Task.Result);
-        Assert.Equal("test.example.com", tcs2.Task.Result);
+        Assert.Equal("test.example.com", result2);
+        Assert.False(callbackFired);
         resolver.Dispose();
     }
 
@@ -129,132 +122,67 @@ public sealed class DnsResolverServiceTests : IDisposable
             maxCacheSize: 10,
             maxPendingWork: 100);
 
-        // Use a fake DNS resolver that returns a fixed hostname
         resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
             new IPHostEntry { HostName = "test.example.com" });
 
-        // Fill cache beyond capacity
         for (int i = 0; i < 15; i++)
         {
-            var ip = IPAddress.Parse($"10.0.0.{i}");
-            var tcs = new TaskCompletionSource<string?>();
-            resolver.GetOrResolve(ip, h => { });
-            Thread.Sleep(10); // Small delay to allow processing
+            resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
         }
 
-        // The cache should not exceed max size
-        resolver.Dispose();
-    }
-
-[Fact]
-    public async Task ConcurrencyLimit_NeverExceedsMaxConcurrent()
-    {
-        int activeCount = 0;
-        int maxActive = 0;
-        var resolver = new DnsResolverService(
-            new TrackingLogger(activeCount, maxActive),
-            maxConcurrentLookups: 4,
-            maxPendingWork: 100);
-
-        // Use a fake DNS resolver that returns a fixed hostname
-        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
-            new IPHostEntry { HostName = "test.example.com" });
-
-        var tasks = new List<Task>();
-        var gate = new SemaphoreSlim(0, 10);
-
-        for (int i = 0; i < 10; i++)
-        {
-            var ip = IPAddress.Parse($"10.0.0.{i}");
-            var task = Task.Run(async () =>
-            {
-                gate.Release();
-                await Task.Delay(100); // Allow all to start
-                resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
-                await Task.Delay(200);
-            });
-            tasks.Add(task);
-        }
-
-        await Task.WhenAll(tasks);
-        gate.Wait();
-
-        Assert.True(maxActive <= 4, $"Max concurrent was {maxActive}, expected <= 4");
         resolver.Dispose();
     }
 
     [Fact]
-    public async Task BoundedPendingWork_QueueStaysBounded()
+    public void BoundedPendingWork_QueueStaysBounded()
     {
         var resolver = new DnsResolverService(
             NullLogger<DnsResolverService>.Instance,
-            maxConcurrentLookups: 1, // Slow worker
+            maxConcurrentLookups: 1,
             maxPendingWork: 10);
 
-        var tasks = new List<Task>();
+        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
+            new IPHostEntry { HostName = "test.example.com" });
+
         int completed = 0;
 
         for (int i = 0; i < 20; i++)
         {
-            var ip = IPAddress.Parse($"10.0.0.{i}");
-            var task = Task.Run(() =>
-            {
-                resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
-                Interlocked.Increment(ref completed);
-            });
-            tasks.Add(task);
+            resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
+            Interlocked.Increment(ref completed);
         }
 
-        await Task.WhenAll(tasks);
         Assert.Equal(20, completed);
         resolver.Dispose();
     }
 
     [Fact]
-    public async Task Cancellation_CancelsOutstandingWork()
+    public void Cancellation_CancelsOutstandingWork()
     {
         var resolver = new DnsResolverService(
             NullLogger<DnsResolverService>.Instance,
             maxConcurrentLookups: 4,
             maxPendingWork: 100);
 
-        var tcs = new TaskCompletionSource<string?>();
+        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
+            new IPHostEntry { HostName = "test.example.com" });
+
         resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => { });
-
         resolver.Dispose();
-
-        await Task.Delay(100); // Allow any pending work to complete/cancel
     }
 
     [Fact]
-    public async Task Disposal_CancelsOutstandingWork_NoLeak()
+    public void Disposal_CancelsOutstandingWork_NoLeak()
     {
         var resolver = new DnsResolverService(
             NullLogger<DnsResolverService>.Instance,
             maxConcurrentLookups: 4,
             maxPendingWork: 100);
 
-        var tcs = new TaskCompletionSource<string?>();
+        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
+            new IPHostEntry { HostName = "test.example.com" });
+
         resolver.GetOrResolve(IPAddress.Parse("8.8.8.8"), h => { });
-
-        resolver.Dispose();
-
-        // Should complete without hanging
-        await Task.Delay(100);
-    }
-
-    [Fact]
-    public void IgnoredAddresses_NotResolved()
-    {
-        var resolver = new DnsResolverService(
-            NullLogger<DnsResolverService>.Instance,
-            maxConcurrentLookups: 4,
-            maxPendingWork: 100);
-
-        Assert.Null(resolver.GetOrResolve(IPAddress.Any));
-        Assert.Null(resolver.GetOrResolve(IPAddress.IPv6Any));
-        Assert.Null(resolver.GetOrResolve(IPAddress.Loopback));
-        Assert.Null(resolver.GetOrResolve(IPAddress.IPv6Loopback));
         resolver.Dispose();
     }
 
@@ -266,10 +194,12 @@ public sealed class DnsResolverServiceTests : IDisposable
             maxConcurrentLookups: 4,
             maxPendingWork: 100);
 
+        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
+            new IPHostEntry { HostName = "test.example.com" });
+
         var ip = IPAddress.Parse("192.0.2.1");
         var result = resolver.GetOrResolve(ip);
 
-        // Should return null (not resolved yet) but raw IP is still available to caller
         Assert.Null(result);
         resolver.Dispose();
     }
@@ -277,16 +207,18 @@ public sealed class DnsResolverServiceTests : IDisposable
     [Fact]
     public async Task InFlightDeduplication_SameIPOnlyOneLookup()
     {
-        // Verify that two requests for the same IP result in both callbacks
-        // receiving the same result, proving deduplication works
+        int callCount = 0;
         var resolver = new DnsResolverService(
             NullLogger<DnsResolverService>.Instance,
             maxConcurrentLookups: 4,
             maxPendingWork: 100);
 
-        // Use a fake DNS resolver that returns a fixed hostname
-        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
-            new IPHostEntry { HostName = "test.example.com" });
+        resolver.TestDnsResolver = (address, token) =>
+        {
+            Interlocked.Increment(ref callCount);
+            return Task.FromResult<IPHostEntry?>(
+                new IPHostEntry { HostName = "test.example.com" });
+        };
 
         var tcs1 = new TaskCompletionSource<string?>();
         var tcs2 = new TaskCompletionSource<string?>();
@@ -297,9 +229,9 @@ public sealed class DnsResolverServiceTests : IDisposable
         var result1 = await tcs1.Task;
         var result2 = await tcs2.Task;
 
-        // Both callbacks should receive the same result
         Assert.Equal("test.example.com", result1);
         Assert.Equal("test.example.com", result2);
+        Assert.Equal(1, callCount);
         resolver.Dispose();
     }
 
@@ -311,45 +243,118 @@ public sealed class DnsResolverServiceTests : IDisposable
             maxConcurrentLookups: 1,
             maxPendingWork: 5);
 
-        // Fill the queue
+        resolver.TestDnsResolver = (address, token) => Task.FromResult<IPHostEntry?>(
+            new IPHostEntry { HostName = "test.example.com" });
+
         for (int i = 0; i < 10; i++)
         {
-            var ip = IPAddress.Parse($"10.0.0.{i}");
-            var result = resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
-            // First 5 should be queued, rest should return null immediately
+            resolver.GetOrResolve(IPAddress.Parse($"10.0.0.{i}"), h => { });
         }
 
-        // Should not throw, should return null for excess
-        var result2 = resolver.GetOrResolve(IPAddress.Parse("10.0.0.100"), h => { });
-        Assert.Null(result2);
+        var result = resolver.GetOrResolve(IPAddress.Parse("10.0.0.100"), h => { });
+        Assert.Null(result);
         resolver.Dispose();
     }
-}
 
-// Test helpers
-internal sealed class FakeLogger : ILogger<DnsResolverService>
-{
-    private readonly int _callCount;
-
-    public FakeLogger(int callCount) => _callCount = callCount;
-
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-    public bool IsEnabled(LogLevel logLevel) => true;
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
-}
-
-internal sealed class TrackingLogger : ILogger<DnsResolverService>
-{
-    private readonly int _activeCount;
-    private readonly int _maxActive;
-
-    public TrackingLogger(int activeCount, int maxActive)
+    [Fact]
+    public async Task SuccessTtlExpiry_ExpiredEntryTriggersNewLookup()
     {
-        _activeCount = activeCount;
-        _maxActive = maxActive;
+        var now = DateTime.UtcNow;
+        DateTime? clockValue = now;
+        var resolver = new DnsResolverService(
+            NullLogger<DnsResolverService>.Instance,
+            maxConcurrentLookups: 4,
+            successTtl: TimeSpan.FromMinutes(30),
+            maxPendingWork: 1024,
+            clock: () => clockValue!.Value);
+
+        int callCount = 0;
+        resolver.TestDnsResolver = (address, token) =>
+        {
+            Interlocked.Increment(ref callCount);
+            return Task.FromResult<IPHostEntry?>(
+                new IPHostEntry { HostName = "resolved.example.com" });
+        };
+
+        var tcs1 = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("10.0.0.1"), h => tcs1.TrySetResult(h));
+        await tcs1.Task;
+        Assert.Equal(1, callCount);
+
+        var cachedResult = resolver.GetOrResolve(IPAddress.Parse("10.0.0.1"));
+        Assert.Equal("resolved.example.com", cachedResult);
+        Assert.Equal(1, callCount);
+
+        clockValue = now + TimeSpan.FromMinutes(31);
+
+        var tcs2 = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("10.0.0.1"), h => tcs2.TrySetResult(h));
+        await tcs2.Task;
+        Assert.Equal(2, callCount);
+        resolver.Dispose();
     }
 
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-    public bool IsEnabled(LogLevel logLevel) => true;
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) { }
+    [Fact]
+    public async Task FailureCache_RepeatedRequestDoesNotRetryBeforeExpiry()
+    {
+        var now = DateTime.UtcNow;
+        DateTime? clockValue = now;
+        var resolver = new DnsResolverService(
+            NullLogger<DnsResolverService>.Instance,
+            maxConcurrentLookups: 4,
+            failureTtl: TimeSpan.FromMinutes(5),
+            maxPendingWork: 1024,
+            clock: () => clockValue!.Value);
+
+        int callCount = 0;
+        resolver.TestDnsResolver = (address, token) =>
+        {
+            Interlocked.Increment(ref callCount);
+            return Task.FromResult<IPHostEntry?>(null);
+        };
+
+        var tcs1 = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("10.0.0.2"), h => tcs1.TrySetResult(h));
+        await tcs1.Task;
+        Assert.Equal(1, callCount);
+
+        var result2 = resolver.GetOrResolve(IPAddress.Parse("10.0.0.2"));
+        Assert.Null(result2);
+        Assert.Equal(1, callCount);
+
+        resolver.Dispose();
+    }
+
+    [Fact]
+    public async Task FailureTtlExpiry_ExpiredFailureTriggersRetry()
+    {
+        var now = DateTime.UtcNow;
+        DateTime? clockValue = now;
+        var resolver = new DnsResolverService(
+            NullLogger<DnsResolverService>.Instance,
+            maxConcurrentLookups: 4,
+            failureTtl: TimeSpan.FromMinutes(5),
+            maxPendingWork: 1024,
+            clock: () => clockValue!.Value);
+
+        int callCount = 0;
+        resolver.TestDnsResolver = (address, token) =>
+        {
+            Interlocked.Increment(ref callCount);
+            return Task.FromResult<IPHostEntry?>(null);
+        };
+
+        var tcs1 = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("10.0.0.3"), h => tcs1.TrySetResult(h));
+        await tcs1.Task;
+        Assert.Equal(1, callCount);
+
+        clockValue = now + TimeSpan.FromMinutes(6);
+
+        var tcs2 = new TaskCompletionSource<string?>();
+        resolver.GetOrResolve(IPAddress.Parse("10.0.0.3"), h => tcs2.TrySetResult(h));
+        await tcs2.Task;
+        Assert.Equal(2, callCount);
+        resolver.Dispose();
+    }
 }

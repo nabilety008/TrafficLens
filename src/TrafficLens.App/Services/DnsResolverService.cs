@@ -19,6 +19,7 @@ public sealed class DnsResolverService : IDisposable
     private readonly TimeSpan _failureTtl;
     private readonly int _maxCacheSize;
     private readonly int _maxPendingWork;
+    private readonly Func<DateTime> _clock;
     private readonly ConcurrentDictionary<IPAddress, DnsCacheEntry> _cache = new();
     private readonly ConcurrentDictionary<IPAddress, TaskCompletionSource<string?>> _inFlight = new();
     private readonly Channel<DnsWorkItem> _workQueue;
@@ -46,7 +47,8 @@ public sealed class DnsResolverService : IDisposable
         TimeSpan? successTtl = null,
         TimeSpan? failureTtl = null,
         int maxCacheSize = 1024,
-        int maxPendingWork = 1024)
+        int maxPendingWork = 1024,
+        Func<DateTime>? clock = null)
     {
         if (maxConcurrentLookups <= 0)
         {
@@ -66,11 +68,12 @@ public sealed class DnsResolverService : IDisposable
         _failureTtl = failureTtl ?? TimeSpan.FromMinutes(5);
         _maxCacheSize = maxCacheSize;
         _maxPendingWork = maxPendingWork;
+        _clock = clock ?? (() => DateTime.UtcNow);
 
         // Bounded channel for pending DNS work
         var options = new BoundedChannelOptions(maxPendingWork)
         {
-            FullMode = BoundedChannelFullMode.Wait, // Wait if full (bounded backpressure)
+            FullMode = BoundedChannelFullMode.Wait,
             SingleReader = false,
             SingleWriter = false
         };
@@ -101,16 +104,21 @@ public sealed class DnsResolverService : IDisposable
         }
 
         // Check cache first
-        if (_cache.TryGetValue(address, out var cachedEntry) && !cachedEntry.IsExpired)
+        if (_cache.TryGetValue(address, out var cachedEntry) && !cachedEntry.IsExpired(_clock()))
         {
             return cachedEntry.Hostname;
         }
 
         // Check if there's already an in-flight lookup for this address
-        var existingTcs = _inFlight.GetOrAdd(address, _ => new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously));
+        bool newlyCreated = false;
+        var existingTcs = _inFlight.GetOrAdd(address, _ =>
+        {
+            newlyCreated = true;
+            return new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        });
         
         // If we created a new TCS, queue the work
-        if (ReferenceEquals(existingTcs, _inFlight[address]))
+        if (newlyCreated)
         {
             var workItem = new DnsWorkItem { Address = address, Completion = existingTcs };
             
@@ -139,7 +147,7 @@ public sealed class DnsResolverService : IDisposable
 
         // Return cached value if available (may be null if not yet resolved)
         _cache.TryGetValue(address, out var entry);
-        return entry?.IsExpired == false ? entry.Hostname : null;
+        return entry?.IsExpired(_clock()) == false ? entry.Hostname : null;
     }
 
     /// <summary>
@@ -161,7 +169,7 @@ public sealed class DnsResolverService : IDisposable
             try
             {
                 // Double-check cache (another worker might have resolved it)
-                if (_cache.TryGetValue(address, out var entry) && !entry.IsExpired)
+                if (_cache.TryGetValue(address, out var entry) && !entry.IsExpired(_clock()))
                 {
                     workItem.Completion.TrySetResult(entry.Hostname);
                     continue;
@@ -193,14 +201,14 @@ public sealed class DnsResolverService : IDisposable
                 var cacheEntry = new DnsCacheEntry
                 {
                     Hostname = success ? hostname : null,
-                    Timestamp = DateTime.UtcNow,
+                    ExpiresAt = _clock() + (success ? _successTtl : _failureTtl),
                     IsNegative = !success
                 };
 
-                // Evict oldest if cache is full (LRU by timestamp)
+                // Evict oldest if cache is full (LRU by earliest expiry)
                 if (_cache.Count >= _maxCacheSize)
                 {
-                    var oldest = _cache.OrderBy(kvp => kvp.Value.Timestamp).FirstOrDefault();
+                    var oldest = _cache.OrderBy(kvp => kvp.Value.ExpiresAt).FirstOrDefault();
                     if (!oldest.Equals(default(KeyValuePair<IPAddress, DnsCacheEntry>)))
                     {
                         _cache.TryRemove(oldest.Key, out _);
@@ -208,6 +216,7 @@ public sealed class DnsResolverService : IDisposable
                 }
 
                 _cache[address] = cacheEntry;
+                _inFlight.TryRemove(address, out _);
                 workItem.Completion.TrySetResult(cacheEntry.Hostname);
             }
             catch (OperationCanceledException)
@@ -259,12 +268,9 @@ public sealed class DnsResolverService : IDisposable
     private sealed class DnsCacheEntry
     {
         public string? Hostname { get; init; }
-        public DateTime Timestamp { get; init; }
+        public DateTime ExpiresAt { get; init; }
         public bool IsNegative { get; init; }
 
-        public bool IsExpired =>
-            IsNegative
-                ? DateTime.UtcNow - Timestamp > TimeSpan.FromMinutes(5) // Failure TTL
-                : DateTime.UtcNow - Timestamp > TimeSpan.FromMinutes(30); // Success TTL
+        public bool IsExpired(DateTime now) => now >= ExpiresAt;
     }
 }
