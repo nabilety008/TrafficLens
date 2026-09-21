@@ -22,6 +22,7 @@
 | M13 | Current-day hourly history | Done (TL-018; branch `feature/tl018-hourly-history`, ready to merge on approval) |
 | M14 | Connections Readability & Usability | Done (TL-020; branch `feature/tl020-connections-readability`) |
 | M14 | First-run Get Started + contextual tunnel hint | Done (TL-019; branch `feature/tl019-get-started`) |
+| M15 | History insights + CSV export | Done (TL-022; branch `feature/tl022-history-insights`) |
 
 ## Guidance
 
