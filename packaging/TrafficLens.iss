@@ -74,7 +74,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "persian"; MessagesFile: "Persian.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: CustomMessage('TaskDesktopShortcut'); GroupDescription: CustomMessage('TaskGroupDescription'); Flags: unchecked
+Name: "desktopicon"; Description: "{cm:TaskDesktopShortcut}"; GroupDescription: "{cm:TaskGroupDescription}"; Flags: unchecked
 
 [Files]
 ; Program files only. PDBs (debug symbols) are not shipped.

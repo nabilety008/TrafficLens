@@ -544,6 +544,14 @@ try {
         Fail "9.10: AppVerName" "should use {#AppVersion}, not {#AppVersionShort}"
     }
 
+    # Check [Tasks] Description/GroupDescription use {cm:...} constants, not CustomMessage() Pascal calls
+    $tasksSection = $issContent -replace '(?s)^.*\[Tasks\](.*?)\[.*', '$1'
+    if ($tasksSection -match "CustomMessage\(") {
+        Fail "9.11: [Tasks] uses literal CustomMessage() — must use {cm:...} constant syntax"
+    } else {
+        Pass "9.11: [Tasks] Description/GroupDescription use {cm:...} constants"
+    }
+
     # ====================================================================
     # 10. FINAL ORPHAN CHECK
     # ====================================================================
