@@ -33,7 +33,8 @@ public sealed class HistoryViewModelTests : IDisposable
         SetSnapshot(new HistorySnapshot(
             true, null,
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
-            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), Array.Empty<HourlyUsagePoint>()));
+            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), Array.Empty<HourlyUsagePoint>(),
+            TrafficUsage.Empty, 0));
 
         Assert.True(_vm.HasData == false);
         Assert.True(_vm.IsEmpty);
@@ -53,7 +54,8 @@ public sealed class HistoryViewModelTests : IDisposable
             new TrafficUsage(8192, 2048),
             new TrafficUsage(16384, 4096),
             new[] { Day(13, 512, 128), Day(14, 1024, 256), Day(15, 2048, 512) },
-            Array.Empty<HourlyUsagePoint>()));
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(2048, 512), 0));
 
         Assert.Equal("Today", _vm.TodayLabel);
         Assert.Equal("2 KB", _vm.SummaryDownloadText);
@@ -73,7 +75,8 @@ public sealed class HistoryViewModelTests : IDisposable
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
             new TrafficUsage(2200, 800),
             new[] { Day(15, 2200, 800) },
-            new[] { Hour(10, 100, 0), Hour(11, 2048, 512), Hour(12, 52, 288) }));
+            new[] { Hour(10, 100, 0), Hour(11, 2048, 512), Hour(12, 52, 288) },
+            new TrafficUsage(2200, 800), 0));
 
         Assert.Equal("10:00", _vm.Series[0].Label);
         Assert.Equal("11:00", _vm.Series[1].Label);
@@ -90,7 +93,8 @@ public sealed class HistoryViewModelTests : IDisposable
         SetSnapshot(new HistorySnapshot(
             true, null,
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
-            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), new[] { Hour(10, 1, 0) }));
+            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), new[] { Hour(10, 1, 0) },
+            TrafficUsage.Empty, 0));
 
         Assert.Equal(_localization["HistoryHourlyTrafficLabel"], _vm.ChartTitleLabel);
     }
@@ -103,7 +107,8 @@ public sealed class HistoryViewModelTests : IDisposable
             new TrafficUsage(100, 0),
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
             new[] { Day(15, 100, 0) },
-            new[] { Hour(0, 40, 0), Hour(1, 0, 0), Hour(2, 60, 0) }));
+            new[] { Hour(0, 40, 0), Hour(1, 0, 0), Hour(2, 60, 0) },
+            TrafficUsage.Empty, 0));
 
         Assert.Equal(3, _vm.Series.Count);
         Assert.Equal(0, _vm.Series[1].TotalBytes);
@@ -135,7 +140,8 @@ public sealed class HistoryViewModelTests : IDisposable
             new TrafficUsage(1550, 0),
             new TrafficUsage(0, 0),
             points,
-            Array.Empty<HourlyUsagePoint>()));
+            Array.Empty<HourlyUsagePoint>(),
+            TrafficUsage.Empty, 0));
         _vm.SelectRangeCommand.Execute(((int)HistoryRange.Last7Days).ToString());
 
         Assert.True(_vm.IsLast7DaysSelected);
@@ -153,7 +159,8 @@ public sealed class HistoryViewModelTests : IDisposable
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
             new TrafficUsage(300, 0),
             points,
-            Array.Empty<HourlyUsagePoint>());
+            Array.Empty<HourlyUsagePoint>(),
+            TrafficUsage.Empty, 0);
         _vm.SelectRangeCommand.Execute(((int)HistoryRange.Lifetime).ToString());
 
         Assert.True(_vm.IsLifetimeSelected);
@@ -177,12 +184,166 @@ public sealed class HistoryViewModelTests : IDisposable
         SetSnapshot(new HistorySnapshot(
             true, null,
             TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
-            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), new[] { Hour(10, 1, 0) }));
+            TrafficUsage.Empty, Array.Empty<DailyUsagePoint>(), new[] { Hour(10, 1, 0) },
+            TrafficUsage.Empty, 0));
         Assert.Equal(_localization["HistoryHourlyTrafficLabel"], _vm.ChartTitleLabel);
 
         _localization.SetCulture("fa-IR");
 
         Assert.Equal("ترافیک ساعتی", _vm.ChartTitleLabel);
+    }
+
+    [Fact]
+    public void ThisMonthRange_SlicesCurrentMonthDays()
+    {
+        var points = new[]
+        {
+            Day(1, 100, 50),
+            Day(14, 200, 100),
+            Day(15, 300, 150),
+        };
+        SetSnapshot(new HistorySnapshot(
+            true, null,
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new TrafficUsage(600, 300),
+            new TrafficUsage(600, 300),
+            points,
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(300, 150), 0));
+        _vm.SelectRangeCommand.Execute(((int)HistoryRange.ThisMonth).ToString());
+
+        Assert.True(_vm.IsThisMonthSelected);
+        Assert.Equal("300 B", _vm.SummaryDownloadText);
+        Assert.Equal("150 B", _vm.SummaryUploadText);
+        Assert.Equal("450 B", _vm.SummaryTotalText);
+        Assert.Equal(3, _vm.Series.Count);
+    }
+
+    [Fact]
+    public void ThisMonthRange_Label_IsLocalized()
+    {
+        _localization.SetCulture("fa-IR");
+        Assert.Equal("این ماه", _vm.ThisMonthLabel);
+    }
+
+    [Fact]
+    public void Comparison_ShowsWhenTodaySelected_WithData()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(1000, 500),
+            new TrafficUsage(2000, 1000),
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(14, 2000, 1000), Day(15, 1000, 500) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(1000, 500), 0.5);
+        SetSnapshot(snapshot);
+
+        Assert.True(_vm.HasComparison);
+        Assert.Contains("1.46 KB", _vm.ComparisonTodayText);
+        Assert.Contains("1.46 KB", _vm.ComparisonYesterdayText);
+    }
+
+    [Fact]
+    public void Comparison_HiddenWhenYesterdayZero()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(1000, 500),
+            TrafficUsage.Empty,
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(15, 1000, 500) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(1000, 500), 0.5);
+        SetSnapshot(snapshot);
+
+        Assert.False(_vm.HasComparison);
+    }
+
+    [Fact]
+    public void Comparison_HiddenWhenDayFractionZero()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(1000, 500),
+            new TrafficUsage(2000, 1000),
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(15, 1000, 500) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(1000, 500), 0);
+        SetSnapshot(snapshot);
+
+        Assert.False(_vm.HasComparison);
+    }
+
+    [Fact]
+    public void Comparison_NegativeDifference()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(500, 250),
+            new TrafficUsage(2000, 1000),
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(14, 2000, 1000), Day(15, 500, 250) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(500, 250), 0.5);
+        SetSnapshot(snapshot);
+
+        Assert.True(_vm.HasComparison);
+        Assert.Contains("−", _vm.ComparisonDifferenceText);
+        Assert.Contains("-", _vm.ComparisonPercentageText);
+    }
+
+    [Fact]
+    public void Comparison_EqualValues_ShowsZeroDifference()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(1000, 500),
+            new TrafficUsage(1000, 500),
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(14, 1000, 500), Day(15, 1000, 500) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(1000, 500), 1.0);
+        SetSnapshot(snapshot);
+
+        Assert.True(_vm.HasComparison);
+        Assert.Contains("0 B", _vm.ComparisonDifferenceText);
+        Assert.Contains("0%", _vm.ComparisonPercentageText);
+    }
+
+    [Fact]
+    public void Comparison_NotShownWhenYesterdayIsZero()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(1000, 500),
+            TrafficUsage.Empty,
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(15, 1000, 500) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(1000, 500), 0.5);
+        SetSnapshot(snapshot);
+
+        Assert.False(_vm.HasComparison);
+    }
+
+    [Fact]
+    public void Comparison_DayFraction_25Percent()
+    {
+        var snapshot = new HistorySnapshot(
+            true, null,
+            new TrafficUsage(100, 50),
+            new TrafficUsage(400, 200),
+            TrafficUsage.Empty, TrafficUsage.Empty, TrafficUsage.Empty,
+            new[] { Day(14, 400, 200), Day(15, 100, 50) },
+            Array.Empty<HourlyUsagePoint>(),
+            new TrafficUsage(100, 50), 0.25);
+        SetSnapshot(snapshot);
+
+        Assert.True(_vm.HasComparison);
+        Assert.Contains("150 B", _vm.ComparisonTodayText);
+        Assert.Contains("150 B", _vm.ComparisonYesterdayText);
     }
 
     private static HistorySnapshot CreateSnapshot(
@@ -197,7 +358,9 @@ public sealed class HistoryViewModelTests : IDisposable
             TrafficUsage.Empty,
             TrafficUsage.Empty,
             new[] { Day(14, 100, 50), Day(15, 200, 100) },
-            Array.Empty<HourlyUsagePoint>());
+            Array.Empty<HourlyUsagePoint>(),
+            TrafficUsage.Empty,
+            0);
 
     private sealed class FakeHistoryService : ITrafficHistoryService
     {

@@ -62,7 +62,9 @@ public sealed class AlertEngineTests
         TrafficUsage.Empty,
         TrafficUsage.Empty,
         Array.Empty<DailyUsagePoint>(),
-        Array.Empty<HourlyUsagePoint>());
+        Array.Empty<HourlyUsagePoint>(),
+        TrafficUsage.Empty,
+        0);
 
     [Fact]
     public void Speed_BelowThreshold_NoTrigger()
