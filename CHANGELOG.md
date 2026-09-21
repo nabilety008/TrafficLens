@@ -2,6 +2,32 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.2] — Release Candidate (TL-025)
+
+Release candidate 0.1.2 — first controlled release from the verified TL-024 baseline.
+
+### What's New Since v0.1.1
+
+- **Performance optimization** — reduced CPU and memory overhead for continuous network monitoring (TL-017)
+- **Current-Day hourly History** — granular per-hour traffic history for today (TL-018)
+- **First-run onboarding** — guided setup for new users with contextual tips (TL-019)
+- **Connections readability** — improved process name display, bounded reverse DNS lookups (TL-020)
+- **Dashboard insights** — Today at a Glance + Top App Now panels (TL-021)
+- **This Month History** — monthly traffic summary with Today vs Yesterday comparison (TL-022)
+- **CSV export** — export history data to CSV for external analysis (TL-022)
+- **Release lifecycle hardening** — 37-point deterministic validation covering install, launch, exit, startup, uninstall, reinstall, portable, and metadata (TL-023)
+- **Bilingual installer** — English and Persian (Farsi) language support with RTL layout (TL-024)
+- **Packaging metadata fixes** — ProductVersion bug fixed, placeholder URLs removed (TL-023, TL-024)
+
+### Known Limitations
+
+- **Unsigned build** — no code signing certificate; enterprise WDAC policies may block installed copies
+- **Some uncommon Inno Setup messages fall back to English** in the Persian installer
+- **Upgrade lifecycle NOT TESTED** — authentic previous v0.1.1 installer artifact unavailable
+- **Persian installer visual verification** — full human visual inspection recommended during release-candidate verification
+
+---
+
 ## [Unreleased] — TL-024 (Installer Localization & Packaging Polish)
 
 ### Added (TL-024)

@@ -8,6 +8,21 @@
 
 ## Backlog
 
+### TL-025 Release Candidate 0.1.2 — **IN PROGRESS**
+- [x] Version bump 0.1.1 → 0.1.2 (Directory.Build.props, TrafficLens.iss defaults, lifecycle assertions)
+- [x] Release branch created: `release/0.1.2`
+- [x] Tests pass: 509/509 (212 Network + 60 Infrastructure + 237 App)
+- [x] Debug + Release builds: 0 warnings / 0 errors
+- [x] Release candidate built: installer (69 MB), portable ZIP (68.6 MB), SHA256 verified
+- [x] SHA256 independent verification: PASS (7805953229EAA412E9D8A2E3455DDE9CEB6DB3768A57F318299D50D04B17E10B)
+- [x] Lifecycle validation: 19/19 PASS before WDAC blocked uninstaller (tests 1-5: checksum, install, launch, exit, startup)
+- [x] Installer metadata: ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged
+- [x] Application GUI smoke: app launches, window renders, "TrafficLens - Network Monitor"
+- [x] Documentation updated (CHANGELOG, TASKS, PROJECT_STATUS, ROADMAP, PACKAGING)
+- [ ] Manual English installer GUI verification — **REQUIRES HUMAN INSPECTION**
+- [ ] Manual Persian installer GUI verification — **REQUIRES HUMAN INSPECTION**
+- **Status: in progress — awaiting visual verification**
+
 ### TL-024 Installer Localization & Packaging Polish — **DONE**
 - [x] Persian (Farsi) installer language file (`packaging/Persian.isl`) — RTL layout, LanguageID=$0429, CodePage=1256, translated wizard messages
 - [x] English/Persian language selection in installer (`[Languages]` section)

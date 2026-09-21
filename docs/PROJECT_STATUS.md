@@ -4,17 +4,15 @@ Updated: 2026-09-21
 
 ## Current Milestone
 
-M17 (TL-024 installer localization) is **complete on
-`feature/tl024-installer-polish`**: bilingual English/Persian installer
-language support with RTL layout, translated wizard messages, and cleaned-up
-packaging metadata. Custom `Persian.isl` language file provides Persian
-translations for all primary installer wizard pages. Placeholder
-`AppPublisherURL`/`AppSupportURL` entries removed. 37-point lifecycle
-validation (5 new assertions for metadata/language checks). Release pipeline
-produces installer (69 MB), portable ZIP (68.6 MB), SHA256 verified. 509/509
-tests pass, Debug + Release 0 warnings/0 errors. Known limitations: unsigned
-build, some uncommon installer messages fall back to English, upgrade test
-unavailable (no prior artifact).
+M18 (TL-025 release candidate 0.1.2) is **in progress on
+`release/0.1.2`**: version bumped from 0.1.1 to 0.1.2, release candidate
+built and validated. 509/509 tests pass, Debug + Release 0 warnings/0 errors.
+Installer (69 MB) and portable ZIP (68.6 MB) produced with SHA256 verified.
+Lifecycle validation 19/19 PASS before WDAC blocked uninstaller (unsigned
+build limitation). Installer metadata: ProductVersion=0.1.2, FileVersion=0.1.2,
+AppId unchanged. Application GUI smoke test passes. Manual English/Persian
+installer visual verification pending. Known limitations: unsigned build,
+some uncommon installer messages fall back to English, upgrade test unavailable.
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary
@@ -67,6 +65,16 @@ Diagnostics block, suite at 410 tests).
 - TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE** (on `feature/tl022-history-insights`)
 - TL-023 Release Hardening & Clean-Machine Validation — **DONE** (on `feature/tl023-release-hardening`)
 - TL-024 Installer Localization & Packaging Polish — **DONE** (on `feature/tl024-installer-polish`)
+
+## Active
+
+- TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
+  - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.
+  - **Release candidate built**: installer (69 MB), portable ZIP (68.6 MB), SHA256 sidecar. Checksum verified independently: `7805953229EAA412E9D8A2E3455DDE9CEB6DB3768A57F318299D50D04B17E10B`.
+  - **Lifecycle validation**: 19/19 PASS (tests 1-5: checksum, install, launch, exit, startup). WDAC blocked uninstaller — documented limitation.
+  - **Installer metadata**: ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged.
+  - **Application GUI smoke**: launches, window renders, "TrafficLens - Network Monitor".
+  - **Status**: awaiting manual English/Persian installer visual verification.
 
 ## Completed
 

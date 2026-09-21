@@ -25,6 +25,7 @@
 | M15 | History insights + CSV export | Done (TL-022; branch `feature/tl022-history-insights`) |
 | M16 | Release hardening & clean-machine validation | Done (TL-023; branch `feature/tl023-release-hardening`) |
 | M17 | Installer localization & packaging polish | Done (TL-024; branch `feature/tl024-installer-polish`) |
+| M18 | Release candidate 0.1.2 | In Progress (TL-025; branch `release/0.1.2`) |
 
 ## Guidance
 
