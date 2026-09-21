@@ -4,18 +4,17 @@ Updated: 2026-09-21
 
 ## Current Milestone
 
-M16 (TL-023 release hardening) is **complete on
-`feature/tl023-release-hardening`**: a non-feature release-validation task
-that proves the current product can be built, installed, launched, exited,
-uninstalled, reinstalled, and verified safely as a release candidate.
-31-point deterministic lifecycle validation covers: SHA256 checksum, clean
-install, first launch, settings/DB initialization, graceful exit, no orphan
-processes/ETW, startup registration behavior, uninstall with user data
-preservation, reinstall with data loading, portable build, and installer
-metadata. Release pipeline (`build-release.ps1`) produces installer (69 MB),
-portable ZIP (68.6 MB), and SHA256 sidecar — all verified. 509/509 tests
-pass, Debug + Release 0 warnings/0 errors. Known limitations: unsigned build,
-installer English-only, placeholder project URLs.
+M17 (TL-024 installer localization) is **complete on
+`feature/tl024-installer-polish`**: bilingual English/Persian installer
+language support with RTL layout, translated wizard messages, and cleaned-up
+packaging metadata. Custom `Persian.isl` language file provides Persian
+translations for all primary installer wizard pages. Placeholder
+`AppPublisherURL`/`AppSupportURL` entries removed. 37-point lifecycle
+validation (5 new assertions for metadata/language checks). Release pipeline
+produces installer (69 MB), portable ZIP (68.6 MB), SHA256 verified. 509/509
+tests pass, Debug + Release 0 warnings/0 errors. Known limitations: unsigned
+build, some uncommon installer messages fall back to English, upgrade test
+unavailable (no prior artifact).
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary
@@ -67,8 +66,17 @@ Diagnostics block, suite at 410 tests).
 - TL-021 Dashboard "Today at a Glance" + "Top App Now" — **DONE** (on `feature/tl021-dashboard-insights`)
 - TL-022 History This Month + Today vs Yesterday + CSV Export — **DONE** (on `feature/tl022-history-insights`)
 - TL-023 Release Hardening & Clean-Machine Validation — **DONE** (on `feature/tl023-release-hardening`)
+- TL-024 Installer Localization & Packaging Polish — **DONE** (on `feature/tl024-installer-polish`)
 
 ## Completed
+
+- TL-024 (Installer Localization & Packaging Polish, on `feature/tl024-installer-polish`):
+  - **Bilingual installer**: English and Persian (Farsi) language support. Custom `packaging/Persian.isl` language file with RTL layout (`RightToLeft=yes`, LanguageID=$0429, CodePage=1256). Translated wizard messages for all primary installer pages (welcome, destination, install, completion, etc.). Language selection dialog at installer startup.
+  - **Custom messages**: `AppRunningWarning` translated per language via `[CustomMessages]` section. Pascal Script updated to use `CustomMessage('AppRunningWarning')`.
+  - **Metadata cleanup**: `AppPublisherURL` and `AppSupportURL` placeholder entries removed from `[Setup]` section. No valid official URL exists; placeholders removed rather than replaced with generics.
+  - **Lifecycle validation**: 37/37 PASS — 5 new assertions (9.5–9.9): AppPublisherURL absent, AppSupportURL absent, stable AppId unchanged, English language present, Persian language present.
+  - **Known limitations**: Some uncommon Inno Setup error messages (e.g., `ArchiveIncorrectPassword`, `ErrorRegCreateKey`) fall back to English. All primary wizard-flow messages are translated. Unsigned build. Upgrade test unavailable (no prior artifact).
+  - **Constraints respected**: zero monitoring changes, zero database changes, zero collectors, zero ETW changes, zero polling/timer changes, zero application feature changes.
 
 - TL-023 (Release Hardening & Clean-Machine Validation, on `feature/tl023-release-hardening`):
   - **Release lifecycle validation** (`scripts/tl023-release-lifecycle.ps1`): 31-point deterministic validation covering the full install → launch → exit → startup registration → uninstall → data preservation → reinstall → portable → checksum lifecycle. Uses isolated temp directories; cleans up after itself; preserves developer's real user data.

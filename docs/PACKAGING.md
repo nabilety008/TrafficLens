@@ -175,8 +175,12 @@ wanted; the installer does not own them beyond the shortcuts it creates.)
   installed (self-contained single-file) build, and the installer leaves
   `settings.json` untouched so the user's saved language survives install/
   upgrade/uninstall/reinstall.
-- The installer UI itself is English-only for TL-015 (application localization
-  is mandatory and shipped; installer localization is deferred).
+- **Installer localization (TL-024):** The installer supports English and
+  Persian (Farsi) via a language selection dialog at startup. Custom
+  `packaging/Persian.isl` provides RTL layout and translated wizard messages.
+  Some uncommon error messages fall back to English. The application's
+  `[CustomMessages]` section provides per-language translations for the
+  running-app warning dialog.
 
 ## Native dependencies
 
@@ -222,9 +226,9 @@ wanted; the installer does not own them beyond the shortcuts it creates.)
 - Replacing branding later only requires re-running `scripts\generate-icons.ps1`
   (or swapping the files in `assets\branding\`) — no `[Setup]` structural changes
   and no application wiring changes are required.
-- Known follow-up: the installer is English-only (`[Languages]`). A Persian
-  installer language file (Inno `Persian.isl`) is a separate localization task;
-  the project URLs in `[Setup]` remain placeholders.
+- Known follow-up: The installer now supports English and Persian (TL-024).
+  `AppPublisherURL`/`AppSupportURL` placeholders have been removed; no valid
+  official URL exists yet. Code signing remains a future release-checklist item.
 
 ## Future branding/icon replacement point
 

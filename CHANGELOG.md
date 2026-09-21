@@ -2,7 +2,27 @@
   
 All notable changes are documented here in reverse chronological order.
 
-## [Unreleased] — TL-023 (Release Hardening & Clean-Machine Validation)
+## [Unreleased] — TL-024 (Installer Localization & Packaging Polish)
+
+### Added (TL-024)
+
+- **Bilingual installer** — English and Persian (Farsi) language support in the Inno Setup installer. Language selection dialog at startup. Persian RTL layout enabled via `RightToLeft=yes` in custom `Persian.isl` language file.
+
+- **Custom translated installer messages** — User-facing installer strings (welcome, destination, install, completion, etc.) translated to Persian. Custom `AppRunningWarning` message translated per language via Inno Setup `[CustomMessages]` section.
+
+- **Lifecycle validation extensions** — 5 new assertions (9.5–9.9): AppPublisherURL absent, AppSupportURL absent, stable AppId unchanged, English language present, Persian language present.
+
+### Fixed (TL-024)
+
+- **Placeholder metadata removed** — `AppPublisherURL` and `AppSupportURL` placeholder entries (`https://github.com/`) removed from `packaging/TrafficLens.iss`. No valid official URL exists; placeholders are worse than absent.
+
+### Known Limitations (TL-024)
+
+- **Persian installer fallback messages** — Some uncommon Inno Setup messages (e.g., `ArchiveIncorrectPassword`, `ErrorRegCreateKey`) fall back to English when not defined in `Persian.isl`. These are edge-case error messages rarely seen by users. All primary wizard-flow messages are translated.
+- **Unsigned build**: No code signing certificate.
+- **Upgrade test**: Authentic previous v0.1.1 installer artifact unavailable; upgrade lifecycle remains NOT TESTED.
+
+---
 
 ### Added (TL-023)
 

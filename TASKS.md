@@ -8,6 +8,18 @@
 
 ## Backlog
 
+### TL-024 Installer Localization & Packaging Polish — **DONE**
+- [x] Persian (Farsi) installer language file (`packaging/Persian.isl`) — RTL layout, LanguageID=$0429, CodePage=1256, translated wizard messages
+- [x] English/Persian language selection in installer (`[Languages]` section)
+- [x] Custom translated `AppRunningWarning` message per language via `[CustomMessages]`
+- [x] Placeholder URLs removed — `AppPublisherURL` and `AppSupportURL` entries removed from `[Setup]`
+- [x] Lifecycle validation extended — 5 new assertions (9.5–9.9): no placeholder URLs, stable AppId, English/Persian languages present
+- [x] Installer compiles with both languages — 37/37 lifecycle checks PASS
+- [x] Regression tests — 509/509 PASS (212 Network + 60 Infrastructure + 237 App)
+- [x] Debug + Release builds — 0 warnings / 0 errors
+- [x] Docs updated (TASKS, PROJECT_STATUS, CHANGELOG, ROADMAP, PACKAGING)
+- **Status: done**
+
 ### TL-023 Release Hardening & Clean-Machine Validation — **DONE**
 - [x] Release lifecycle validation script (`scripts/tl023-release-lifecycle.ps1`) — 31-point deterministic validation
 - [x] SHA256 checksum verification — computed hash matches sidecar file
