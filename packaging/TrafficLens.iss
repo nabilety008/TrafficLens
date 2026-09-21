@@ -74,7 +74,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "persian"; MessagesFile: "Persian.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "desktopicon"; Description: CustomMessage('TaskDesktopShortcut'); GroupDescription: CustomMessage('TaskGroupDescription'); Flags: unchecked
 
 [Files]
 ; Program files only. PDBs (debug symbols) are not shipped.
@@ -95,6 +95,10 @@ Type: dirifempty; Name: "{app}"
 [CustomMessages]
 english.AppRunningWarning=TrafficLens is currently running. Please close it before continuing so the new files can be installed safely.%n%n(Your settings and history are never affected by an upgrade.)
 persian.AppRunningWarning=TrafficLens در حال حاضر در حال اجراست. لطفاً قبل از ادامه آن را ببندید تا پرونده‌های جدید به صورت ایمن نصب شوند.%n%n(تنظیمات و تاریخچه شما تحت تأثیر ارتقا قرار نمی‌گیرند.)
+english.TaskDesktopShortcut=Create a &desktop shortcut
+english.TaskGroupDescription=Additional shortcuts:
+persian.TaskDesktopShortcut=ایجاد میانبر روی دسکتاپ
+persian.TaskGroupDescription=میانبرهای اضافی:
 
 [Code]
 // ---- Run check ------------------------------------------------------------
