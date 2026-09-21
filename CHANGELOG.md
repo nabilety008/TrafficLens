@@ -2,6 +2,31 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — TL-021 (Dashboard Insights: Today + Top App)
+
+Branch `feature/tl021-dashboard-insights` off master; implementation complete.
+
+### Added (TL-021)
+
+- **Dashboard "Today at a Glance" section** — Three-card grid showing Download/Upload/Total bytes used today. Reads from `ITrafficHistoryService.HistoryChanged` → `HistorySnapshot.Today` (`TrafficUsage`). Formatted via `DataSizeFormatter.Format()`. Handles unavailable history service and snapshots (zero-fills).
+
+- **Dashboard "Top App Now" section** — Card showing the process with highest current throughput (`ProcessSampleSelection.TopConsumer()`). Reads from `IProcessTrafficCollector.SamplesReady` event. Shows app name, total rate, download/upload rates. Idle state shows localized "No active traffic" text. Permission-denied and unavailable states handled with localized warnings.
+
+- **DashboardViewModel extension** — Constructor extended with optional `ITrafficHistoryService?` and `IProcessTrafficCollector?` parameters (backward-compatible, DI-resolved). Event subscriptions in constructor, unsubscribed in `Dispose()`. All updates gated by `_isActive`.
+
+- **Localization** — 12 new keys in both `Strings.resx` and `Strings.fa-IR.resx` (TodayAtGlanceLabel, DownloadTodayLabel, UploadTodayLabel, TotalTodayLabel, TopAppNowLabel, TopAppApplicationLabel, TopAppCurrentLabel, TopAppNoDataLabel, TopAppPermissionDeniedLabel, TopAppUnavailableLabel, TopAppDownloadLabel, TopAppUploadLabel).
+
+- **Tests (+22 → 495/495)** — `DashboardInsightTests`: 7 Today tests, 11 Top App tests, 4 Lifecycle tests. All use fakes, no live DNS or DB.
+
+### Constraints (TL-021)
+
+- No new timers/polling/ETW sessions/history polling
+- No new DB queries or schema changes
+- No per-process metadata queries in hot path
+- All data from existing event pipelines (`HistoryChanged`, `SamplesReady`, `StatusChanged`)
+
+---
+
 ## [Unreleased] — TL-020 (Connections Readability & Usability)
 
 Branch `feature/tl020-connections-readability` off master; implementation complete.

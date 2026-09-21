@@ -567,4 +567,40 @@
   <data name="GetStartedReopen" xml:space="preserve">
     <value>Get Started</value>
   </data>
+  <data name="TodayAtGlanceLabel" xml:space="preserve">
+    <value>Today at a Glance</value>
+  </data>
+  <data name="DownloadTodayLabel" xml:space="preserve">
+    <value>Download Today</value>
+  </data>
+  <data name="UploadTodayLabel" xml:space="preserve">
+    <value>Upload Today</value>
+  </data>
+  <data name="TotalTodayLabel" xml:space="preserve">
+    <value>Total Today</value>
+  </data>
+  <data name="TopAppNowLabel" xml:space="preserve">
+    <value>Top App Now</value>
+  </data>
+  <data name="TopAppApplicationLabel" xml:space="preserve">
+    <value>Application</value>
+  </data>
+  <data name="TopAppCurrentLabel" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="TopAppNoDataLabel" xml:space="preserve">
+    <value>No active traffic</value>
+  </data>
+  <data name="TopAppPermissionDeniedLabel" xml:space="preserve">
+    <value>Administrator required</value>
+  </data>
+  <data name="TopAppUnavailableLabel" xml:space="preserve">
+    <value>Process traffic unavailable</value>
+  </data>
+  <data name="TopAppDownloadLabel" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="TopAppUploadLabel" xml:space="preserve">
+    <value>Upload</value>
+  </data>
 </root>

@@ -567,4 +567,40 @@
   <data name="GetStartedReopen" xml:space="preserve">
     <value>راهنمای شروع</value>
   </data>
+  <data name="TodayAtGlanceLabel" xml:space="preserve">
+    <value>مرور امروز</value>
+  </data>
+  <data name="DownloadTodayLabel" xml:space="preserve">
+    <value>دانلود امروز</value>
+  </data>
+  <data name="UploadTodayLabel" xml:space="preserve">
+    <value>آپلود امروز</value>
+  </data>
+  <data name="TotalTodayLabel" xml:space="preserve">
+    <value>مجموع امروز</value>
+  </data>
+  <data name="TopAppNowLabel" xml:space="preserve">
+    <value>برترین برنامه الان</value>
+  </data>
+  <data name="TopAppApplicationLabel" xml:space="preserve">
+    <value>برنامه</value>
+  </data>
+  <data name="TopAppCurrentLabel" xml:space="preserve">
+    <value>سرعت فعلی</value>
+  </data>
+  <data name="TopAppNoDataLabel" xml:space="preserve">
+    <value>ترافیک فعالی وجود ندارد</value>
+  </data>
+  <data name="TopAppPermissionDeniedLabel" xml:space="preserve">
+    <value>نیاز به مدیر سیستم</value>
+  </data>
+  <data name="TopAppUnavailableLabel" xml:space="preserve">
+    <value>ترافیک فرآیند در دسترس نیست</value>
+  </data>
+  <data name="TopAppDownloadLabel" xml:space="preserve">
+    <value>دانلود</value>
+  </data>
+  <data name="TopAppUploadLabel" xml:space="preserve">
+    <value>آپلود</value>
+  </data>
 </root>

@@ -4,8 +4,10 @@ using System.Windows.Threading;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Conversion;
 using TrafficLens.Core.Graph;
+using TrafficLens.Core.History;
 using TrafficLens.Core.Localization;
 using TrafficLens.Core.Models;
+using TrafficLens.Core.Selection;
 using TrafficLens.Network.Aggregation;
 
 namespace TrafficLens.App.ViewModels;
@@ -15,6 +17,8 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private readonly INetworkTrafficCollector _collector;
     private readonly INetworkAdapterProvider _adapterProvider;
     private readonly ILocalizationService _localization;
+    private readonly ITrafficHistoryService? _historyService;
+    private readonly IProcessTrafficCollector? _processCollector;
     private readonly Dispatcher? _dispatcher;
     private readonly IReadOnlyDictionary<NetworkAdapterKind, string> _kindKeys;
     private readonly TrafficSampleBuffer _graphBuffer = new(
@@ -73,14 +77,45 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private string _tunnelAggregateHint = string.Empty;
     private bool _hasTunnelAdapter;
 
+    private string _todayAtGlanceLabel = string.Empty;
+    private string _downloadTodayLabel = string.Empty;
+    private string _uploadTodayLabel = string.Empty;
+    private string _totalTodayLabel = string.Empty;
+    private string _todayDownloadText = "0 B";
+    private string _todayUploadText = "0 B";
+    private string _todayTotalText = "0 B";
+    private bool _hasTodayData;
+
+    private string _topAppNowLabel = string.Empty;
+    private string _topAppApplicationLabel = string.Empty;
+    private string _topAppCurrentLabel = string.Empty;
+    private string _topAppNoDataLabel = string.Empty;
+    private string _topAppPermissionDeniedLabel = string.Empty;
+    private string _topAppUnavailableLabel = string.Empty;
+    private string _topAppDownloadLabel = string.Empty;
+    private string _topAppUploadLabel = string.Empty;
+    private string _topAppName = string.Empty;
+    private string _topAppRateText = string.Empty;
+    private string _topAppDownloadRateText = string.Empty;
+    private string _topAppUploadRateText = string.Empty;
+    private string _topAppStatusText = string.Empty;
+    private bool _hasTopApp;
+    private bool _isTopAppPermissionDenied;
+    private bool _isTopAppUnavailable;
+    private bool _isTopAppIdle;
+
     public DashboardViewModel(
         INetworkTrafficCollector collector,
         INetworkAdapterProvider adapterProvider,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        ITrafficHistoryService? historyService = null,
+        IProcessTrafficCollector? processCollector = null)
     {
         _collector = collector;
         _adapterProvider = adapterProvider;
         _localization = localization;
+        _historyService = historyService;
+        _processCollector = processCollector;
         _dispatcher = Application.Current?.Dispatcher;
 
         _kindKeys = new Dictionary<NetworkAdapterKind, string>
@@ -97,6 +132,17 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _collector.NetworkChanged += OnAdaptersChanged;
         _adapterProvider.AdaptersChanged += OnAdaptersChanged;
 
+        if (_historyService is not null)
+        {
+            _historyService.HistoryChanged += OnHistoryChanged;
+        }
+
+        if (_processCollector is not null)
+        {
+            _processCollector.SamplesReady += OnProcessSamplesReady;
+            _processCollector.StatusChanged += OnProcessStatusChanged;
+        }
+
         SelectGraphRangeCommand = new Commands.RelayCommand(ExecuteSelectGraphRange);
 
         RefreshLocalizedStrings();
@@ -104,6 +150,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RefreshAll();
         RefreshGraph();
         UpdateRangeSelectionFlags();
+        RefreshToday();
     }
 
     public void SetActive(bool active)
@@ -133,6 +180,17 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _collector.SpeedSampleReady -= OnSpeedSample;
         _collector.NetworkChanged -= OnAdaptersChanged;
         _adapterProvider.AdaptersChanged -= OnAdaptersChanged;
+
+        if (_historyService is not null)
+        {
+            _historyService.HistoryChanged -= OnHistoryChanged;
+        }
+
+        if (_processCollector is not null)
+        {
+            _processCollector.SamplesReady -= OnProcessSamplesReady;
+            _processCollector.StatusChanged -= OnProcessStatusChanged;
+        }
     }
 
     public string DashboardLabel
@@ -387,6 +445,156 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         private set => SetProperty(ref _hasTunnelAdapter, value);
     }
 
+    public string TodayAtGlanceLabel
+    {
+        get => _todayAtGlanceLabel;
+        private set => SetProperty(ref _todayAtGlanceLabel, value);
+    }
+
+    public string DownloadTodayLabel
+    {
+        get => _downloadTodayLabel;
+        private set => SetProperty(ref _downloadTodayLabel, value);
+    }
+
+    public string UploadTodayLabel
+    {
+        get => _uploadTodayLabel;
+        private set => SetProperty(ref _uploadTodayLabel, value);
+    }
+
+    public string TotalTodayLabel
+    {
+        get => _totalTodayLabel;
+        private set => SetProperty(ref _totalTodayLabel, value);
+    }
+
+    public string TodayDownloadText
+    {
+        get => _todayDownloadText;
+        private set => SetProperty(ref _todayDownloadText, value);
+    }
+
+    public string TodayUploadText
+    {
+        get => _todayUploadText;
+        private set => SetProperty(ref _todayUploadText, value);
+    }
+
+    public string TodayTotalText
+    {
+        get => _todayTotalText;
+        private set => SetProperty(ref _todayTotalText, value);
+    }
+
+    public bool HasTodayData
+    {
+        get => _hasTodayData;
+        private set => SetProperty(ref _hasTodayData, value);
+    }
+
+    public string TopAppNowLabel
+    {
+        get => _topAppNowLabel;
+        private set => SetProperty(ref _topAppNowLabel, value);
+    }
+
+    public string TopAppApplicationLabel
+    {
+        get => _topAppApplicationLabel;
+        private set => SetProperty(ref _topAppApplicationLabel, value);
+    }
+
+    public string TopAppCurrentLabel
+    {
+        get => _topAppCurrentLabel;
+        private set => SetProperty(ref _topAppCurrentLabel, value);
+    }
+
+    public string TopAppNoDataLabel
+    {
+        get => _topAppNoDataLabel;
+        private set => SetProperty(ref _topAppNoDataLabel, value);
+    }
+
+    public string TopAppPermissionDeniedLabel
+    {
+        get => _topAppPermissionDeniedLabel;
+        private set => SetProperty(ref _topAppPermissionDeniedLabel, value);
+    }
+
+    public string TopAppUnavailableLabel
+    {
+        get => _topAppUnavailableLabel;
+        private set => SetProperty(ref _topAppUnavailableLabel, value);
+    }
+
+    public string TopAppDownloadLabel
+    {
+        get => _topAppDownloadLabel;
+        private set => SetProperty(ref _topAppDownloadLabel, value);
+    }
+
+    public string TopAppUploadLabel
+    {
+        get => _topAppUploadLabel;
+        private set => SetProperty(ref _topAppUploadLabel, value);
+    }
+
+    public string TopAppName
+    {
+        get => _topAppName;
+        private set => SetProperty(ref _topAppName, value);
+    }
+
+    public string TopAppRateText
+    {
+        get => _topAppRateText;
+        private set => SetProperty(ref _topAppRateText, value);
+    }
+
+    public string TopAppDownloadRateText
+    {
+        get => _topAppDownloadRateText;
+        private set => SetProperty(ref _topAppDownloadRateText, value);
+    }
+
+    public string TopAppUploadRateText
+    {
+        get => _topAppUploadRateText;
+        private set => SetProperty(ref _topAppUploadRateText, value);
+    }
+
+    public string TopAppStatusText
+    {
+        get => _topAppStatusText;
+        private set => SetProperty(ref _topAppStatusText, value);
+    }
+
+    public bool HasTopApp
+    {
+        get => _hasTopApp;
+        private set => SetProperty(ref _hasTopApp, value);
+    }
+
+    public bool IsTopAppPermissionDenied
+    {
+        get => _isTopAppPermissionDenied;
+        private set => SetProperty(ref _isTopAppPermissionDenied, value);
+    }
+
+    public bool IsTopAppUnavailable
+    {
+        get => _isTopAppUnavailable;
+        private set => SetProperty(ref _isTopAppUnavailable, value);
+    }
+
+    public bool IsTopAppIdle
+    {
+        get => _isTopAppIdle;
+        private set => SetProperty(ref _isTopAppIdle, value);
+    }
+
     private void OnSpeedSample(object? sender, NetworkSpeedSample sample)
     {
         if (!_isActive)
@@ -477,6 +685,20 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         GraphDownloadSeriesLabel = _localization["GraphDownloadSeriesLabel"];
         GraphUploadSeriesLabel = _localization["GraphUploadSeriesLabel"];
         TunnelAggregateHint = _localization["TunnelAggregateHintText"];
+
+        TodayAtGlanceLabel = _localization["TodayAtGlanceLabel"];
+        DownloadTodayLabel = _localization["DownloadTodayLabel"];
+        UploadTodayLabel = _localization["UploadTodayLabel"];
+        TotalTodayLabel = _localization["TotalTodayLabel"];
+
+        TopAppNowLabel = _localization["TopAppNowLabel"];
+        TopAppApplicationLabel = _localization["TopAppApplicationLabel"];
+        TopAppCurrentLabel = _localization["TopAppCurrentLabel"];
+        TopAppNoDataLabel = _localization["TopAppNoDataLabel"];
+        TopAppPermissionDeniedLabel = _localization["TopAppPermissionDeniedLabel"];
+        TopAppUnavailableLabel = _localization["TopAppUnavailableLabel"];
+        TopAppDownloadLabel = _localization["TopAppDownloadLabel"];
+        TopAppUploadLabel = _localization["TopAppUploadLabel"];
     }
 
     private void ReloadAdapters()
@@ -652,5 +874,138 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         Is30SecondsSelected = _selectedGraphRange == GraphTimeRange.ThirtySeconds;
         Is1MinuteSelected = _selectedGraphRange == GraphTimeRange.OneMinute;
         Is5MinutesSelected = _selectedGraphRange == GraphTimeRange.FiveMinutes;
+    }
+
+    private void OnHistoryChanged(object? sender, EventArgs e) =>
+        RunOnUi(() =>
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+            RefreshToday();
+        });
+
+    private void OnProcessSamplesReady(object? sender, IReadOnlyList<ProcessTrafficSample> samples) =>
+        RunOnUi(() =>
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+            RefreshTopApp(samples);
+        });
+
+    private void OnProcessStatusChanged(object? sender, EventArgs e) =>
+        RunOnUi(() =>
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+            RefreshTopAppStatus();
+        });
+
+    internal void RefreshToday()
+    {
+        if (_historyService is null || !_historyService.IsAvailable)
+        {
+            HasTodayData = false;
+            TodayDownloadText = DataSizeFormatter.Format(0);
+            TodayUploadText = DataSizeFormatter.Format(0);
+            TodayTotalText = DataSizeFormatter.Format(0);
+            return;
+        }
+
+        var snapshot = _historyService.GetSnapshot();
+        if (!snapshot.IsAvailable)
+        {
+            HasTodayData = false;
+            TodayDownloadText = DataSizeFormatter.Format(0);
+            TodayUploadText = DataSizeFormatter.Format(0);
+            TodayTotalText = DataSizeFormatter.Format(0);
+            return;
+        }
+
+        var today = snapshot.Today;
+        HasTodayData = true;
+        TodayDownloadText = DataSizeFormatter.Format(today.DownloadBytes);
+        TodayUploadText = DataSizeFormatter.Format(today.UploadBytes);
+        TodayTotalText = DataSizeFormatter.Format(today.TotalBytes);
+    }
+
+    internal void RefreshTopApp(IReadOnlyList<ProcessTrafficSample>? samples = null)
+    {
+        if (_processCollector is null)
+        {
+            RefreshTopAppStatus();
+            return;
+        }
+
+        samples ??= _processCollector.GetCurrentSamples();
+        RefreshTopAppStatus();
+
+        if (IsTopAppPermissionDenied || IsTopAppUnavailable)
+        {
+            HasTopApp = false;
+            TopAppName = string.Empty;
+            TopAppRateText = string.Empty;
+            TopAppDownloadRateText = string.Empty;
+            TopAppUploadRateText = string.Empty;
+            return;
+        }
+
+        var consumer = ProcessSampleSelection.TopConsumer(samples);
+        var hasActive = ProcessSampleSelection.HasActiveTraffic(samples);
+
+        if (!hasActive || consumer is null)
+        {
+            HasTopApp = false;
+            TopAppName = string.Empty;
+            TopAppRateText = string.Empty;
+            TopAppDownloadRateText = string.Empty;
+            TopAppUploadRateText = string.Empty;
+            TopAppStatusText = TopAppNoDataLabel;
+            IsTopAppIdle = true;
+            return;
+        }
+
+        HasTopApp = true;
+        IsTopAppIdle = false;
+        TopAppName = consumer.ProcessName;
+        TopAppRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.TotalBytesPerSecond));
+        TopAppDownloadRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.DownloadBytesPerSecond));
+        TopAppUploadRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.UploadBytesPerSecond));
+    }
+
+    private void RefreshTopAppStatus()
+    {
+        if (_processCollector is null)
+        {
+            IsTopAppPermissionDenied = false;
+            IsTopAppUnavailable = false;
+            TopAppStatusText = string.Empty;
+            return;
+        }
+
+        switch (_processCollector.Status)
+        {
+            case ProcessTrafficCollectorStatus.PermissionDenied:
+                IsTopAppPermissionDenied = true;
+                IsTopAppUnavailable = false;
+                TopAppStatusText = TopAppPermissionDeniedLabel;
+                break;
+            case ProcessTrafficCollectorStatus.Failed:
+            case ProcessTrafficCollectorStatus.Stopped:
+                IsTopAppPermissionDenied = false;
+                IsTopAppUnavailable = true;
+                TopAppStatusText = TopAppUnavailableLabel;
+                break;
+            default:
+                IsTopAppPermissionDenied = false;
+                IsTopAppUnavailable = false;
+                TopAppStatusText = string.Empty;
+                break;
+        }
     }
 }
