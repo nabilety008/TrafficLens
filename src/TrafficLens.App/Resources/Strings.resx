@@ -630,4 +630,25 @@
   <data name="NoComparisonDataLabel" xml:space="preserve">
     <value>No comparison data</value>
   </data>
+  <data name="AlertsConfiguredRulesLabel" xml:space="preserve">
+    <value>Configured Alert Rules</value>
+  </data>
+  <data name="AlertsNoConfiguredRulesLabel" xml:space="preserve">
+    <value>No alerts have been configured yet.</value>
+  </data>
+  <data name="AlertsTriggeredSectionLabel" xml:space="preserve">
+    <value>Triggered Alerts</value>
+  </data>
+  <data name="AlertsNoTriggeredLabel" xml:space="preserve">
+    <value>No alerts have been triggered yet.</value>
+  </data>
+  <data name="AlertThresholdFormat" xml:space="preserve">
+    <value>Threshold: {0}</value>
+  </data>
+  <data name="AlertStatusEnabledLabel" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="AlertStatusDisabledLabel" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
 </root>

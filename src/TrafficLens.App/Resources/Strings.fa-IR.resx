@@ -630,4 +630,25 @@
   <data name="NoComparisonDataLabel" xml:space="preserve">
     <value>داده مقایسه‌ای موجود نیست</value>
   </data>
+  <data name="AlertsConfiguredRulesLabel" xml:space="preserve">
+    <value>قوانین هشدار تنظیم شده</value>
+  </data>
+  <data name="AlertsNoConfiguredRulesLabel" xml:space="preserve">
+    <value>هنوز هیچ هشداری تنظیم نشده است</value>
+  </data>
+  <data name="AlertsTriggeredSectionLabel" xml:space="preserve">
+    <value>هشدارهای فعال شده</value>
+  </data>
+  <data name="AlertsNoTriggeredLabel" xml:space="preserve">
+    <value>هنوز هیچ هشداری فعال نشده است</value>
+  </data>
+  <data name="AlertThresholdFormat" xml:space="preserve">
+    <value>آستانه: {0}</value>
+  </data>
+  <data name="AlertStatusEnabledLabel" xml:space="preserve">
+    <value>فعال</value>
+  </data>
+  <data name="AlertStatusDisabledLabel" xml:space="preserve">
+    <value>غیرفعال</value>
+  </data>
 </root>

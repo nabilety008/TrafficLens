@@ -20,9 +20,14 @@ public interface IAlertService : IDisposable
 {
     event EventHandler<AlertRaisedEventArgs>? AlertRaised;
 
+    event EventHandler? ConfigChanged;
+
     /// <summary>Newest-first snapshot of alerts raised this session (max 100).</summary>
     IReadOnlyList<AlertEvent> RecentAlerts { get; }
 
-    /// <summary>Reloads the alert configuration from settings (no UI page owns it yet).</summary>
+    /// <summary>The current alert configuration loaded from settings.</summary>
+    AlertConfig CurrentConfig { get; }
+
+    /// <summary>Reloads the alert configuration from settings.</summary>
     void RefreshConfig();
 }

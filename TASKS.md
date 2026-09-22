@@ -17,11 +17,16 @@
 - [x] FloatingWidgetWindow FlowDirection culture refresh
 - [x] CSV dialog localization
 - [x] MainViewModel.Dispose CultureChanged unsubscribe
-- [x] 13 new DarkTheme tests + 4 localization regression tests
-- [x] Tests: 538/538 PASS (212 Network + 60 Infrastructure + 266 App)
+- [x] **Navigation crash fix** — ComboBox template ColumnDefinition Width hardcoded to `17` (was `{DynamicResource SystemParameters.VerticalScrollBarWidthKey}` → `double` → `GridLength` cast failure)
+- [x] **Disabled ComboBox Background fix** — SurfaceColor → SurfaceBrush in ComboBox disabled-state trigger
+- [x] **Alerts configured rules display** — New "Configured Alert Rules" section on Alerts page showing enabled rules with thresholds
+- [x] **Alerts empty state** — "No alerts have been configured yet." / "No alerts have been triggered yet." localized empty states
+- [x] **IAlertService.ConfigChanged event** — Alerts page updates immediately when rules are saved on Settings page
+- [x] 17 new DarkTheme tests + 8 localization/regression tests
+- [x] Tests: 542/542 PASS (212 Network + 60 Infrastructure + 270 App)
 - [x] Debug + Release builds: 0 warnings / 0 errors
 - [x] Version bump 0.1.2 → 0.1.3
-- [x] GUI verification — human visual PASS
+- [x] GUI verification — human visual PASS (navigation crash verified fixed)
 - **Status: done**
 
 ### Post-0.1.2 UI/UX Hotfix — **DONE**

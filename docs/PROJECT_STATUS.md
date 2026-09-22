@@ -7,7 +7,9 @@ Updated: 2026-09-22
 **v0.1.3** released on `hotfix/ui-polish-after-0.1.2`: dark theme
 consistency, white content background removal, ComboBox/ContextMenu dark
 popups, complete runtime English/Persian switching, Floating Widget
-lifecycle fix, About icon quality. 538/538 tests pass, Debug + Release
+lifecycle fix, About icon quality, navigation crash fix (ComboBox GridLength),
+Alerts page configured rules display, and localized empty states.
+542/542 tests pass, Debug + Release
 0 warnings/0 errors. Human GUI verification PASS.
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24

@@ -42,8 +42,10 @@ public sealed class AlertService : IAlertService
         _settings = settings;
         _logger = logger;
 
+        var config = AlertSettings.Load(settings);
+        CurrentConfig = config;
         _engine = new AlertEngine(
-            AlertSettings.Load(settings),
+            config,
             TimeZoneInfo.Local,
             () => DateTimeOffset.UtcNow);
         _engine.RestoreTriggeredDates(AlertSettings.LoadTriggeredDates(settings));
@@ -55,12 +57,18 @@ public sealed class AlertService : IAlertService
 
     public event EventHandler<AlertRaisedEventArgs>? AlertRaised;
 
+    public event EventHandler? ConfigChanged;
+
     public IReadOnlyList<AlertEvent> RecentAlerts => _buffer.Latest();
+
+    public AlertConfig CurrentConfig { get; private set; }
 
     public void RefreshConfig()
     {
-        _engine.UpdateConfig(AlertSettings.Load(_settings));
+        CurrentConfig = AlertSettings.Load(_settings);
+        _engine.UpdateConfig(CurrentConfig);
         _logger.LogInformation("Alert configuration refreshed from settings");
+        ConfigChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void Dispose()

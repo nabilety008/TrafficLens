@@ -8,6 +8,8 @@ Post-v0.1.2 UI polish and runtime language switching fixes.
 
 ### Fixed
 
+- **ComboBox navigation crash** — ComboBox template `ColumnDefinition Width` used `{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}` which returns a boxed `double` at runtime. WPF cannot implicitly convert `double` → `GridLength` during template application, causing `InvalidCastException` and process termination. Fixed by using a hardcoded literal `Width="17"`.
+- **Disabled ComboBox Background** — ComboBox template disabled-state trigger used `{DynamicResource SurfaceColor}` (a `Color` object) where `Background` expects a `Brush`. Fixed to `{DynamicResource SurfaceBrush}`.
 - **White main content background** — removed bright white background behind all page content by applying `BackgroundBrush` to MainWindow root Grid.
 - **Dark ComboBox dropdown** — full ComboBox ControlTemplate with dark Popup background (`DynamicResource`), removed `SystemDropShadowChrome`. Eliminates default white dropdown surface.
 - **Dark WPF ContextMenu/MenuItem** — implicit styles for ContextMenu and MenuItem with dark backgrounds, hover highlights, and full ControlTemplate.
@@ -16,9 +18,16 @@ Post-v0.1.2 UI polish and runtime language switching fixes.
 - **About page icon** — switched from ICO to TrafficLens-256.png for sharper 48x48 rendering.
 - **CSV dialog localization** — SaveFileDialog filter now uses localized resource string.
 - **CultureChanged cleanup** — MainViewModel.Dispose unsubscribes from CultureChanged.
+- **Alerts page configured rules display** — Alerts page now shows configured alert rules (enabled rules with thresholds) above the triggered alerts section. Rules update immediately after saving on the Settings page without restart.
+- **Alerts page empty state** — Shows "No alerts have been configured yet." when no rules are enabled; "No alerts have been triggered yet." when no alerts have fired. Empty states update dynamically.
 
 ### Added
 
+- `IAlertService.CurrentConfig` property exposing the current `AlertConfig`.
+- `IAlertService.ConfigChanged` event fired when alert configuration is refreshed.
+- `ConfiguredAlertRuleViewModel` displaying each enabled alert rule with name and threshold.
+- 7 new localization strings for configured rules section and empty states (English + Persian).
+- 4 new regression tests for Alerts configured rules display, culture switching, and empty state.
 - 13 new DarkTheme structural tests (brush resources, ComboBox/ComboBoxItem/ContextMenu/MenuItem style existence, no SystemColors references).
 - 4 new localization regression tests (ConnectionsViewModel label refresh, AlertRuleViewModel name refresh and PropertyChanged).
 

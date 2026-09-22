@@ -215,9 +215,17 @@ internal sealed class FakeAlertService : IAlertService
 
     public event EventHandler<AlertRaisedEventArgs>? AlertRaised;
 
+    public event EventHandler? ConfigChanged;
+
     public IReadOnlyList<AlertEvent> RecentAlerts => _recent.ToArray();
 
-    public void RefreshConfig() => RefreshCalls++;
+    public AlertConfig CurrentConfig { get; set; } = AlertConfig.Default();
+
+    public void RefreshConfig()
+    {
+        RefreshCalls++;
+        ConfigChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public void Dispose() => DisposeCalls++;
 

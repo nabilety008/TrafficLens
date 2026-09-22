@@ -25,7 +25,7 @@ public sealed class AlertsViewModelTests : IDisposable
     public void Constructor_EmptyBuffer_ShowsNoAlertsState()
     {
         Assert.True(_vm.HasNoAlerts);
-        Assert.Equal("No alerts have been triggered.", _vm.NoAlertsText);
+        Assert.Equal("No alerts have been triggered yet.", _vm.NoAlertsText);
         Assert.Equal(string.Empty, _vm.AlertCountText);
         Assert.Empty(_vm.RecentAlerts);
     }
@@ -68,5 +68,98 @@ public sealed class AlertsViewModelTests : IDisposable
 
         Assert.Empty(_vm.RecentAlerts);
         Assert.True(_vm.HasNoAlerts);
+    }
+
+    [Fact]
+    public void Constructor_DefaultConfig_ShowsNoConfiguredRules_AllDisabled()
+    {
+        Assert.Empty(_vm.ConfiguredRules);
+        Assert.True(_vm.HasNoConfiguredRules);
+    }
+
+    [Fact]
+    public void ConfigChanged_UpdatesConfiguredRules()
+    {
+        _alertService.CurrentConfig = new AlertConfig(
+            HighDownloadSpeedEnabled: true,
+            HighDownloadSpeedThresholdBytesPerSecond: 50 * 1024 * 1024,
+            HighUploadSpeedEnabled: false,
+            HighUploadSpeedThresholdBytesPerSecond: 20 * 1024 * 1024,
+            DailyDownloadLimitEnabled: true,
+            DailyDownloadLimitBytes: 50L * 1024 * 1024 * 1024,
+            DailyUploadLimitEnabled: false,
+            DailyUploadLimitBytes: 20L * 1024 * 1024 * 1024,
+            DailyTotalLimitEnabled: false,
+            DailyTotalLimitBytes: 100L * 1024 * 1024 * 1024,
+            Cooldown: TimeSpan.FromMinutes(5));
+
+        _alertService.RefreshConfig();
+
+        Assert.False(_vm.HasNoConfiguredRules);
+        Assert.Equal(2, _vm.ConfiguredRules.Count);
+
+        var highDownload = _vm.ConfiguredRules.First(r => r.Type == AlertType.HighDownloadSpeed);
+        Assert.Contains("50", highDownload.ThresholdText);
+
+        var dailyDownload = _vm.ConfiguredRules.First(r => r.Type == AlertType.DailyDownloadLimit);
+        Assert.NotNull(dailyDownload);
+
+        Assert.DoesNotContain(_vm.ConfiguredRules, r => r.Type == AlertType.HighUploadSpeed);
+        Assert.DoesNotContain(_vm.ConfiguredRules, r => r.Type == AlertType.DailyUploadLimit);
+        Assert.DoesNotContain(_vm.ConfiguredRules, r => r.Type == AlertType.DailyTotalLimit);
+    }
+
+    [Fact]
+    public void ConfigChanged_CultureChange_LocalizesConfiguredRules()
+    {
+        _alertService.CurrentConfig = new AlertConfig(
+            HighDownloadSpeedEnabled: true,
+            HighDownloadSpeedThresholdBytesPerSecond: 50 * 1024 * 1024,
+            HighUploadSpeedEnabled: false,
+            HighUploadSpeedThresholdBytesPerSecond: 20 * 1024 * 1024,
+            DailyDownloadLimitEnabled: false,
+            DailyDownloadLimitBytes: 50L * 1024 * 1024 * 1024,
+            DailyUploadLimitEnabled: false,
+            DailyUploadLimitBytes: 20L * 1024 * 1024 * 1024,
+            DailyTotalLimitEnabled: false,
+            DailyTotalLimitBytes: 100L * 1024 * 1024 * 1024,
+            Cooldown: TimeSpan.FromMinutes(5));
+
+        _alertService.RefreshConfig();
+
+        var highDownload = _vm.ConfiguredRules.First(r => r.Type == AlertType.HighDownloadSpeed);
+        Assert.Equal("High download speed", highDownload.RuleName);
+
+        _localization.SetCulture("fa-IR");
+
+        var highDownloadFa = _vm.ConfiguredRules.First(r => r.Type == AlertType.HighDownloadSpeed);
+        Assert.Equal("سرعت دانلود بالا", highDownloadFa.RuleName);
+    }
+
+    [Fact]
+    public void AllEnabledAlertTypes_DisplayedInConfiguredRules()
+    {
+        _alertService.CurrentConfig = new AlertConfig(
+            HighDownloadSpeedEnabled: true,
+            HighDownloadSpeedThresholdBytesPerSecond: 50 * 1024 * 1024,
+            HighUploadSpeedEnabled: true,
+            HighUploadSpeedThresholdBytesPerSecond: 20 * 1024 * 1024,
+            DailyDownloadLimitEnabled: true,
+            DailyDownloadLimitBytes: 50L * 1024 * 1024 * 1024,
+            DailyUploadLimitEnabled: true,
+            DailyUploadLimitBytes: 20L * 1024 * 1024 * 1024,
+            DailyTotalLimitEnabled: true,
+            DailyTotalLimitBytes: 100L * 1024 * 1024 * 1024,
+            Cooldown: TimeSpan.FromMinutes(5));
+
+        _alertService.RefreshConfig();
+
+        Assert.Equal(5, _vm.ConfiguredRules.Count);
+        var types = _vm.ConfiguredRules.Select(r => r.Type).ToList();
+        Assert.Contains(AlertType.HighDownloadSpeed, types);
+        Assert.Contains(AlertType.HighUploadSpeed, types);
+        Assert.Contains(AlertType.DailyDownloadLimit, types);
+        Assert.Contains(AlertType.DailyUploadLimit, types);
+        Assert.Contains(AlertType.DailyTotalLimit, types);
     }
 }
