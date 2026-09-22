@@ -1,0 +1,70 @@
+<Window
+    x:Class="TrafficLens.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TrafficLens.WinUI"
+    Title="TrafficLens">
+
+    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="48" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                x:Name="TitleText"
+                Grid.Column="0"
+                Margin="16,0,0,0"
+                VerticalAlignment="Center"
+                FontSize="14"
+                FontWeight="SemiBold"
+                Text="TrafficLens" />
+
+            <StackPanel
+                Grid.Column="2"
+                Margin="0,0,8,0"
+                Orientation="Horizontal"
+                Spacing="4"
+                VerticalAlignment="Center">
+                <Button
+                    x:Name="EnglishButton"
+                    Click="EnglishButton_Click"
+                    Content="English"
+                    Padding="10,4" />
+                <Button
+                    x:Name="PersianButton"
+                    Click="PersianButton_Click"
+                    Content="فارسی"
+                    Padding="10,4" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView
+            x:Name="NavView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            OpenPaneLength="220"
+            PaneDisplayMode="Left"
+            SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="DashboardNavItem" Content="Dashboard" Tag="Dashboard" />
+                <NavigationViewItem x:Name="ApplicationsNavItem" Content="Applications" Tag="Applications" />
+                <NavigationViewItem x:Name="ConnectionsNavItem" Content="Connections" Tag="Connections" />
+                <NavigationViewItem x:Name="HistoryNavItem" Content="History" Tag="History" />
+                <NavigationViewItem x:Name="AlertsNavItem" Content="Alerts" Tag="Alerts" />
+                <NavigationViewItem x:Name="SettingsNavItem" Content="Settings" Tag="Settings" />
+                <NavigationViewItem x:Name="AboutNavItem" Content="About" Tag="About" />
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+    </Grid>
+</Window>

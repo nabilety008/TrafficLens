@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <RootNamespace>TrafficLens.WinUI</RootNamespace>
+    <AssemblyName>TrafficLens.WinUI</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\branding\TrafficLens.ico</ApplicationIcon>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrafficLens.Core\TrafficLens.Core.csproj" />
+    <ProjectReference Include="..\TrafficLens.Infrastructure\TrafficLens.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\TrafficLens.App\Resources\Strings.resx" Link="Resources\Strings.resx" />
+    <EmbeddedResource Include="..\TrafficLens.App\Resources\Strings.fa-IR.resx" Link="Resources\Strings.fa-IR.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\assets\branding\TrafficLens-256.png" Link="Assets\TrafficLens-256.png" />
+    <None Include="..\..\assets\branding\TrafficLens.ico" Link="Assets\TrafficLens.ico" />
+  </ItemGroup>
+
+</Project>

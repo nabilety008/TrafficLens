@@ -1,0 +1,33 @@
+<UserControl
+    x:Class="TrafficLens.WinUI.Pages.PlaceholderView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Padding="24,20,24,24" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            x:Name="PageTitleText"
+            Grid.Row="0"
+            FontSize="28"
+            FontWeight="SemiBold"
+            Text="Page" />
+
+        <TextBlock
+            x:Name="PageHintText"
+            Grid.Row="1"
+            Opacity="0.75"
+            TextWrapping="Wrap" />
+
+        <TextBlock
+            x:Name="MilestoneHintText"
+            Grid.Row="2"
+            Margin="0,8,0,0"
+            Opacity="0.55"
+            TextWrapping="Wrap" />
+    </Grid>
+</UserControl>
