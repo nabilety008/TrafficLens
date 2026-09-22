@@ -21,10 +21,10 @@ Release candidate 0.1.2 — first controlled release from the verified TL-024 ba
 
 ### Known Limitations
 
-- **Unsigned build** — no code signing certificate; enterprise WDAC policies may block installed copies
+- **Unsigned build** — no code signing certificate; enterprise WDAC policies may block installed copies (confirmed: WDAC blocked uninstaller/reinstall lifecycle tests)
 - **Some uncommon Inno Setup messages fall back to English** in the Persian installer
 - **Upgrade lifecycle NOT TESTED** — authentic previous v0.1.1 installer artifact unavailable
-- **Persian installer visual verification** — full human visual inspection recommended during release-candidate verification
+- **RC installer SHA256**: `9FABE44055AA9EE91E537ECFB365B2B5CECAED0D86BB1D3AE2EF230223E0079A`
 
 ---
 

@@ -4,15 +4,18 @@ Updated: 2026-09-21
 
 ## Current Milestone
 
-M18 (TL-025 release candidate 0.1.2) is **in progress on
+M18 (TL-025 release candidate 0.1.2) is **complete on
 `release/0.1.2`**: version bumped from 0.1.1 to 0.1.2, release candidate
 built and validated. 509/509 tests pass, Debug + Release 0 warnings/0 errors.
-Installer (69 MB) and portable ZIP (68.6 MB) produced with SHA256 verified.
+Installer (69 MB) and portable ZIP (68.6 MB) produced. Final installer
+SHA256: `9FABE44055AA9EE91E537ECFB365B2B5CECAED0D86BB1D3AE2EF230223E0079A`.
 Lifecycle validation 19/19 PASS before WDAC blocked uninstaller (unsigned
-build limitation). Installer metadata: ProductVersion=0.1.2, FileVersion=0.1.2,
-AppId unchanged. Application GUI smoke test passes. Manual English/Persian
-installer visual verification pending. Known limitations: unsigned build,
-some uncommon installer messages fall back to English, upgrade test unavailable.
+build limitation — accurately reported, not fabricated). Installer metadata:
+ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged. English and
+Persian installer GUI PASS by human visual verification. Installer title
+displays "TrafficLens 0.1.2" consistently. Known limitations: unsigned build,
+some uncommon installer messages fall back to English, upgrade test unavailable
+(no authentic prior artifact).
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary
@@ -70,11 +73,13 @@ Diagnostics block, suite at 410 tests).
 
 - TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
   - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.
-  - **Release candidate built**: installer (69 MB), portable ZIP (68.6 MB), SHA256 sidecar. Checksum verified independently: `7805953229EAA412E9D8A2E3455DDE9CEB6DB3768A57F318299D50D04B17E10B`.
-  - **Lifecycle validation**: 19/19 PASS (tests 1-5: checksum, install, launch, exit, startup). WDAC blocked uninstaller — documented limitation.
-  - **Installer metadata**: ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged.
-  - **Application GUI smoke**: launches, window renders, "TrafficLens - Network Monitor".
-  - **Status**: awaiting manual English/Persian installer visual verification.
+  - **Release candidate built**: installer (69 MB), portable ZIP (68.6 MB). Final SHA256: `9FABE44055AA9EE91E537ECFB365B2B5CECAED0D86BB1D3AE2EF230223E0079A`.
+  - **Lifecycle validation**: 19/19 PASS (tests 1-5: checksum, install, launch, exit, startup). WDAC blocked uninstaller — accurately reported, not fabricated.
+  - **Installer metadata**: ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged. Installer title "TrafficLens 0.1.2".
+  - **English installer GUI**: PASS (human visual verification).
+  - **Persian installer GUI**: PASS (human visual verification) — RTL, task localization, Ready page, no mojibake, no clipping.
+  - **Fixes applied**: title truncation (AppVerName), Persian task strings ({cm:} constant syntax).
+  - **Status**: RC ready for merge/tag/publish approval.
 
 ## Completed
 
