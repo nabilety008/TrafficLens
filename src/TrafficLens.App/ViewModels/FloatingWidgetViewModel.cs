@@ -132,6 +132,39 @@ public sealed class FloatingWidgetViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        DetachEvents();
+    }
+
+    /// <summary>
+    /// Temporarily detach from live data events while the widget is hidden.
+    /// Lighter than Dispose — the ViewModel stays alive and can be resumed
+    /// without creating a new instance.
+    /// </summary>
+    public void Suspend()
+    {
+        DetachEvents();
+    }
+
+    /// <summary>
+    /// Re-attach to live data events after being suspended.
+    /// </summary>
+    public void Resume()
+    {
+        AttachEvents();
+        RefreshLocalizedStrings();
+        RefreshRates();
+    }
+
+    private void AttachEvents()
+    {
+        _collector.SpeedSampleReady += OnSpeedSample;
+        _collector.NetworkChanged += OnAdaptersChanged;
+        _adapterProvider.AdaptersChanged += OnAdaptersChanged;
+        _localization.CultureChanged += OnCultureChanged;
+    }
+
+    private void DetachEvents()
+    {
         _collector.SpeedSampleReady -= OnSpeedSample;
         _collector.NetworkChanged -= OnAdaptersChanged;
         _adapterProvider.AdaptersChanged -= OnAdaptersChanged;

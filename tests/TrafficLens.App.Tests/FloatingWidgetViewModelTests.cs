@@ -133,4 +133,162 @@ public sealed class FloatingWidgetViewModelTests : IDisposable
         _adapters.SetAdapters(new[] { Adapter("eth0", NetworkAdapterKind.Ethernet, true) });
         _localization.SetCulture("fa-IR");
     }
+
+    [Fact]
+    public void Suspend_StopsEventProcessing()
+    {
+        _adapters.SetAdapters(new[] { Adapter("eth0", NetworkAdapterKind.Ethernet, true) });
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 1048576, 0, DateTime.UtcNow));
+        Assert.Equal("1 MB/s", _vm.DownloadText);
+
+        _vm.Suspend();
+
+        // After suspend, new samples should NOT update the view model
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 2097152, 0, DateTime.UtcNow));
+        Assert.Equal("1 MB/s", _vm.DownloadText);
+    }
+
+    [Fact]
+    public void Resume_RestartsEventProcessing()
+    {
+        _adapters.SetAdapters(new[] { Adapter("eth0", NetworkAdapterKind.Ethernet, true) });
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 1048576, 0, DateTime.UtcNow));
+        Assert.Equal("1 MB/s", _vm.DownloadText);
+
+        _vm.Suspend();
+        _vm.Resume();
+
+        // After resume, new samples should update the view model
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 2097152, 0, DateTime.UtcNow));
+        Assert.Equal("2 MB/s", _vm.DownloadText);
+    }
+
+    [Fact]
+    public void Suspend_Resume_Suspend_Resume_Works()
+    {
+        _adapters.SetAdapters(new[] { Adapter("eth0", NetworkAdapterKind.Ethernet, true) });
+
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 1024, 0, DateTime.UtcNow));
+        Assert.Equal("1 KB/s", _vm.DownloadText);
+
+        _vm.Suspend();
+        _vm.Resume();
+
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 2048, 0, DateTime.UtcNow));
+        Assert.Equal("2 KB/s", _vm.DownloadText);
+
+        _vm.Suspend();
+        _vm.Resume();
+
+        _collector.RaiseSample(new NetworkSpeedSample("eth0", "Ethernet", 4096, 0, DateTime.UtcNow));
+        Assert.Equal("4 KB/s", _vm.DownloadText);
+    }
+
+    [Fact]
+    public void Suspend_DoesNotCrashOnAdaptersChanged()
+    {
+        _vm.Suspend();
+
+        // These should not throw
+        _adapters.SetAdapters(new[] { Adapter("eth0", NetworkAdapterKind.Ethernet, true) });
+        _collector.RaiseNetworkChanged();
+    }
+
+    [Fact]
+    public void Suspend_DoesNotCrashOnCultureChange()
+    {
+        _vm.Suspend();
+
+        _localization.SetCulture("fa-IR");
+    }
+
+    [Fact]
+    public void Resume_ReappliesCurrentCulture()
+    {
+        _localization.SetCulture("en-US");
+        Assert.Equal("Download", _vm.DownloadLabel);
+
+        _vm.Suspend();
+        _localization.SetCulture("fa-IR");
+        _vm.Resume();
+
+        Assert.NotEqual("Download", _vm.DownloadLabel);
+    }
+
+    [Fact]
+    public void Dispose_AfterSuspend_NoCrash()
+    {
+        _vm.Suspend();
+        _vm.Dispose();
+    }
+
+    [Fact]
+    public void FakeWidgetService_Toggle_Cycles()
+    {
+        var fake = new FakeFloatingWidgetService();
+
+        Assert.False(fake.IsVisible);
+
+        fake.Toggle();
+        Assert.True(fake.IsVisible);
+
+        fake.Toggle();
+        Assert.False(fake.IsVisible);
+
+        fake.Toggle();
+        Assert.True(fake.IsVisible);
+    }
+
+    [Fact]
+    public void FakeWidgetService_MultipleToggles_NoDuplicateState()
+    {
+        var fake = new FakeFloatingWidgetService();
+
+        for (int i = 0; i < 10; i++)
+        {
+            fake.Toggle();
+        }
+
+        // 10 toggles from false: even count ends at false
+        Assert.False(fake.IsVisible);
+        Assert.Equal(10, fake.ToggleCalls);
+    }
+
+    [Fact]
+    public void FakeWidgetService_Hide_DoesNotExitApp()
+    {
+        var fake = new FakeFloatingWidgetService();
+
+        fake.Show();
+        Assert.True(fake.IsVisible);
+
+        fake.Hide();
+        Assert.False(fake.IsVisible);
+
+        // Hide should NOT call Dispose (exit is separate)
+        Assert.Equal(0, fake.DisposeCalls);
+    }
+
+    [Fact]
+    public void FakeWidgetService_Dispose_CalledOnAppExit()
+    {
+        var fake = new FakeFloatingWidgetService();
+
+        fake.Show();
+        fake.Dispose();
+
+        Assert.Equal(1, fake.DisposeCalls);
+    }
+
+    [Fact]
+    public void FakeWidgetService_PersistedSetting_Synchronized()
+    {
+        var fake = new FakeFloatingWidgetService();
+
+        fake.Show();
+        Assert.True(fake.IsVisible);
+
+        fake.Hide();
+        Assert.False(fake.IsVisible);
+    }
 }

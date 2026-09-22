@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Resource Include="..\..\assets\branding\TrafficLens.ico" />
+    <Resource Include="..\..\assets\branding\TrafficLens-256.png" />
   </ItemGroup>
 
   <PropertyGroup>

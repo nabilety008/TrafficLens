@@ -85,12 +85,10 @@ public void Hide()
             IsVisible = false;
             SaveEnabled(false);
 
-            // Dispose view model to stop background event processing while hidden
-            if (_viewModel is not null)
-            {
-                DisposeWidgetViewModel(_viewModel);
-                _viewModel = null;
-            }
+            // Suspend (not dispose) the view model to stop background event
+            // processing while hidden. The window remains alive so Show() can
+            // re-activate it with a simple Resume().
+            _viewModel?.Suspend();
         }
 
     public void Toggle()
@@ -161,6 +159,8 @@ public void Hide()
     {
         if (_window is not null)
         {
+            // Window already exists — resume if previously suspended
+            _viewModel?.Resume();
             return;
         }
 
