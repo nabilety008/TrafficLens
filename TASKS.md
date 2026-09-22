@@ -8,6 +8,20 @@
 
 ## Backlog
 
+### WUI-001 WinUI 3 Migration — Foundation + Application Shell — **AWAITING HUMAN GUI VERIFICATION**
+- [x] `docs/WINUI3_MIGRATION.md` — component map, WASDK version rationale, WUI-001…010 plan
+- [x] New `src/TrafficLens.WinUI` project — `net8.0-windows10.0.19041.0`, Windows App SDK **2.5.1**, unpackaged, self-contained, x64
+- [x] App.xaml composition root — DI (`ISettingsService`, `ILocalizationService`, file logging)
+- [x] MainWindow — custom TitleBar (`ExtendsContentIntoTitleBar`), `NavigationView`, dark theme
+- [x] Destinations: Dashboard, Applications, Connections, History, Alerts, Settings, About (placeholder pages)
+- [x] Localization foundation — linked `Strings.resx`/`Strings.fa-IR.resx`, runtime EN/FA switch, RTL `FlowDirection`, language persisted
+- [x] Solution membership with x64 platform mapping
+- [x] Release build: 0 warnings / 0 errors (project + full solution)
+- [x] Tests: 542/542 PASS (212 Network + 60 Infrastructure + 270 App)
+- [x] Launched WinUI shell; process alive and responding
+- [ ] GUI verification — **REQUIRES HUMAN INSPECTION** (title bar, nav, EN/FA/RTL, no crash)
+- **Status: awaiting visual verification** (branch `feature/winui3-migration`, rollback `f9017f0`)
+
 ### TL-026 Release v0.1.3 — Dark Theme & Localization Hotfix — **DONE**
 - [x] White main content background removed (MainWindow root Grid)
 - [x] Dark ComboBox ControlTemplate with DynamicResource Popup
