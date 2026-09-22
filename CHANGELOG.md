@@ -2,6 +2,28 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.3] — Dark Theme & Localization Hotfix
+
+Post-v0.1.2 UI polish and runtime language switching fixes.
+
+### Fixed
+
+- **White main content background** — removed bright white background behind all page content by applying `BackgroundBrush` to MainWindow root Grid.
+- **Dark ComboBox dropdown** — full ComboBox ControlTemplate with dark Popup background (`DynamicResource`), removed `SystemDropShadowChrome`. Eliminates default white dropdown surface.
+- **Dark WPF ContextMenu/MenuItem** — implicit styles for ContextMenu and MenuItem with dark backgrounds, hover highlights, and full ControlTemplate.
+- **Runtime English/Persian switching** — fixed incomplete UI refresh: AlertRuleViewModel.Name now raises PropertyChanged, ConnectionsViewModel backing field bypass fixed, FloatingWidgetWindow FlowDirection updates on culture change.
+- **Floating Widget lifecycle** — Suspend/Resume instead of Dispose/Recreate prevents disposed ViewModel and duplicate instances.
+- **About page icon** — switched from ICO to TrafficLens-256.png for sharper 48x48 rendering.
+- **CSV dialog localization** — SaveFileDialog filter now uses localized resource string.
+- **CultureChanged cleanup** — MainViewModel.Dispose unsubscribes from CultureChanged.
+
+### Added
+
+- 13 new DarkTheme structural tests (brush resources, ComboBox/ComboBoxItem/ContextMenu/MenuItem style existence, no SystemColors references).
+- 4 new localization regression tests (ConnectionsViewModel label refresh, AlertRuleViewModel name refresh and PropertyChanged).
+
+---
+
 ## [Post-0.1.2] — UI/UX Hotfix
 
 Post-v0.1.2 UI polish fixes. These are NOT part of the tagged v0.1.2 release.

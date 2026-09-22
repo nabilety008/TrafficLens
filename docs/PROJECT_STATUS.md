@@ -1,14 +1,14 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-21
+Updated: 2026-09-22
 
 ## Current Milestone
 
-Post-0.1.2 UI/UX hotfix is **in progress on
-`hotfix/ui-polish-after-0.1.2`**: dark theme ComboBox styling, floating
-widget toggle lifecycle fix, About page icon quality improvement. 510/510
-tests pass (12 new widget lifecycle tests), Debug + Release 0 warnings/0
-errors. GUI verification pending.
+**v0.1.3** released on `hotfix/ui-polish-after-0.1.2`: dark theme
+consistency, white content background removal, ComboBox/ContextMenu dark
+popups, complete runtime English/Persian switching, Floating Widget
+lifecycle fix, About icon quality. 538/538 tests pass, Debug + Release
+0 warnings/0 errors. Human GUI verification PASS.
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary

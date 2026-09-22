@@ -8,7 +8,23 @@
 
 ## Backlog
 
-### Post-0.1.2 UI/UX Hotfix — **IN PROGRESS**
+### TL-026 Release v0.1.3 — Dark Theme & Localization Hotfix — **DONE**
+- [x] White main content background removed (MainWindow root Grid)
+- [x] Dark ComboBox ControlTemplate with DynamicResource Popup
+- [x] Dark WPF ContextMenu/MenuItem implicit styles
+- [x] AlertRuleViewModel.Name PropertyChanged fix
+- [x] ConnectionsViewModel backing field bypass fix
+- [x] FloatingWidgetWindow FlowDirection culture refresh
+- [x] CSV dialog localization
+- [x] MainViewModel.Dispose CultureChanged unsubscribe
+- [x] 13 new DarkTheme tests + 4 localization regression tests
+- [x] Tests: 538/538 PASS (212 Network + 60 Infrastructure + 266 App)
+- [x] Debug + Release builds: 0 warnings / 0 errors
+- [x] Version bump 0.1.2 → 0.1.3
+- [x] GUI verification — human visual PASS
+- **Status: done**
+
+### Post-0.1.2 UI/UX Hotfix — **DONE**
 - [x] Dark theme ComboBox style — implicit ComboBox/ComboBoxItem styles in DarkTheme.xaml
 - [x] Floating widget toggle fix — Suspend/Resume lifecycle, no Dispose on hide
 - [x] About page icon quality — use TrafficLens-256.png instead of ICO
