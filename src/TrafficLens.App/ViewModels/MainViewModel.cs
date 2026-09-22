@@ -85,6 +85,7 @@ public sealed class MainViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _localization.CultureChanged -= OnCultureChanged;
         _floatingWidgetService.IsVisibleChanged -= OnIsVisibleChanged;
         About.Dispose();
         Settings.Dispose();

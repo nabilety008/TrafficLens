@@ -290,4 +290,30 @@ public sealed class ConnectionsViewModelTests : IDisposable
         Assert.False(_vm.EnableReverseDns);
         Assert.Equal(saveCalls + 2, _settings.SaveCalls);
     }
+
+    [Fact]
+    public void CultureSwitch_UpdatesHideListenersLabel()
+    {
+        var initialLabel = _vm.HideListenersLabel;
+        Assert.Equal("Hide listeners", initialLabel);
+
+        _localization.SetCulture("fa-IR");
+        Assert.Equal("پنهان کردن شنونده‌ها", _vm.HideListenersLabel);
+
+        _localization.SetCulture("en-US");
+        Assert.Equal("Hide listeners", _vm.HideListenersLabel);
+    }
+
+    [Fact]
+    public void CultureSwitch_UpdatesEnableReverseDnsLabel()
+    {
+        var initialLabel = _vm.EnableReverseDnsLabel;
+        Assert.Equal("Resolve remote hostnames (reverse DNS)", initialLabel);
+
+        _localization.SetCulture("fa-IR");
+        Assert.Equal("بررسی نام میزبان‌ها (DNS معکوس)", _vm.EnableReverseDnsLabel);
+
+        _localization.SetCulture("en-US");
+        Assert.Equal("Resolve remote hostnames (reverse DNS)", _vm.EnableReverseDnsLabel);
+    }
 }

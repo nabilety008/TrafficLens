@@ -412,8 +412,8 @@ private string _pidLabel = string.Empty;
         _unknownProcessText = _localization["UnknownProcessLabel"];
         _tcpText = _localization["TcpLabel"];
         _udpText = _localization["UdpLabel"];
-        _hideListenersLabel = _localization["HideListenersLabel"];
-        _enableReverseDnsLabel = _localization["EnableReverseDnsLabel"];
+        HideListenersLabel = _localization["HideListenersLabel"];
+        EnableReverseDnsLabel = _localization["EnableReverseDnsLabel"];
 
         _stateTexts[ConnectionState.Closed] = _localization["StateClosedLabel"];
         _stateTexts[ConnectionState.Listen] = _localization["StateListenLabel"];

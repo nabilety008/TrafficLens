@@ -620,9 +620,12 @@
   </data>
   <data name="ExportSuccessfulLabel" xml:space="preserve">
     <value>خروجی CSV با موفقیت ذخیره شد</value>
-  </data>
+   </data>
   <data name="ExportFailedLabel" xml:space="preserve">
     <value>خطا در ذخیره خروجی CSV. لطفاً مجوز فایل را بررسی کنید و دوباره تلاش کنید.</value>
+  </data>
+  <data name="CsvFileFilterLabel" xml:space="preserve">
+    <value>فایل‌های CSV (*.csv)|*.csv</value>
   </data>
   <data name="NoComparisonDataLabel" xml:space="preserve">
     <value>داده مقایسه‌ای موجود نیست</value>

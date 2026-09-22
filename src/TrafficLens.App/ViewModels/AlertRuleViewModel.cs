@@ -4,6 +4,7 @@ public sealed class AlertRuleViewModel : ViewModelBase
 {
     private Action? _onEdited;
     private bool _isEnabled;
+    private string _name = string.Empty;
     private string _thresholdText = string.Empty;
     private int _unitIndex;
 
@@ -14,7 +15,11 @@ public sealed class AlertRuleViewModel : ViewModelBase
 
     public string Id { get; }
 
-    public string Name { get; set; } = string.Empty;
+    public string Name
+    {
+        get => _name;
+        set => SetProperty(ref _name, value);
+    }
 
     public string[] UnitOptions { get; set; } = Array.Empty<string>();
 

@@ -168,7 +168,7 @@ public void Hide()
         _viewModel.CloseRequested += OnCloseRequested;
         _viewModel.PinStateChanged += OnPinStateChanged;
 
-        _window = new FloatingWidgetWindow(_viewModel);
+        _window = new FloatingWidgetWindow(_viewModel, _localization);
         _window.Closing += OnWindowClosing;
     }
 

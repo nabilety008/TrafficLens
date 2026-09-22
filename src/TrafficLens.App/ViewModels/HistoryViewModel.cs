@@ -584,7 +584,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
         var defaultName = $"TrafficLens-History-{DateTime.Now:yyyy-MM-dd}.csv";
         var dialog = new SaveFileDialog
         {
-            Filter = "CSV files (*.csv)|*.csv",
+            Filter = _localization["CsvFileFilterLabel"],
             DefaultExt = ".csv",
             FileName = defaultName
         };

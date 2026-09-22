@@ -315,4 +315,32 @@ public sealed class SettingsViewModelTests : IDisposable
 
         Assert.True(onboarding.IsVisible);
     }
+
+    [Fact]
+    public void CultureSwitch_UpdatesAlertRuleNames()
+    {
+        var rule = Rule("highDownloadSpeed");
+        Assert.Equal("High download speed", rule.Name);
+
+        _localization.SetCulture("fa-IR");
+        Assert.Equal("سرعت دانلود بالا", rule.Name);
+
+        _localization.SetCulture("en-US");
+        Assert.Equal("High download speed", rule.Name);
+    }
+
+    [Fact]
+    public void CultureSwitch_RaisesAlertRuleNamePropertyChanged()
+    {
+        var rule = Rule("highDownloadSpeed");
+        var changed = new List<string>();
+        ((System.ComponentModel.INotifyPropertyChanged)rule).PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AlertRuleViewModel.Name))
+                changed.Add("Name");
+        };
+
+        _localization.SetCulture("fa-IR");
+        Assert.Contains("Name", changed);
+    }
 }
