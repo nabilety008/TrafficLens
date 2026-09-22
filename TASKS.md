@@ -8,6 +8,17 @@
 
 ## Backlog
 
+### Post-0.1.2 UI/UX Hotfix — **IN PROGRESS**
+- [x] Dark theme ComboBox style — implicit ComboBox/ComboBoxItem styles in DarkTheme.xaml
+- [x] Floating widget toggle fix — Suspend/Resume lifecycle, no Dispose on hide
+- [x] About page icon quality — use TrafficLens-256.png instead of ICO
+- [x] Global dark theme controls — implicit TextBox, CheckBox, Button styles
+- [x] Widget toggle regression tests — 12 new tests covering Suspend/Resume/toggle cycles
+- [x] Tests: 510/510 PASS (212 Network + 60 Infrastructure + 249 App)
+- [x] Debug + Release builds: 0 warnings / 0 errors
+- [ ] GUI verification — **REQUIRES HUMAN INSPECTION**
+- **Status: awaiting visual verification**
+
 ### TL-025 Release Candidate 0.1.2 — **DONE**
 - [x] Version bump 0.1.1 → 0.1.2 (Directory.Build.props, TrafficLens.iss defaults, lifecycle assertions)
 - [x] Release branch created: `release/0.1.2`

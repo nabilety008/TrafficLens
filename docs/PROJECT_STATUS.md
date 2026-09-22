@@ -4,18 +4,11 @@ Updated: 2026-09-21
 
 ## Current Milestone
 
-M18 (TL-025 release candidate 0.1.2) is **complete on
-`release/0.1.2`**: version bumped from 0.1.1 to 0.1.2, release candidate
-built and validated. 509/509 tests pass, Debug + Release 0 warnings/0 errors.
-Installer (69 MB) and portable ZIP (68.6 MB) produced. Final installer
-SHA256: `9FABE44055AA9EE91E537ECFB365B2B5CECAED0D86BB1D3AE2EF230223E0079A`.
-Lifecycle validation 19/19 PASS before WDAC blocked uninstaller (unsigned
-build limitation — accurately reported, not fabricated). Installer metadata:
-ProductVersion=0.1.2, FileVersion=0.1.2, AppId unchanged. English and
-Persian installer GUI PASS by human visual verification. Installer title
-displays "TrafficLens 0.1.2" consistently. Known limitations: unsigned build,
-some uncommon installer messages fall back to English, upgrade test unavailable
-(no authentic prior artifact).
+Post-0.1.2 UI/UX hotfix is **in progress on
+`hotfix/ui-polish-after-0.1.2`**: dark theme ComboBox styling, floating
+widget toggle lifecycle fix, About page icon quality improvement. 510/510
+tests pass (12 new widget lifecycle tests), Debug + Release 0 warnings/0
+errors. GUI verification pending.
 
 Headline: History `Today` shows an "Hourly Traffic" title with up to 24
 zero-filled local-hour bars that balance **exactly** against the Today summary

@@ -2,6 +2,23 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Post-0.1.2] — UI/UX Hotfix
+
+Post-v0.1.2 UI polish fixes. These are NOT part of the tagged v0.1.2 release.
+
+### Fixed
+
+- **Dark theme ComboBox dropdown** — added implicit ComboBox/ComboBoxItem styles to `DarkTheme.xaml`. Dropdown popup, hover, selected, and disabled states now use dark theme colors instead of WPF default white.
+- **Floating widget toggle** — fixed lifecycle bug where toggling widget off/on could leave a disposed ViewModel bound to the window. Now uses Suspend/Resume instead of Dispose/Recreate. Widget window is reused across toggle cycles. No duplicate instances, no application exit, no lost events.
+- **About page icon** — switched from `TrafficLens.ico` to `TrafficLens-256.png` for sharper rendering at 48x48 display size. Added `RenderOptions.BitmapScalingMode="HighQuality"`.
+- **Global dark theme controls** — added implicit styles for TextBox, CheckBox, Button to ensure consistent dark theme across all controls.
+
+### Added
+
+- 12 new widget lifecycle regression tests covering: Suspend stops events, Resume restarts events, repeated Suspend/Resume cycles, culture refresh on Resume, FakeWidgetService toggle cycles, multiple toggles, hide-does-not-exit, dispose-on-exit, persisted setting sync.
+
+---
+
 ## [0.1.2] — Release Candidate (TL-025)
 
 Release candidate 0.1.2 — first controlled release from the verified TL-024 baseline.
