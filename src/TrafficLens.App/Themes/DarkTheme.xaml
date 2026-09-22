@@ -55,7 +55,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition />
                                     <ColumnDefinition Width="0" />
-                                    <ColumnDefinition Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+                                    <ColumnDefinition Width="17" />
                                 </Grid.ColumnDefinitions>
                                 <Popup x:Name="Popup"
                                        Placement="Bottom"
@@ -130,7 +130,7 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
-                            <Setter Property="Background" Value="{DynamicResource SurfaceColor}" />
+                            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
                             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                             <Setter TargetName="Arrow" Property="Stroke" Value="{DynamicResource TextMutedBrush}" />
                         </Trigger>
