@@ -4,16 +4,16 @@
 ;   scripts\build-release.ps1   (preferred — passes /D defines)
 ;
 ; Or manually (using defines with defaults):
-;   ISCC.exe /DAppVersion=0.1.1 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.1-win-x64.exe TrafficLens.iss
+;   ISCC.exe /DAppVersion=0.1.2 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.2-win-x64.exe TrafficLens.iss
 ;
 ; Per-user install into %LOCALAPPDATA%\Programs\TrafficLens — NO elevation.
 ; Program files only; user data (%LOCALAPPDATA%\TrafficLens) is never touched.
 
 #ifndef AppVersion
-  #define AppVersion "0.1.1"
+  #define AppVersion "0.1.2"
 #endif
 #ifndef AppVersionShort
-  #define AppVersionShort "0.1.1"
+  #define AppVersionShort "0.1.2"
 #endif
 #ifndef SourceDir
   #error "Define /DSourceDir=<publish directory>"
@@ -36,7 +36,7 @@
 AppId={#AppId}
 AppName={#AppName}
 AppVersion={#AppVersion}
-AppVerName={#AppName} {#AppVersionShort}
+AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppCopyright=Copyright (C) 2026 TrafficLens Contributors
 ; Embedded product metadata for the Setup executable.
@@ -74,7 +74,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "persian"; MessagesFile: "Persian.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:TaskDesktopShortcut}"; GroupDescription: "{cm:TaskGroupDescription}"; Flags: unchecked
 
 [Files]
 ; Program files only. PDBs (debug symbols) are not shipped.
@@ -95,6 +95,10 @@ Type: dirifempty; Name: "{app}"
 [CustomMessages]
 english.AppRunningWarning=TrafficLens is currently running. Please close it before continuing so the new files can be installed safely.%n%n(Your settings and history are never affected by an upgrade.)
 persian.AppRunningWarning=TrafficLens در حال حاضر در حال اجراست. لطفاً قبل از ادامه آن را ببندید تا پرونده‌های جدید به صورت ایمن نصب شوند.%n%n(تنظیمات و تاریخچه شما تحت تأثیر ارتقا قرار نمی‌گیرند.)
+english.TaskDesktopShortcut=Create a &desktop shortcut
+english.TaskGroupDescription=Additional shortcuts:
+persian.TaskDesktopShortcut=ایجاد میانبر روی دسکتاپ
+persian.TaskGroupDescription=میانبرهای اضافی:
 
 [Code]
 // ---- Run check ------------------------------------------------------------

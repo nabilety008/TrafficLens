@@ -23,8 +23,8 @@ if ([System.Threading.Thread]::CurrentThread.ApartmentState -ne [System.Threadin
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Installer)   { $Installer   = Join-Path $repoRoot "artifacts\installer\TrafficLens-Setup-0.1.1-win-x64.exe" }
-if (-not $PortableZip) { $PortableZip = Join-Path $repoRoot "artifacts\portable\TrafficLens-Portable-0.1.1-win-x64.zip" }
+if (-not $Installer)   { $Installer   = Join-Path $repoRoot "artifacts\installer\TrafficLens-Setup-0.1.2-win-x64.exe" }
+if (-not $PortableZip) { $PortableZip = Join-Path $repoRoot "artifacts\portable\TrafficLens-Portable-0.1.2-win-x64.zip" }
 if (-not $ChecksumFile){ $ChecksumFile = "$Installer.sha256" }
 
 $script:anyFail = $false
@@ -489,12 +489,12 @@ try {
     } else {
         Fail "9.1: Installer ProductName" "'$productName'"
     }
-    if ($productVer -eq '0.1.1') {
+    if ($productVer -eq '0.1.2') {
         Pass "9.2: Installer ProductVersion = $productVer"
     } else {
-        Fail "9.2: Installer ProductVersion" "'$productVer' (expected 0.1.1)"
+        Fail "9.2: Installer ProductVersion" "'$productVer' (expected 0.1.2)"
     }
-    if ($fileVer -eq '0.1.1') {
+    if ($fileVer -eq '0.1.2') {
         Pass "9.3: Installer FileVersion = $fileVer"
     } else {
         Fail "9.3: Installer FileVersion" "'$fileVer'"
@@ -535,6 +535,21 @@ try {
         Pass "9.9: Persian installer language present"
     } else {
         Fail "9.9: Persian language" "not found in ISS"
+    }
+
+    # Check AppVerName uses full version (not AppVersionShort which strips the patch)
+    if ($issContent -match 'AppVerName=\{#AppName\}\s+\{#AppVersion\}') {
+        Pass "9.10: AppVerName uses full AppVersion (not AppVersionShort)"
+    } else {
+        Fail "9.10: AppVerName" "should use {#AppVersion}, not {#AppVersionShort}"
+    }
+
+    # Check [Tasks] Description/GroupDescription use {cm:...} constants, not CustomMessage() Pascal calls
+    $tasksSection = $issContent -replace '(?s)^.*\[Tasks\](.*?)\[.*', '$1'
+    if ($tasksSection -match "CustomMessage\(") {
+        Fail "9.11: [Tasks] uses literal CustomMessage() — must use {cm:...} constant syntax"
+    } else {
+        Pass "9.11: [Tasks] Description/GroupDescription use {cm:...} constants"
     }
 
     # ====================================================================
