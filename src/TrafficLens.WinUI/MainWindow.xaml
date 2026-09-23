@@ -11,39 +11,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="48" ColumnSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="48">
             <TextBlock
                 x:Name="TitleText"
-                Grid.Column="0"
                 Margin="16,0,0,0"
                 VerticalAlignment="Center"
                 FontSize="14"
                 FontWeight="SemiBold"
                 Text="TrafficLens" />
-
-            <StackPanel
-                Grid.Column="2"
-                Margin="0,0,8,0"
-                Orientation="Horizontal"
-                Spacing="4"
-                VerticalAlignment="Center">
-                <Button
-                    x:Name="EnglishButton"
-                    Click="EnglishButton_Click"
-                    Content="English"
-                    Padding="10,4" />
-                <Button
-                    x:Name="PersianButton"
-                    Click="PersianButton_Click"
-                    Content="فارسی"
-                    Padding="10,4" />
-            </StackPanel>
         </Grid>
 
         <NavigationView

@@ -1,34 +1,60 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 using TrafficLens.Infrastructure.Logging;
 using TrafficLens.Infrastructure.Services;
+using TrafficLens.Network;
+using TrafficLens.WinUI.Infrastructure;
+using TrafficLens.WinUI.Services;
 
 namespace TrafficLens.WinUI;
 
 public partial class App : Application
 {
+    private const string SingleInstanceMutexName = "TrafficLens.SingleInstance";
+    private const string SingleInstanceActivationEventName = "TrafficLens.SingleInstance.Activate";
+
     private ServiceProvider? _serviceProvider;
+    private SingleInstanceGuard? _singleInstanceGuard;
+    private IDisposable? _activationWatch;
 
     public App()
     {
         InitializeComponent();
     }
 
-    public static IServiceProvider Services { get; private set; } = null!;
+    public static IServicesAccessor Services { get; private set; } = null!;
 
-    public Window? MainWindow { get; private set; }
+    public static IServiceProvider ServicesProvider => Services.Provider;
+
+    public MainWindow? MainWindow { get; private set; }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
+            SingleInstanceMutexName,
+            SingleInstanceActivationEventName);
+
+        if (!_singleInstanceGuard.IsPrimary)
+        {
+            _singleInstanceGuard.SignalActivation();
+            _singleInstanceGuard.Dispose();
+            _singleInstanceGuard = null;
+            NativeMethods.PostQuitMessage(0);
+            return;
+        }
+
+        _activationWatch = _singleInstanceGuard.StartActivationWatcher(OnActivationRequested);
+
         AppPaths.EnsureDirectories();
 
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
-        Services = _serviceProvider;
+        Services = new ServicesAccessor(_serviceProvider);
 
         var logger = _serviceProvider.GetRequiredService<ILogger<App>>();
         logger.LogInformation("TrafficLens WinUI shell starting up");
@@ -38,14 +64,56 @@ public partial class App : Application
         localization.SetCulture(settings.Language);
         logger.LogInformation("Culture set to {Culture}", localization.CurrentCulture.Name);
 
+        var exitCoordinator = new ApplicationExitCoordinator(
+            _serviceProvider.GetRequiredService<ISystemTrayService>(),
+            _serviceProvider.GetRequiredService<IFloatingWidgetService>(),
+            _serviceProvider.GetRequiredService<ILogger<ApplicationExitCoordinator>>(),
+            ShutdownMainWindow);
+
         MainWindow = new MainWindow(
-            _serviceProvider.GetRequiredService<ILocalizationService>(),
-            _serviceProvider.GetRequiredService<ISettingsService>());
+            localization,
+            settings,
+            _serviceProvider.GetRequiredService<ISystemTrayService>(),
+            exitCoordinator);
         MainWindow.Activate();
         logger.LogInformation("WinUI MainWindow activated");
+
+        var collector = _serviceProvider.GetRequiredService<INetworkTrafficCollector>();
+        try
+        {
+            _ = collector.StartAsync(CancellationToken.None);
+            logger.LogInformation("Network traffic collector started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start network traffic collector");
+        }
+
+        var tray = _serviceProvider.GetRequiredService<ISystemTrayService>();
+        tray.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
+        tray.Show();
+
+        _serviceProvider.GetRequiredService<IFloatingWidgetService>().RestoreIfEnabled();
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    private void OnActivationRequested()
+    {
+        DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() => MainWindow?.ShowMainWindow());
+    }
+
+    private void ShutdownMainWindow()
+    {
+        DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
+        {
+            MainWindow?.Close();
+            MainWindow = null;
+            _serviceProvider?.Dispose();
+            _activationWatch?.Dispose();
+            _singleInstanceGuard?.Dispose();
+        });
+    }
+
+    private void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ISettingsService>(
             new JsonSettingsService(AppPaths.SettingsFile));
@@ -55,5 +123,27 @@ public partial class App : Application
         services.AddSingleton(localizationService);
 
         services.AddFileLogging(AppPaths.LogsDirectory);
+        services.AddNetworkServices();
+        services.AddSingleton(DispatcherQueue.GetForCurrentThread()!);
+        services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
+        services.AddSingleton<ISystemTrayService, SystemTrayService>();
     }
+
+    private sealed class ServicesAccessor : IServicesAccessor
+    {
+        public ServicesAccessor(IServiceProvider provider) => Provider = provider;
+
+        public IServiceProvider Provider { get; }
+    }
+}
+
+public interface IServicesAccessor
+{
+    IServiceProvider Provider { get; }
+}
+
+internal static partial class NativeMethods
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    internal static extern void PostQuitMessage(int nExitCode);
 }

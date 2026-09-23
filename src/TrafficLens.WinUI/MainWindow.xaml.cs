@@ -1,8 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Windowing;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 using TrafficLens.WinUI.Pages;
+using TrafficLens.WinUI.Services;
 using Windows.Graphics;
 
 namespace TrafficLens.WinUI;
@@ -11,13 +13,21 @@ public sealed partial class MainWindow : Window
 {
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
+    private readonly ISystemTrayService _trayService;
+    private readonly ApplicationExitCoordinator _exitCoordinator;
     private bool _navigating;
 
-    public MainWindow(ILocalizationService localization, ISettingsService settings)
+    public MainWindow(
+        ILocalizationService localization,
+        ISettingsService settings,
+        ISystemTrayService trayService,
+        ApplicationExitCoordinator exitCoordinator)
     {
         InitializeComponent();
         _localization = localization;
         _settings = settings;
+        _trayService = trayService;
+        _exitCoordinator = exitCoordinator;
 
         var appWindow = AppWindow;
         appWindow.Resize(new SizeInt32(900, 560));
@@ -25,11 +35,57 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
+        appWindow.Closing += OnAppWindowClosing;
+        appWindow.Changed += OnAppWindowChanged;
+
+        _trayService.OpenRequested += OnOpenRequested;
         _localization.CultureChanged += OnCultureChanged;
         ApplyLocalization();
 
         NavView.SelectedItem = DashboardNavItem;
         ContentFrame.Navigate(typeof(DashboardPage));
+    }
+
+    public void ShowMainWindow()
+    {
+        if (AppWindow.Presenter is OverlappedPresenter presenter &&
+            presenter.State == OverlappedPresenterState.Minimized)
+        {
+            presenter.Restore();
+        }
+
+        AppWindow.Show();
+        Activate();
+    }
+
+    private void OnOpenRequested(object? sender, EventArgs e) =>
+        DispatcherQueue.TryEnqueue(ShowMainWindow);
+
+    private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        var action = TrayBehavior.ResolveCloseAction(_exitCoordinator.IsExitRequested, _settings);
+        if (action == WindowCloseAction.Exit)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        AppWindow.Hide();
+        _trayService.ShowFirstCloseToTrayNotice();
+    }
+
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (AppWindow.Presenter is not OverlappedPresenter presenter ||
+            presenter.State != OverlappedPresenterState.Minimized)
+        {
+            return;
+        }
+
+        if (TrayBehavior.GetMinimizeToTray(_settings))
+        {
+            AppWindow.Hide();
+        }
     }
 
     private void OnCultureChanged(object? sender, EventArgs e)
@@ -70,16 +126,6 @@ public sealed partial class MainWindow : Window
             _settings.Language = _localization.CurrentCulture.Name;
             _settings.Save();
         }
-    }
-
-    private void EnglishButton_Click(object sender, RoutedEventArgs e)
-    {
-        _localization.SetCulture("en-US");
-    }
-
-    private void PersianButton_Click(object sender, RoutedEventArgs e)
-    {
-        _localization.SetCulture("fa-IR");
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

@@ -24,6 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\TrafficLens.Core\TrafficLens.Core.csproj" />
     <ProjectReference Include="..\TrafficLens.Infrastructure\TrafficLens.Infrastructure.csproj" />
+    <ProjectReference Include="..\TrafficLens.Network\TrafficLens.Network.csproj" />
+    <ProjectReference Include="..\TrafficLens.WinUI.Tray\TrafficLens.WinUI.Tray.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +41,7 @@
 
   <ItemGroup>
     <Content Include="..\..\assets\branding\TrafficLens-256.png" Link="Assets\TrafficLens-256.png" />
-    <None Include="..\..\assets\branding\TrafficLens.ico" Link="Assets\TrafficLens.ico" />
+    <Content Include="..\..\assets\branding\TrafficLens.ico" Link="Assets\TrafficLens.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

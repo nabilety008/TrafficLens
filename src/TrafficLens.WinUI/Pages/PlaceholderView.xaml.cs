@@ -14,7 +14,7 @@ public sealed partial class PlaceholderView : UserControl
     public PlaceholderView()
     {
         InitializeComponent();
-        _localization = App.Services.GetRequiredService<ILocalizationService>();
+        _localization = App.Services.Provider.GetRequiredService<ILocalizationService>();
         _localization.CultureChanged += OnCultureChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
