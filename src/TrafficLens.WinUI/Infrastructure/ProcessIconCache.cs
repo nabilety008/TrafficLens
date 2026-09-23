@@ -9,6 +9,7 @@ namespace TrafficLens.WinUI.Infrastructure;
 public sealed class ProcessIconCache
 {
     public const int CacheCapacity = 256;
+    public const int MaxExtractionsPerRefresh = 8;
 
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ConcurrentDictionary<string, BitmapImage> _images = new(StringComparer.OrdinalIgnoreCase);
@@ -18,6 +19,7 @@ public sealed class ProcessIconCache
     private BitmapImage? _fallback;
     private byte[]? _fallbackPng;
     private bool _fallbackLoading;
+    private int _extractionsThisRefresh;
     private bool _disposed;
 
     public ProcessIconCache(DispatcherQueue dispatcherQueue)
@@ -28,6 +30,11 @@ public sealed class ProcessIconCache
     public event EventHandler<string>? IconReady;
 
     public BitmapImage? Fallback => _fallback;
+
+    public void BeginRefresh()
+    {
+        _extractionsThisRefresh = 0;
+    }
 
     public BitmapImage? TryGet(string? executablePath, bool iconAvailable)
     {
@@ -73,11 +80,17 @@ public sealed class ProcessIconCache
             return;
         }
 
+        if (_extractionsThisRefresh >= MaxExtractionsPerRefresh)
+        {
+            return;
+        }
+
         if (!_requested.TryAdd(executablePath, 0))
         {
             return;
         }
 
+        _extractionsThisRefresh++;
         _ = ExtractAsync(executablePath);
     }
 
@@ -322,7 +335,7 @@ public sealed class ProcessIconCache
         public string szTypeName;
     }
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHGetFileInfo")]
     private static extern IntPtr ShGetFileInfo(
         string pszPath,
         uint dwFileAttributes,

@@ -537,6 +537,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     private void RefreshSamples(IReadOnlyList<ProcessTrafficSample> samples)
     {
         _samples = samples;
+        _iconCache.BeginRefresh();
 
         var seen = new HashSet<ProcessInstanceId>(samples.Count);
         foreach (var sample in samples)
