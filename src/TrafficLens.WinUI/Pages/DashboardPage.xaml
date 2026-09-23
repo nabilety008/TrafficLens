@@ -50,7 +50,7 @@
                             FontSize="26"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Foreground="{ThemeResource TextFillColorAccentBrush}"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                             Text="0 B/s"
                             TextTrimming="CharacterEllipsis" />
                         <TextBlock
@@ -174,7 +174,7 @@
                             FontSize="22"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Foreground="{ThemeResource TextFillColorAccentBrush}"
+                            Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                             Text="0 B"
                             TextTrimming="CharacterEllipsis" />
                     </StackPanel>
@@ -295,7 +295,7 @@
                                 x:Name="TopAppDownloadLabel"
                                 Margin="0,0,4,0"
                                 FontSize="11"
-                                Foreground="{ThemeResource TextFillColorAccentBrush}"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Text="Download" />
                             <TextBlock
                                 x:Name="TopAppDownloadValue"
