@@ -55,9 +55,11 @@ public sealed partial class ApplicationsPage : Page
 
     private void ApplyFlowDirection()
     {
-        RootLayout.FlowDirection = _localization.IsRightToLeft
+        var direction = _localization.IsRightToLeft
             ? FlowDirection.RightToLeft
             : FlowDirection.LeftToRight;
+        PageScroller.FlowDirection = direction;
+        RootLayout.FlowDirection = direction;
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) =>

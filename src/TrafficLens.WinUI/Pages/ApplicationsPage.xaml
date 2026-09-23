@@ -10,6 +10,7 @@
     </Page.Resources>
 
     <ScrollViewer
+        x:Name="PageScroller"
         HorizontalScrollBarVisibility="Auto"
         HorizontalScrollMode="Auto"
         VerticalScrollBarVisibility="Auto"
