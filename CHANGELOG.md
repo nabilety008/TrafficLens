@@ -2,6 +2,19 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — WinUI 3 Migration (WUI-001 / WUI-002)
+
+Work on `feature/winui3-migration`. WPF remains the rollback path (`f9017f0`).
+No installer/publish; v0.1.3 artifacts untouched.
+
+### Added
+
+- **WinUI 3 shell (WUI-001)** — unpackaged `TrafficLens.WinUI` (Windows App SDK 2.5.1), custom title bar, NavigationView, 7 destinations, EN/FA localization + RTL, floating widget, system tray (WinForms host project), single-instance guard, settings language selector.
+- **WinUI Dashboard (WUI-002)** — live Download/Upload/Total cards, Today at a Glance, Top App Now, Active Adapter, and a lightweight Canvas live graph (30s / 1m / 5m ranges) reusing shared `INetworkTrafficCollector`, aggregator, formatters, `ITrafficHistoryService`, and `IProcessTrafficCollector` — no duplicate collectors, ETW sessions, or polling timers.
+- Process traffic collector and traffic history service startup wired once in WinUI `App` (mirrors WPF composition root).
+
+---
+
 ## [0.1.3] — Dark Theme & Localization Hotfix
 
 Post-v0.1.2 UI polish and runtime language switching fixes.

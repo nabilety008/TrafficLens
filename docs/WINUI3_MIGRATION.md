@@ -3,7 +3,7 @@
 Updated: 2026-09-23  
 Branch: `feature/winui3-migration`  
 Safe WPF rollback commit: `f9017f0`  
-Status: **WUI-001 in progress** — foundation + application shell only
+Status: **WUI-002 implemented** — Dashboard + live bindings; awaiting human GUI verification
 
 ## Goals and non-goals
 
@@ -113,8 +113,8 @@ Risk: feedback or data path that can regress monitoring behavior if mishandled.
 
 | ID | Scope | Exit criteria |
 |----|--------|----------------|
-| **WUI-001** | Project foundation + shell (TitleBar, NavigationView, 7 destinations, theme, DI, localization) | Builds 0/0; launches; human verifies chrome + nav + EN/FA/RTL |
-| WUI-002 | Dashboard page + live bindings | Live rates/cards match WPF behavior |
+| **WUI-001** | Project foundation + shell (TitleBar, NavigationView, 7 destinations, theme, DI, localization) | Builds 0/0; launches; human verifies chrome + nav + EN/FA/RTL — **DONE (human PASS)** |
+| **WUI-002** | Dashboard page + live bindings | Live rates/cards match WPF behavior — **implemented; awaiting human verification** |
 | WUI-003 | Applications page | Process table parity |
 | WUI-004 | Connections page | Connection table parity |
 | WUI-005 | History page + graph control | Ranges + hourly bars + localization |
@@ -136,10 +136,21 @@ Risk: feedback or data path that can regress monitoring behavior if mishandled.
 
 ## WUI-001 verification checklist (human)
 
-- [ ] Window opens with custom title bar and `NavigationView` pane
-- [ ] Destinations: Dashboard, Applications, Connections, History, Alerts, Settings, About
-- [ ] Default theme is dark; no glaring white surfaces
-- [ ] English ↔ فارسی switch updates labels; RTL flips layout
-- [ ] Window minimize/maximize/close work; resizing respected
-- [ ] No crash on repeated navigation between all destinations
-- [ ] Process remains single-instance-safe enough for shell smoke test (WUI-008 hardens this)
+- [x] Window opens with custom title bar and `NavigationView` pane
+- [x] Destinations: Dashboard, Applications, Connections, History, Alerts, Settings, About
+- [x] Default theme is dark; no glaring white surfaces
+- [x] English ↔ فارسی switch updates labels; RTL flips layout
+- [x] Window minimize/maximize/close work; resizing respected
+- [x] No crash on repeated navigation between all destinations
+- [x] Process remains single-instance-safe enough for shell smoke test (WUI-008 hardens this)
+
+## WUI-002 verification checklist (human)
+
+- [ ] Download / Upload / Total cards show live rates (not stuck at 0 while traffic exists)
+- [ ] Today at a Glance matches history for today
+- [ ] Top App Now shows a process (or permission/unavailable/no-data state honestly)
+- [ ] Active Adapter shows name, kind, connected/disconnected status
+- [ ] Live graph draws download + upload series; 30s / 1m / 5m range switching works
+- [ ] English ↔ فارسی switch updates Dashboard labels; RTL flips layout; numeric rates stay LTR
+- [ ] Narrow window stacks summary/insight cards vertically; wide window shows 3-column layout
+- [ ] Navigating away and back to Dashboard does not crash or leak duplicate subscriptions

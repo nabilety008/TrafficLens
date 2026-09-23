@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using TrafficLens.Core.Abstractions;
+using TrafficLens.Core.History;
 using TrafficLens.Core.Localization;
 using TrafficLens.Infrastructure.Logging;
 using TrafficLens.Infrastructure.Services;
@@ -89,6 +90,28 @@ public partial class App : Application
             logger.LogError(ex, "Failed to start network traffic collector");
         }
 
+        var processCollector = _serviceProvider.GetRequiredService<IProcessTrafficCollector>();
+        try
+        {
+            _ = processCollector.StartAsync(CancellationToken.None);
+            logger.LogInformation("Process traffic collector started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start process traffic collector");
+        }
+
+        var history = _serviceProvider.GetRequiredService<ITrafficHistoryService>();
+        try
+        {
+            _ = history.StartAsync(CancellationToken.None);
+            logger.LogInformation("Traffic history service started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start traffic history service");
+        }
+
         var tray = _serviceProvider.GetRequiredService<ISystemTrayService>();
         tray.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
         tray.Show();
@@ -124,6 +147,7 @@ public partial class App : Application
 
         services.AddFileLogging(AppPaths.LogsDirectory);
         services.AddNetworkServices();
+        services.AddHistoryServices(AppPaths.DatabaseFile);
         services.AddSingleton(DispatcherQueue.GetForCurrentThread()!);
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();

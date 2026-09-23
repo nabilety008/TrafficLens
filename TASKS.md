@@ -8,6 +8,19 @@
 
 ## Backlog
 
+### WUI-002 WinUI 3 Migration — Dashboard Page + Live Bindings — **AWAITING HUMAN GUI VERIFICATION**
+- [x] `ViewModels/DashboardViewModel.cs` — port of WPF dashboard (shared collector/aggregator/formatters/history/process services; coalesced DispatcherQueue refresh; no new timers/collectors)
+- [x] `Controls/TrafficGraphView` — Canvas polyline live graph (points, scale, window, reference time; theme brushes; no third-party chart lib)
+- [x] `Pages/DashboardPage.xaml(.cs)` — Download/Upload/Total cards, Today at a Glance, Top App Now, Active Adapter, live graph + 30s/1m/5m range buttons
+- [x] DI: `AddHistoryServices(AppPaths.DatabaseFile)`; started `IProcessTrafficCollector` + `ITrafficHistoryService` once in App (network collector already started)
+- [x] Localization via existing resx keys (EN + fa-IR); numeric values LTR; RTL FlowDirection on page root; responsive reflow &lt;780px stacks cards
+- [x] Page lifecycle: Loaded → SetActive(true); Unloaded → SetActive(false) + Dispose (unsubscribes events)
+- [x] Release build: 0 warnings / 0 errors (full solution)
+- [x] Tests: 542/542 PASS (212 Network + 60 Infrastructure + 270 App)
+- [x] Launched WinUI app; process left running
+- [ ] GUI verification — **REQUIRES HUMAN INSPECTION** (live rates, cards, graph, EN/FA/RTL, responsive)
+- **Status: awaiting visual verification** (branch `feature/winui3-migration`, prior WUI-001 `5677e14`)
+
 ### WUI-001 WinUI 3 Migration — Foundation + Application Shell — **AWAITING HUMAN GUI VERIFICATION**
 - [x] `docs/WINUI3_MIGRATION.md` — component map, WASDK version rationale, WUI-001…010 plan
 - [x] New `src/TrafficLens.WinUI` project — `net8.0-windows10.0.19041.0`, Windows App SDK **2.5.1**, unpackaged, self-contained, x64
@@ -19,8 +32,8 @@
 - [x] Release build: 0 warnings / 0 errors (project + full solution)
 - [x] Tests: 542/542 PASS (212 Network + 60 Infrastructure + 270 App)
 - [x] Launched WinUI shell; process alive and responding
-- [ ] GUI verification — **REQUIRES HUMAN INSPECTION** (title bar, nav, EN/FA/RTL, no crash)
-- **Status: awaiting visual verification** (branch `feature/winui3-migration`, rollback `f9017f0`)
+- [x] GUI verification — **HUMAN PASS** (2026-09-23; shell, nav, EN/FA/RTL confirmed)
+- **Status: done (human PASS)** — superseded for UI by WUI-002 (branch `feature/winui3-migration`, rollback `f9017f0`)
 
 ### TL-026 Release v0.1.3 — Dark Theme & Localization Hotfix — **DONE**
 - [x] White main content background removed (MainWindow root Grid)

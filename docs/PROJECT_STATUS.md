@@ -1,10 +1,16 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-22
+Updated: 2026-09-23
 
 ## Current Milestone
 
-**v0.1.3** released on `hotfix/ui-polish-after-0.1.2`: dark theme
+**WinUI 3 migration** on `feature/winui3-migration` (WPF rollback `f9017f0`):
+WUI-001 shell **human PASS** (`5677e14`); WUI-002 **Dashboard implemented** —
+cards, Today/TopApp/Adapter, live Canvas graph, shared services only; solution
+**0 warnings/0 errors**, **542/542 tests**. **Human GUI verification for WUI-002: PENDING.**
+No merge/tag/publish; v0.1.3 artifacts preserved.
+
+**Prior: v0.1.3** released on `hotfix/ui-polish-after-0.1.2`: dark theme
 consistency, white content background removal, ComboBox/ContextMenu dark
 popups, complete runtime English/Persian switching, Floating Widget
 lifecycle fix, About icon quality, navigation crash fix (ComboBox GridLength),
