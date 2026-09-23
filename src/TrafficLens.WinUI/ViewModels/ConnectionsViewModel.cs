@@ -1,37 +1,25 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Net;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
-using TrafficLens.App.Commands;
-using TrafficLens.App.Services;
+using System.Runtime.CompilerServices;
+using Microsoft.UI.Dispatching;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 using TrafficLens.Core.Models;
 using TrafficLens.Core.Selection;
 using TrafficLens.Infrastructure.Services;
+using TrafficLens.WinUI.Infrastructure;
 
-namespace TrafficLens.App.ViewModels;
+namespace TrafficLens.WinUI.ViewModels;
 
-/// <summary>
-/// Active Connections page. Consumes only the <see cref="IConnectionProvider"/>
-/// abstraction: subscribes to ~1 s snapshots of current connections (never raw
-/// native rows), marshals them to the WPF dispatcher, and renders a
-/// filtered/searched/sorted view keyed by stable <see cref="ConnectionKey"/>.
-/// Filtering, searching and sorting are pure <see cref="ConnectionFiltering"/> /
-/// <see cref="ConnectionSort"/> operations over the snapshot and never mutate
-/// provider state. Rows are replaced or removed only when the key set or order
-/// actually changes, so UDP churn does not churn the collection. Provider
-/// failures surface as a banner and never crash the app or other pages.
-/// </summary>
-public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
+public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly IConnectionProvider _provider;
     private readonly ILocalizationService _localization;
-    private readonly ProcessIconResolver _iconResolver;
-    private readonly Dispatcher? _dispatcher;
     private readonly ISettingsService _settings;
+    private readonly DispatcherQueue _dispatcherQueue;
+    private readonly ProcessIconCache _iconCache;
     private readonly DnsResolverService _dnsResolver;
     private readonly Dictionary<ConnectionKey, ConnectionRowViewModel> _rows = new();
     private readonly List<ConnectionKey> _displayedKeys = new();
@@ -62,38 +50,41 @@ public sealed class ConnectionsViewModel : ViewModelBase, IDisposable
     private string _noActiveConnectionsText = string.Empty;
     private string _errorTitle = string.Empty;
     private string _errorDetail = string.Empty;
-private string _connectionErrorDetailText = string.Empty;
-        private bool _hasError;
-        private string _hideListenersLabel = string.Empty;
-        private string _processLabel = string.Empty;
-private string _pidLabel = string.Empty;
-        private string _copyLocalEndpointLabel = string.Empty;
-        private string _copyRemoteEndpointLabel = string.Empty;
-        private string _copyRemoteIpLabel = string.Empty;
-        private string _copyProcessNameLabel = string.Empty;
-        private string _enableReverseDnsLabel = string.Empty;
-        private string _unknownProcessText = string.Empty;
+    private string _connectionErrorDetailText = string.Empty;
+    private bool _hasError;
+    private string _hideListenersLabel = string.Empty;
+    private string _processLabel = string.Empty;
+    private string _pidLabel = string.Empty;
+    private string _copyLocalEndpointLabel = string.Empty;
+    private string _copyRemoteEndpointLabel = string.Empty;
+    private string _copyRemoteIpLabel = string.Empty;
+    private string _copyProcessNameLabel = string.Empty;
+    private string _enableReverseDnsLabel = string.Empty;
+    private string _unknownProcessText = string.Empty;
     private string _tcpText = string.Empty;
     private string _udpText = string.Empty;
     private ConnectionDisplayStrings? _displayStrings;
     private readonly Dictionary<ConnectionState, string> _stateTexts = new();
     private bool _isEmpty = true;
     private bool _isActive;
+    private bool _refreshPending;
+    private bool _disposed;
     private IReadOnlyList<ConnectionInfo> _pendingConnections = Array.Empty<ConnectionInfo>();
 
     public ConnectionsViewModel(
         IConnectionProvider provider,
         ILocalizationService localization,
-        ProcessIconResolver iconResolver,
         ISettingsService settings,
+        DispatcherQueue dispatcherQueue,
+        ProcessIconCache iconCache,
         DnsResolverService dnsResolver)
     {
         _provider = provider;
         _localization = localization;
-        _iconResolver = iconResolver;
         _settings = settings;
+        _dispatcherQueue = dispatcherQueue;
+        _iconCache = iconCache;
         _dnsResolver = dnsResolver;
-        _dispatcher = Application.Current?.Dispatcher;
         _culture = localization.CurrentCulture;
 
         _hideListeners = GetBool(_settings, HideListenersKey, defaultValue: false);
@@ -101,11 +92,14 @@ private string _pidLabel = string.Empty;
 
         _provider.ConnectionsChanged += OnConnectionsChanged;
         _localization.CultureChanged += OnCultureChanged;
+        _iconCache.IconReady += OnIconReady;
 
         RefreshLocalizedStrings();
         UpdateErrorState();
         RefreshConnections(_provider.GetCurrentConnections());
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<ConnectionRowViewModel> Connections { get; } = new();
 
@@ -115,13 +109,22 @@ private string _pidLabel = string.Empty;
 
     public ObservableCollection<ConnectionSortOption> SortOptions { get; } = new();
 
+    public IEnumerable<ConnectionRowViewModel> Rows => _rows.Values;
+
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _isActive = false;
+
         _provider.ConnectionsChanged -= OnConnectionsChanged;
         _localization.CultureChanged -= OnCultureChanged;
+        _iconCache.IconReady -= OnIconReady;
     }
-
-    public IEnumerable<ConnectionRowViewModel> Rows => _rows.Values;
 
     public string SearchText
     {
@@ -200,20 +203,17 @@ private string _pidLabel = string.Empty;
             {
                 _settings.Set(EnableReverseDnsKey, value.ToString());
                 _settings.Save();
-                // When enabled/disabled, we may need to refresh the display
                 if (value)
                 {
-                    // Trigger DNS resolution for visible rows
                     RefreshDnsForVisibleRows();
                 }
                 else
                 {
-                    // Clear resolved hostnames when disabled
                     ClearResolvedHostnames();
                 }
             }
         }
-    } // End of EnableReverseDns setter
+    }
 
     public string ErrorTitle
     {
@@ -338,13 +338,16 @@ private string _pidLabel = string.Empty;
     public bool IsEmpty
     {
         get => _isEmpty;
-        private set => SetProperty(ref _isEmpty, value);
+        private set
+        {
+            if (SetProperty(ref _isEmpty, value))
+            {
+                OnPropertyChanged(nameof(IsNotEmpty));
+            }
+        }
     }
 
-    public bool IsNotEmpty
-    {
-        get => !_isEmpty;
-    }
+    public bool IsNotEmpty => !_isEmpty;
 
     public void SetActive(bool active)
     {
@@ -361,31 +364,95 @@ private string _pidLabel = string.Empty;
 
     private void OnConnectionsChanged(object? sender, IReadOnlyList<ConnectionInfo> connections)
     {
-        if (!_isActive)
+        if (!_isActive || _disposed)
         {
             _pendingConnections = connections;
             return;
         }
 
-        RunOnUi(() => RefreshConnections(connections));
+        CoalesceRefresh(() => RefreshConnections(connections));
     }
 
-    private void OnCultureChanged(object? sender, EventArgs e) =>
+    private void OnCultureChanged(object? sender, EventArgs e)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
         RunOnUi(() =>
         {
             RefreshLocalizedStrings();
             RefreshConnections(_connections, force: true);
         });
+    }
+
+    private void OnIconReady(object? sender, string path)
+    {
+        if (!_isActive || _disposed)
+        {
+            return;
+        }
+
+        RunOnUi(() =>
+        {
+            foreach (var row in _rows.Values)
+            {
+                row.OnIconReady(_iconCache);
+            }
+        });
+    }
+
+    private void CoalesceRefresh(Action action)
+    {
+        if (_refreshPending || _disposed)
+        {
+            return;
+        }
+
+        _refreshPending = true;
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            _refreshPending = false;
+            if (_isActive && !_disposed)
+            {
+                action();
+            }
+
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            _refreshPending = false;
+            if (_isActive && !_disposed)
+            {
+                action();
+            }
+        });
+    }
 
     private void RunOnUi(Action action)
     {
-        if (_dispatcher is null || _dispatcher.CheckAccess())
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
         {
             action();
             return;
         }
 
-        _dispatcher.InvokeAsync(action);
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (!_disposed)
+            {
+                action();
+            }
+        });
     }
 
     private void RefreshLocalizedStrings()
@@ -435,13 +502,13 @@ private string _pidLabel = string.Empty;
             _udpText,
             state => _stateTexts.TryGetValue(state, out var text) ? text : string.Empty);
 
-FilterOptions.Clear();
+        FilterOptions.Clear();
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.All, _localization["AllLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Established, _localization["EstablishedLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Listening, _localization["ListeningLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Tcp, _localization["TcpLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Udp, _localization["UdpLabel"]));
-FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _localization["HideListenersLabel"]));
+        FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _localization["HideListenersLabel"]));
 
         FamilyFilterOptions.Clear();
         FamilyFilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.All, _localization["AllLabel"]));
@@ -473,6 +540,7 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
     {
         _connections = connections;
         UpdateErrorState();
+        _iconCache.BeginRefresh();
 
         var seen = new HashSet<ConnectionKey>(connections.Count);
         foreach (var connection in connections)
@@ -488,7 +556,7 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
 
             if (_displayStrings is not null)
             {
-                row.Update(connection, _culture, _displayStrings, force);
+                row.Update(connection, _culture, _displayStrings, _iconCache, force);
             }
         }
 
@@ -500,33 +568,11 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
             }
         }
 
-        ResolveIcons();
         RebuildDisplayList(force: false);
 
-        // Trigger DNS resolution for visible rows if enabled
         if (_enableReverseDns)
         {
             RefreshDnsForVisibleRows();
-        }
-    }
-
-    private void ResolveIcons()
-    {
-        var budget = ProcessIconResolver.MaxExtractionsPerRefresh;
-        foreach (var row in _rows.Values)
-        {
-            if (row.Icon is not null)
-            {
-                continue;
-            }
-
-            if (budget <= 0)
-            {
-                break;
-            }
-
-            budget--;
-            row.Icon = _iconResolver.GetOrExtract(row.ExecutablePath, row.IconAvailable);
         }
     }
 
@@ -535,6 +581,11 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
         IEnumerable<ConnectionInfo> source = _connections
             .Where(c => ConnectionFiltering.Matches(c, _filter))
             .Where(c => ConnectionFiltering.Matches(c, _familyFilter));
+
+        if (_hideListeners)
+        {
+            source = source.Where(c => ConnectionFiltering.Matches(c, ConnectionFilter.HideListeners));
+        }
 
         if (!string.IsNullOrWhiteSpace(_searchText))
         {
@@ -620,7 +671,6 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
         _displayedKeys.AddRange(targetKeys);
 
         IsEmpty = Connections.Count == 0;
-        OnPropertyChanged(nameof(IsNotEmpty));
     }
 
     private string DisplayName(ConnectionInfo connection) =>
@@ -670,10 +720,8 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
                 var key = ConnectionKey.From(connection);
                 if (_rows.TryGetValue(key, out var row))
                 {
-                    // Start DNS resolution for this IP
                     _dnsResolver.GetOrResolve(connection.RemoteAddress, hostname =>
                     {
-                        // Update the row on UI thread
                         RunOnUi(() =>
                         {
                             if (_rows.TryGetValue(key, out var currentRow))
@@ -694,4 +742,19 @@ FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _lo
             row.SetResolvedHostname(string.Empty);
         }
     }
+
+    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            return false;
+        }
+
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

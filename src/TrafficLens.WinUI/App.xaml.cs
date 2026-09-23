@@ -112,6 +112,17 @@ public partial class App : Application
             logger.LogError(ex, "Failed to start process traffic collector");
         }
 
+        var connectionProvider = _serviceProvider.GetRequiredService<IConnectionProvider>();
+        try
+        {
+            _ = connectionProvider.StartAsync(CancellationToken.None);
+            logger.LogInformation("Connection provider started");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start connection provider");
+        }
+
         var history = _serviceProvider.GetRequiredService<ITrafficHistoryService>();
         try
         {
@@ -170,6 +181,7 @@ public partial class App : Application
             sp.GetRequiredService<DispatcherQueue>()));
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
+        services.AddSingleton<DnsResolverService>();
     }
 
     private sealed class ServicesAccessor : IServicesAccessor

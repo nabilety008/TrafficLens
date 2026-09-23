@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
-namespace TrafficLens.App.Services;
+namespace TrafficLens.Infrastructure.Services;
 
 /// <summary>
 /// Bounded reverse DNS resolver with TTL cache, bounded pending queue,

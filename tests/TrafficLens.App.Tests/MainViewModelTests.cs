@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using TrafficLens.App.Services;
 using TrafficLens.App.ViewModels;
+using TrafficLens.Infrastructure.Services;
 
 namespace TrafficLens.App.Tests;
 
