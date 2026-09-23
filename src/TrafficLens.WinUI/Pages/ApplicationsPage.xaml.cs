@@ -46,7 +46,11 @@ public sealed partial class ApplicationsPage : Page
     }
 
     private void OnCultureChanged(object? sender, EventArgs e) =>
-        DispatcherQueue.TryEnqueue(ApplyFlowDirection);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            ApplyFlowDirection();
+            Bindings.Update();
+        });
 
     private void ApplyFlowDirection()
     {

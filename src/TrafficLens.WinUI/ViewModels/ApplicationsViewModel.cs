@@ -540,7 +540,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     private void RefreshTopConsumers()
     {
         HasActiveTraffic = ProcessSampleSelection.HasActiveTraffic(_samples);
-        IsIdle = !HasActiveTraffic;
+        RefreshIdleState();
 
         var consumer = ProcessSampleSelection.TopConsumer(_samples);
         if (!HasActiveTraffic || consumer is null)
@@ -618,7 +618,15 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
                 break;
         }
 
+        RefreshIdleState();
         OnPropertyChanged(nameof(CollectorStatus));
+    }
+
+    private void RefreshIdleState()
+    {
+        var collectorUsable = _collectorStatus is ProcessTrafficCollectorStatus.Running
+            or ProcessTrafficCollectorStatus.Starting;
+        IsIdle = collectorUsable && !HasActiveTraffic;
     }
 
     private string LocalizedStatusDetail(ProcessTrafficCollectorStatus status) => status switch

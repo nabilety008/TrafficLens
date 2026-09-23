@@ -21,50 +21,62 @@
                 FontSize="12"
                 FontWeight="SemiBold"
                 Opacity="0.6"
-                Text="Applications" />
+                Text="{x:Bind ViewModel.ApplicationsLabel, Mode=OneWay}" />
 
             <Border
                 x:Name="StatusBanner"
-                Margin="0,0,0,12"
-                Padding="14,12"
+                Margin="0,0,0,10"
+                Padding="12,8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="8"
                 Visibility="{x:Bind ViewModel.IsStatusBannerVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                <StackPanel>
+                <Grid ColumnSpacing="10" RowSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
                     <TextBlock
                         x:Name="StatusText"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        FontSize="12"
                         FontWeight="SemiBold"
                         TextWrapping="Wrap"
                         Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+                    <Button
+                        x:Name="RestartAdminButton"
+                        Grid.Column="1"
+                        Grid.Row="0"
+                        Padding="10,4"
+                        Click="RestartAdmin_Click"
+                        Content="{x:Bind ViewModel.RestartAsAdministratorLabel, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.IsPermissionDenied, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                    <Button
+                        x:Name="StartMonitoringButton"
+                        Grid.Column="1"
+                        Grid.Row="0"
+                        Padding="10,4"
+                        Click="StartMonitoring_Click"
+                        Content="{x:Bind ViewModel.StartMonitoringLabel, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.IsStartMonitoringVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
                     <TextBlock
                         x:Name="StatusDetailText"
-                        Margin="0,4,0,0"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Grid.Row="1"
                         FontSize="11"
                         Opacity="0.6"
                         TextWrapping="Wrap"
                         Text="{x:Bind ViewModel.StatusDetailText, Mode=OneWay}"
                         Visibility="{x:Bind ViewModel.HasStatusDetail, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-                    <StackPanel
-                        Margin="0,8,0,0"
-                        Orientation="Horizontal"
-                        Visibility="{x:Bind ViewModel.IsPermissionDenied, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                        <Button
-                            x:Name="RestartAdminButton"
-                            Click="RestartAdmin_Click"
-                            Content="{x:Bind ViewModel.RestartAsAdministratorLabel, Mode=OneWay}" />
-                    </StackPanel>
-                    <StackPanel
-                        Margin="0,8,0,0"
-                        Orientation="Horizontal"
-                        Visibility="{x:Bind ViewModel.IsStartMonitoringVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                        <Button
-                            x:Name="StartMonitoringButton"
-                            Click="StartMonitoring_Click"
-                            Content="{x:Bind ViewModel.StartMonitoringLabel, Mode=OneWay}" />
-                    </StackPanel>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <Grid x:Name="SummaryGrid" ColumnSpacing="12">
@@ -209,15 +221,20 @@
                 </Border>
             </Grid>
 
-            <Grid Margin="0,16,0,8" ColumnSpacing="8">
+            <Grid x:Name="SortSearchGrid" Margin="0,14,0,8" ColumnSpacing="8" RowSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
                 <TextBlock
                     x:Name="SortByLabel"
+                    Grid.Row="0"
                     Grid.Column="0"
                     VerticalAlignment="Center"
                     FontSize="12"
@@ -225,18 +242,22 @@
                     Text="{x:Bind ViewModel.SortByLabel, Mode=OneWay}" />
                 <ComboBox
                     x:Name="SortComboBox"
+                    Grid.Row="0"
                     Grid.Column="1"
-                    MinWidth="180"
-                    Margin="8,0,8,0"
+                    MinWidth="160"
+                    MaxWidth="240"
+                    HorizontalAlignment="Left"
                     DisplayMemberPath="Label"
                     ItemsSource="{x:Bind ViewModel.SortOptions, Mode=OneWay}"
                     SelectedValue="{x:Bind ViewModel.SortKey, Mode=TwoWay}"
                     SelectedValuePath="Key" />
                 <TextBox
                     x:Name="SearchBox"
+                    Grid.Row="0"
                     Grid.Column="2"
-                    MinWidth="200"
+                    MinWidth="160"
                     HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
                     PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
                     TextChanged="SearchBox_TextChanged" />
             </Grid>
@@ -248,17 +269,17 @@
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1,1,1,0"
                 CornerRadius="8,8,0,0">
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="6">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="2.2*" MinWidth="90" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="72" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="*" MinWidth="70" />
                     </Grid.ColumnDefinitions>
 
                     <TextBlock
@@ -266,18 +287,21 @@
                         Grid.Column="0"
                         FontSize="10"
                         Opacity="0.6"
+                        TextTrimming="CharacterEllipsis"
                         Text="{x:Bind ViewModel.ProcessLabel, Mode=OneWay}" />
                     <TextBlock
                         x:Name="PidHeader"
                         Grid.Column="1"
                         FontSize="10"
                         Opacity="0.6"
+                        TextTrimming="CharacterEllipsis"
                         Text="{x:Bind ViewModel.PidLabel, Mode=OneWay}" />
                     <TextBlock
                         x:Name="StateHeader"
                         Grid.Column="2"
                         FontSize="10"
                         Opacity="0.6"
+                        TextTrimming="CharacterEllipsis"
                         Text="{x:Bind ViewModel.ProcessStateLabel, Mode=OneWay}" />
                     <TextBlock
                         x:Name="CurrentSpeedHeader"
@@ -285,6 +309,7 @@
                         Grid.ColumnSpan="3"
                         FontSize="10"
                         Opacity="0.6"
+                        TextTrimming="CharacterEllipsis"
                         Text="{x:Bind ViewModel.CurrentSpeedLabel, Mode=OneWay}" />
                     <TextBlock
                         x:Name="TotalTransferredHeader"
@@ -292,6 +317,7 @@
                         Grid.ColumnSpan="3"
                         FontSize="10"
                         Opacity="0.6"
+                        TextTrimming="CharacterEllipsis"
                         Text="{x:Bind ViewModel.TotalTransferredLabel, Mode=OneWay}" />
                 </Grid>
             </Border>
@@ -308,17 +334,17 @@
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1"
                             CornerRadius="8">
-                            <Grid ColumnSpacing="8">
+                            <Grid ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="2.2*" MinWidth="90" />
+                                    <ColumnDefinition Width="64" />
+                                    <ColumnDefinition Width="72" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="*" MinWidth="70" />
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock
