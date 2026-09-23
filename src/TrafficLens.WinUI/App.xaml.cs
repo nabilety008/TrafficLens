@@ -21,10 +21,12 @@ public partial class App : Application
     private ServiceProvider? _serviceProvider;
     private SingleInstanceGuard? _singleInstanceGuard;
     private IDisposable? _activationWatch;
+    private ILogger<App>? _logger;
 
     public App()
     {
         InitializeComponent();
+        UnhandledException += OnUnhandledException;
     }
 
     public static IServicesAccessor Services { get; private set; } = null!;
@@ -58,6 +60,7 @@ public partial class App : Application
         Services = new ServicesAccessor(_serviceProvider);
 
         var logger = _serviceProvider.GetRequiredService<ILogger<App>>();
+        _logger = logger;
         logger.LogInformation("TrafficLens WinUI shell starting up");
 
         var localization = _serviceProvider.GetRequiredService<ILocalizationService>();
@@ -71,13 +74,21 @@ public partial class App : Application
             _serviceProvider.GetRequiredService<ILogger<ApplicationExitCoordinator>>(),
             ShutdownMainWindow);
 
-        MainWindow = new MainWindow(
-            localization,
-            settings,
-            _serviceProvider.GetRequiredService<ISystemTrayService>(),
-            exitCoordinator);
-        MainWindow.Activate();
-        logger.LogInformation("WinUI MainWindow activated");
+        try
+        {
+            MainWindow = new MainWindow(
+                localization,
+                settings,
+                _serviceProvider.GetRequiredService<ISystemTrayService>(),
+                exitCoordinator);
+            MainWindow.Activate();
+            logger.LogInformation("WinUI MainWindow activated");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to create or activate MainWindow");
+            throw;
+        }
 
         var collector = _serviceProvider.GetRequiredService<INetworkTrafficCollector>();
         try
@@ -122,6 +133,12 @@ public partial class App : Application
     private void OnActivationRequested()
     {
         DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() => MainWindow?.ShowMainWindow());
+    }
+
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        _logger?.LogError(e.Exception, "Unhandled UI exception");
+        e.Handled = true;
     }
 
     private void ShutdownMainWindow()
