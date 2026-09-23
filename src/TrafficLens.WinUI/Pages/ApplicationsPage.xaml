@@ -12,12 +12,12 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
         <StackPanel
             x:Name="RootLayout"
-            Margin="20,14,20,12"
+            Margin="16,12,16,12"
             Spacing="0">
 
             <TextBlock
                 x:Name="PageTitleText"
-                Margin="0,0,0,10"
+                Margin="0,0,0,8"
                 FontSize="12"
                 FontWeight="SemiBold"
                 Opacity="0.6"
@@ -79,9 +79,9 @@
                 </Grid>
             </Border>
 
-            <Grid x:Name="SummaryGrid" ColumnSpacing="12">
+            <Grid x:Name="SummaryGrid" ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.4*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
@@ -90,7 +90,7 @@
                     x:Name="IdleCard"
                     Grid.Column="0"
                     Grid.ColumnSpan="3"
-                    Padding="14,12"
+                    Padding="12,10"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
@@ -105,36 +105,42 @@
                 <Border
                     x:Name="TopConsumerCard"
                     Grid.Column="0"
-                    Padding="14,12"
+                    Padding="12,10"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Visibility="{x:Bind ViewModel.HasActiveTraffic, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
+                    <StackPanel Spacing="0">
                         <TextBlock
                             x:Name="TopConsumerNowLabel"
-                            Margin="0,0,0,6"
-                            FontSize="12"
+                            Margin="0,0,0,4"
+                            FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopConsumerNowLabel, Mode=OneWay}" />
                         <TextBlock
                             x:Name="TopConsumerName"
-                            Margin="0,0,0,8"
-                            FontSize="18"
+                            Margin="0,0,0,6"
+                            FontSize="15"
                             FontWeight="SemiBold"
+                            MaxLines="2"
+                            TextWrapping="Wrap"
                             TextTrimming="CharacterEllipsis"
                             Text="{x:Bind ViewModel.TopConsumerName, Mode=OneWay}" />
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                             <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" Text="↓" />
                             <TextBlock
                                 x:Name="TopConsumerDownloadRateText"
-                                Margin="4,0,12,0"
+                                Margin="4,0,10,0"
+                                TextWrapping="NoWrap"
+                                TextTrimming="CharacterEllipsis"
                                 Text="{x:Bind ViewModel.TopConsumerDownloadRateText, Mode=OneWay}" />
                             <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource SuccessFillColorDefaultBrush}" Text="↑" />
                             <TextBlock
                                 x:Name="TopConsumerUploadRateText"
-                                Margin="4,0,12,0"
+                                Margin="4,0,0,0"
+                                TextWrapping="NoWrap"
+                                TextTrimming="CharacterEllipsis"
                                 Text="{x:Bind ViewModel.TopConsumerUploadRateText, Mode=OneWay}" />
                         </StackPanel>
                         <StackPanel Margin="0,2,0,0" Orientation="Horizontal" FlowDirection="LeftToRight">
@@ -149,6 +155,8 @@
                                 FontSize="11"
                                 FlowDirection="LeftToRight"
                                 Opacity="0.6"
+                                TextWrapping="NoWrap"
+                                TextTrimming="CharacterEllipsis"
                                 Text="{x:Bind ViewModel.TopConsumerTotalRateText, Mode=OneWay}" />
                         </StackPanel>
                     </StackPanel>
@@ -157,24 +165,26 @@
                 <Border
                     x:Name="TopDownloadCard"
                     Grid.Column="1"
-                    Padding="14,12"
+                    Padding="12,10"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Visibility="{x:Bind ViewModel.HasActiveTraffic, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
+                    <StackPanel Spacing="0">
                         <TextBlock
                             x:Name="TopDownloadLabel"
-                            Margin="0,0,0,6"
-                            FontSize="12"
+                            Margin="0,0,0,4"
+                            FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopDownloadLabel, Mode=OneWay}" />
                         <TextBlock
                             x:Name="TopDownloadName"
-                            Margin="0,0,0,8"
-                            FontSize="15"
+                            Margin="0,0,0,6"
+                            FontSize="14"
                             FontWeight="SemiBold"
+                            MaxLines="2"
+                            TextWrapping="Wrap"
                             TextTrimming="CharacterEllipsis"
                             Text="{x:Bind ViewModel.TopDownloadName, Mode=OneWay}" />
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
@@ -182,6 +192,8 @@
                             <TextBlock
                                 x:Name="TopDownloadRateText"
                                 Margin="4,0,0,0"
+                                TextWrapping="NoWrap"
+                                TextTrimming="CharacterEllipsis"
                                 Text="{x:Bind ViewModel.TopDownloadRateText, Mode=OneWay}" />
                         </StackPanel>
                     </StackPanel>
@@ -190,24 +202,26 @@
                 <Border
                     x:Name="TopUploadCard"
                     Grid.Column="2"
-                    Padding="14,12"
+                    Padding="12,10"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
                     Visibility="{x:Bind ViewModel.HasActiveTraffic, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
+                    <StackPanel Spacing="0">
                         <TextBlock
                             x:Name="TopUploadLabel"
-                            Margin="0,0,0,6"
-                            FontSize="12"
+                            Margin="0,0,0,4"
+                            FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopUploadLabel, Mode=OneWay}" />
                         <TextBlock
                             x:Name="TopUploadName"
-                            Margin="0,0,0,8"
-                            FontSize="15"
+                            Margin="0,0,0,6"
+                            FontSize="14"
                             FontWeight="SemiBold"
+                            MaxLines="2"
+                            TextWrapping="Wrap"
                             TextTrimming="CharacterEllipsis"
                             Text="{x:Bind ViewModel.TopUploadName, Mode=OneWay}" />
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
@@ -215,15 +229,16 @@
                             <TextBlock
                                 x:Name="TopUploadRateText"
                                 Margin="4,0,0,0"
+                                TextWrapping="NoWrap"
+                                TextTrimming="CharacterEllipsis"
                                 Text="{x:Bind ViewModel.TopUploadRateText, Mode=OneWay}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <Grid x:Name="SortSearchGrid" Margin="0,14,0,8" ColumnSpacing="8" RowSpacing="8">
+            <Grid x:Name="SortSearchGrid" Margin="0,12,0,8" ColumnSpacing="8" RowSpacing="8">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
@@ -244,18 +259,20 @@
                     x:Name="SortComboBox"
                     Grid.Row="0"
                     Grid.Column="1"
-                    MinWidth="160"
-                    MaxWidth="240"
-                    HorizontalAlignment="Left"
+                    MinWidth="180"
+                    MaxWidth="280"
+                    HorizontalAlignment="Stretch"
                     DisplayMemberPath="Label"
                     ItemsSource="{x:Bind ViewModel.SortOptions, Mode=OneWay}"
                     SelectedValue="{x:Bind ViewModel.SortKey, Mode=TwoWay}"
                     SelectedValuePath="Key" />
+
                 <TextBox
                     x:Name="SearchBox"
-                    Grid.Row="0"
-                    Grid.Column="2"
-                    MinWidth="160"
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    MinWidth="200"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
                     PlaceholderText="{x:Bind ViewModel.SearchPlaceholder, Mode=OneWay}"
@@ -264,22 +281,22 @@
 
             <Border
                 x:Name="HeaderRow"
-                Padding="8,8,8,10"
+                Padding="10,7,10,8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1,1,1,0"
                 CornerRadius="8,8,0,0">
-                <Grid ColumnSpacing="6">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2.2*" MinWidth="90" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="72" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
-                        <ColumnDefinition Width="*" MinWidth="70" />
+                        <ColumnDefinition Width="2.4*" MinWidth="100" />
+                        <ColumnDefinition Width="52" />
+                        <ColumnDefinition Width="58" />
+                        <ColumnDefinition Width="1.1*" MinWidth="72" />
+                        <ColumnDefinition Width="1.1*" MinWidth="72" />
+                        <ColumnDefinition Width="1.1*" MinWidth="72" />
+                        <ColumnDefinition Width="1.1*" MinWidth="68" />
+                        <ColumnDefinition Width="1.1*" MinWidth="68" />
+                        <ColumnDefinition Width="1.1*" MinWidth="68" />
                     </Grid.ColumnDefinitions>
 
                     <TextBlock
@@ -328,23 +345,23 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:ProcessRowViewModel">
                         <Border
-                            Margin="0,0,0,6"
-                            Padding="8,6,8,6"
+                            Margin="0,0,0,5"
+                            Padding="10,6,10,6"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1"
                             CornerRadius="8">
-                            <Grid ColumnSpacing="6">
+                            <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2.2*" MinWidth="90" />
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="72" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
-                                    <ColumnDefinition Width="*" MinWidth="70" />
+                                    <ColumnDefinition Width="2.4*" MinWidth="100" />
+                                    <ColumnDefinition Width="52" />
+                                    <ColumnDefinition Width="58" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="72" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="72" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="72" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="68" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="68" />
+                                    <ColumnDefinition Width="1.1*" MinWidth="68" />
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock
@@ -366,27 +383,29 @@
                                 <TextBlock
                                     Grid.Column="2"
                                     VerticalAlignment="Center"
-                                    FontSize="12"
+                                    FontSize="11"
                                     Opacity="0.6"
                                     Text="{x:Bind StateText, Mode=OneWay}"
                                     TextTrimming="CharacterEllipsis" />
 
-                                <StackPanel Grid.Column="3" VerticalAlignment="Center" FlowDirection="LeftToRight">
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Orientation="Horizontal" FlowDirection="LeftToRight">
                                     <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" Text="↓" />
                                     <TextBlock
                                         Margin="3,0,0,0"
                                         FontSize="12"
-                                        Text="{x:Bind DownloadRateText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="NoWrap"
+                                        TextTrimming="CharacterEllipsis"
+                                        Text="{x:Bind DownloadRateText, Mode=OneWay}" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="4" VerticalAlignment="Center" FlowDirection="LeftToRight">
+                                <StackPanel Grid.Column="4" VerticalAlignment="Center" Orientation="Horizontal" FlowDirection="LeftToRight">
                                     <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource SuccessFillColorDefaultBrush}" Text="↑" />
                                     <TextBlock
                                         Margin="3,0,0,0"
                                         FontSize="12"
-                                        Text="{x:Bind UploadRateText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="NoWrap"
+                                        TextTrimming="CharacterEllipsis"
+                                        Text="{x:Bind UploadRateText, Mode=OneWay}" />
                                 </StackPanel>
 
                                 <TextBlock
@@ -394,25 +413,28 @@
                                     VerticalAlignment="Center"
                                     FontSize="12"
                                     FlowDirection="LeftToRight"
-                                    Text="{x:Bind TotalRateText, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis" />
+                                    TextWrapping="NoWrap"
+                                    TextTrimming="CharacterEllipsis"
+                                    Text="{x:Bind TotalRateText, Mode=OneWay}" />
 
-                                <StackPanel Grid.Column="6" VerticalAlignment="Center" FlowDirection="LeftToRight">
+                                <StackPanel Grid.Column="6" VerticalAlignment="Center" Orientation="Horizontal" FlowDirection="LeftToRight">
                                     <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" Text="↓" />
                                     <TextBlock
                                         Margin="3,0,0,0"
                                         FontSize="12"
-                                        Text="{x:Bind DownloadText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="NoWrap"
+                                        TextTrimming="CharacterEllipsis"
+                                        Text="{x:Bind DownloadText, Mode=OneWay}" />
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="7" VerticalAlignment="Center" FlowDirection="LeftToRight">
+                                <StackPanel Grid.Column="7" VerticalAlignment="Center" Orientation="Horizontal" FlowDirection="LeftToRight">
                                     <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource SuccessFillColorDefaultBrush}" Text="↑" />
                                     <TextBlock
                                         Margin="3,0,0,0"
                                         FontSize="12"
-                                        Text="{x:Bind UploadText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="NoWrap"
+                                        TextTrimming="CharacterEllipsis"
+                                        Text="{x:Bind UploadText, Mode=OneWay}" />
                                 </StackPanel>
 
                                 <TextBlock
@@ -420,8 +442,9 @@
                                     VerticalAlignment="Center"
                                     FontSize="12"
                                     FlowDirection="LeftToRight"
-                                    Text="{x:Bind TotalText, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis" />
+                                    TextWrapping="NoWrap"
+                                    TextTrimming="CharacterEllipsis"
+                                    Text="{x:Bind TotalText, Mode=OneWay}" />
                             </Grid>
                         </Border>
                     </DataTemplate>
