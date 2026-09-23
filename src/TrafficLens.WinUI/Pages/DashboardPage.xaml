@@ -8,19 +8,18 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
         <Grid
             x:Name="RootLayout"
-            Padding="24,20,24,24"
+            Padding="24,16,24,20"
             ColumnSpacing="12"
-            RowSpacing="16">
+            RowSpacing="14">
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Spacing="4">
+            <StackPanel Grid.Row="0" Spacing="2">
                 <TextBlock
                     x:Name="PageTitleText"
                     FontSize="28"
@@ -28,7 +27,8 @@
                     Text="Dashboard" />
                 <TextBlock
                     x:Name="TunnelHintText"
-                    Opacity="0.7"
+                    FontSize="12"
+                    Opacity="0.6"
                     TextWrapping="Wrap"
                     Visibility="Collapsed" />
             </StackPanel>
@@ -53,20 +53,21 @@
                     x:Name="DownloadCard"
                     Grid.Column="0"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="6">
                         <TextBlock
                             x:Name="DownloadLabel"
                             FontSize="12"
+                            FontWeight="Medium"
                             Opacity="0.7"
                             Text="Download" />
                         <TextBlock
                             x:Name="DownloadValueText"
-                            FontSize="26"
+                            FontSize="32"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Text="0 B/s" />
@@ -74,7 +75,7 @@
                             x:Name="DownloadMbpsText"
                             FontSize="12"
                             FlowDirection="LeftToRight"
-                            Opacity="0.65"
+                            Opacity="0.5"
                             Text="0 Mbps" />
                     </StackPanel>
                 </Border>
@@ -83,20 +84,21 @@
                     x:Name="UploadCard"
                     Grid.Column="1"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="6">
                         <TextBlock
                             x:Name="UploadLabel"
                             FontSize="12"
+                            FontWeight="Medium"
                             Opacity="0.7"
                             Text="Upload" />
                         <TextBlock
                             x:Name="UploadValueText"
-                            FontSize="26"
+                            FontSize="32"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Text="0 B/s" />
@@ -104,7 +106,7 @@
                             x:Name="UploadMbpsText"
                             FontSize="12"
                             FlowDirection="LeftToRight"
-                            Opacity="0.65"
+                            Opacity="0.5"
                             Text="0 Mbps" />
                     </StackPanel>
                 </Border>
@@ -113,20 +115,21 @@
                     x:Name="TotalCard"
                     Grid.Column="2"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="6">
                         <TextBlock
                             x:Name="TotalLabel"
                             FontSize="12"
+                            FontWeight="Medium"
                             Opacity="0.7"
                             Text="Total" />
                         <TextBlock
                             x:Name="TotalValueText"
-                            FontSize="26"
+                            FontSize="32"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Text="0 B/s" />
@@ -134,7 +137,7 @@
                             x:Name="TotalMbpsText"
                             FontSize="12"
                             FlowDirection="LeftToRight"
-                            Opacity="0.65"
+                            Opacity="0.5"
                             Text="0 Mbps" />
                     </StackPanel>
                 </Border>
@@ -160,18 +163,19 @@
                     x:Name="TodayCard"
                     Grid.Column="0"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="8">
                         <TextBlock
                             x:Name="TodayHeader"
-                            FontSize="14"
+                            FontSize="13"
                             FontWeight="SemiBold"
+                            Opacity="0.85"
                             Text="Today at a Glance" />
-                        <Grid ColumnSpacing="12" RowSpacing="6">
+                        <Grid ColumnSpacing="12" RowSpacing="4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
@@ -182,14 +186,14 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" FontSize="12" Opacity="0.7" x:Name="DownloadTodayLabel" Text="Download" />
+                            <TextBlock Grid.Row="0" Grid.Column="0" FontSize="12" Opacity="0.6" x:Name="DownloadTodayLabel" Text="Download" />
                             <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Right" x:Name="TodayDownloadValue" Text="0 B" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" FontSize="12" Opacity="0.7" x:Name="UploadTodayLabel" Text="Upload" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" FontSize="12" Opacity="0.6" x:Name="UploadTodayLabel" Text="Upload" />
                             <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Right" x:Name="TodayUploadValue" Text="0 B" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" FontSize="12" Opacity="0.7" x:Name="TotalTodayLabel" Text="Total" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" FontSize="13" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Right" x:Name="TodayTotalValue" Text="0 B" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" FontSize="12" Opacity="0.6" x:Name="TotalTodayLabel" Text="Total" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" FontSize="15" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Right" x:Name="TodayTotalValue" Text="0 B" />
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -198,47 +202,49 @@
                     x:Name="TopAppCard"
                     Grid.Column="1"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="8">
+                    <StackPanel Spacing="6">
                         <TextBlock
                             x:Name="TopAppHeader"
-                            FontSize="14"
+                            FontSize="13"
                             FontWeight="SemiBold"
+                            Opacity="0.85"
                             Text="Top App Now" />
                         <TextBlock
                             x:Name="TopAppStatusText"
                             FontSize="13"
-                            Opacity="0.75"
+                            Opacity="0.7"
                             TextWrapping="Wrap"
                             Visibility="Collapsed" />
-                        <StackPanel x:Name="TopAppValuesPanel" Spacing="4">
+                        <StackPanel x:Name="TopAppValuesPanel" Spacing="2">
                             <TextBlock
                                 x:Name="TopAppNameText"
-                                FontSize="16"
+                                FontSize="18"
                                 FontWeight="SemiBold"
                                 TextWrapping="Wrap" />
                             <TextBlock
                                 x:Name="TopAppRateText"
-                                FontSize="13"
+                                FontSize="14"
+                                FontWeight="Medium"
                                 FlowDirection="LeftToRight"
                                 Opacity="0.85"
                                 Text="0 B/s" />
-                            <Grid ColumnSpacing="12">
+                            <Grid ColumnSpacing="12" Margin="0,4,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="2">
-                                    <TextBlock x:Name="TopAppDownloadLabel" FontSize="11" Opacity="0.65" Text="Download" />
-                                    <TextBlock x:Name="TopAppDownloadValue" FontSize="12" FlowDirection="LeftToRight" Text="0 B/s" />
+                                <StackPanel Grid.Column="0" Spacing="1">
+                                    <TextBlock x:Name="TopAppDownloadLabel" FontSize="11" Opacity="0.55" Text="Download" />
+                                    <TextBlock x:Name="TopAppDownloadValue" FontSize="12" FlowDirection="LeftToRight" Opacity="0.85" Text="0 B/s" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock x:Name="TopAppUploadLabel" FontSize="11" Opacity="0.65" Text="Upload" />
-                                    <TextBlock x:Name="TopAppUploadValue" FontSize="12" FlowDirection="LeftToRight" Text="0 B/s" />
+                                <StackPanel Grid.Column="1" Spacing="1">
+                                    <TextBlock x:Name="TopAppUploadLabel" FontSize="11" Opacity="0.55" Text="Upload" />
+                                    <TextBlock x:Name="TopAppUploadValue" FontSize="12" FlowDirection="LeftToRight" Opacity="0.85" Text="0 B/s" />
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -249,30 +255,31 @@
                     x:Name="AdapterCard"
                     Grid.Column="2"
                     Grid.Row="0"
-                    Padding="16,14"
+                    Padding="18,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="8">
+                    <StackPanel Spacing="6">
                         <TextBlock
                             x:Name="ActiveAdapterHeader"
-                            FontSize="14"
+                            FontSize="13"
                             FontWeight="SemiBold"
+                            Opacity="0.85"
                             Text="Active Adapter" />
                         <TextBlock
                             x:Name="AdapterNameText"
-                            FontSize="16"
+                            FontSize="18"
                             FontWeight="SemiBold"
                             TextWrapping="Wrap" />
-                        <StackPanel Spacing="4">
+                        <StackPanel Spacing="4" Margin="0,4,0,0">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock x:Name="AdapterKindLabel" FontSize="12" Opacity="0.65" Text="Kind" />
-                                <TextBlock x:Name="AdapterKindText" FontSize="12" Text="" />
+                                <TextBlock x:Name="AdapterKindLabel" FontSize="12" Opacity="0.55" Text="Kind" />
+                                <TextBlock x:Name="AdapterKindText" FontSize="12" Opacity="0.85" Text="" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock x:Name="StatusLabel" FontSize="12" Opacity="0.65" Text="Status" />
-                                <TextBlock x:Name="AdapterStatusText" FontSize="12" Text="" />
+                                <TextBlock x:Name="StatusLabel" FontSize="12" Opacity="0.55" Text="Status" />
+                                <TextBlock x:Name="AdapterStatusText" FontSize="12" Opacity="0.85" Text="" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -281,28 +288,35 @@
 
             <Border
                 Grid.Row="3"
-                Padding="16,14"
+                Padding="16,12"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
-                <Grid RowSpacing="12">
+                <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock
-                        x:Name="GraphHeader"
-                        Grid.Row="0"
-                        FontSize="14"
-                        FontWeight="SemiBold"
-                        Text="Live Traffic" />
-
-                    <StackPanel Grid.Row="1" Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Grid Grid.Row="0" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            x:Name="GraphHeader"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Text="Live Traffic" />
+                        <StackPanel
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            VerticalAlignment="Center">
                             <RadioButton
                                 x:Name="Range30sButton"
                                 Content="Last 30 seconds"
@@ -322,21 +336,25 @@
                                 IsChecked="{x:Bind ViewModel.Is5MinutesSelected, Mode=OneWay}"
                                 Click="Range5m_Click" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="16">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="12" Height="4" CornerRadius="2" Background="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="DownloadSeriesLabel" FontSize="12" Opacity="0.75" Text="Download" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="12" Height="4" CornerRadius="2" Background="{ThemeResource SuccessFillColorDefaultBrush}" VerticalAlignment="Center" />
-                                <TextBlock x:Name="UploadSeriesLabel" FontSize="12" Opacity="0.75" Text="Upload" />
-                            </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="16">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="12" Height="4" CornerRadius="2" Background="{ThemeResource AccentFillColorDefaultBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="DownloadSeriesLabel" FontSize="12" Opacity="0.7" Text="Download" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="12" Height="4" CornerRadius="2" Background="{ThemeResource SuccessFillColorDefaultBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="UploadSeriesLabel" FontSize="12" Opacity="0.7" Text="Upload" />
                         </StackPanel>
                     </StackPanel>
 
                     <Border
+                        x:Name="GraphPlotBorder"
                         Grid.Row="2"
-                        MinHeight="200"
+                        Height="280"
+                        MinHeight="220"
+                        MaxHeight="460"
                         Padding="0"
                         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -352,7 +370,7 @@
                         Grid.Row="3"
                         FontSize="11"
                         HorizontalAlignment="Right"
-                        Opacity="0.6"
+                        Opacity="0.5"
                         Text="Now"
                         x:Name="GraphNowText" />
                 </Grid>

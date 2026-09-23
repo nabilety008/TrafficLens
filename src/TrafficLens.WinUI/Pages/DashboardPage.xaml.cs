@@ -256,6 +256,8 @@ public sealed partial class DashboardPage : Page
             TopAppCard.SetValue(Grid.RowProperty, 1);
             AdapterCard.SetValue(Grid.ColumnProperty, 0);
             AdapterCard.SetValue(Grid.RowProperty, 2);
+
+            GraphPlotBorder.Height = 240;
         }
         else
         {
@@ -282,7 +284,19 @@ public sealed partial class DashboardPage : Page
             TopAppCard.SetValue(Grid.RowProperty, 0);
             AdapterCard.SetValue(Grid.ColumnProperty, 2);
             AdapterCard.SetValue(Grid.RowProperty, 0);
+
+            UpdateGraphPlotHeight();
         }
+    }
+
+    private void UpdateGraphPlotHeight()
+    {
+        const double chrome = 500;
+        const double minPlot = 220;
+        const double maxPlot = 460;
+
+        var viewport = ActualHeight > 0 ? ActualHeight : 800;
+        GraphPlotBorder.Height = Math.Clamp(viewport - chrome, minPlot, maxPlot);
     }
 
     private void Range30s_Click(object sender, RoutedEventArgs e) =>
