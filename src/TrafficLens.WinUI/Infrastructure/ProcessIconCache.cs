@@ -25,6 +25,7 @@ public sealed class ProcessIconCache
     public ProcessIconCache(DispatcherQueue dispatcherQueue)
     {
         _dispatcherQueue = dispatcherQueue;
+        Log("cache-created");
     }
 
     public event EventHandler<string>? IconReady;
@@ -114,9 +115,22 @@ public sealed class ProcessIconCache
 
             if (png is null)
             {
+                png = await ExtractOnUiAsync(path).ConfigureAwait(false);
+            }
+
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (png is null)
+            {
+                Log($"extract-fail path={path}");
                 CacheFallbackForPath(path);
                 return;
             }
+
+            Log($"extract-ok path={path} bytes={png.Length}");
 
             await _dispatcherQueue.TryEnqueueAsync(async () =>
             {
@@ -130,18 +144,61 @@ public sealed class ProcessIconCache
                     var image = await DecodePngAsync(png).ConfigureAwait(true);
                     CacheImage(path, image, notify: true);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Log($"decode-fail path={path} err={ex.Message}");
                     CacheFallbackForPath(path);
                 }
             });
         }
-        catch
+        catch (Exception ex)
         {
+            Log($"extract-err path={path} err={ex.Message}");
             if (!_disposed)
             {
                 CacheFallbackForPath(path);
             }
+        }
+    }
+
+    private Task<byte[]?> ExtractOnUiAsync(string path)
+    {
+        var completion = new TaskCompletionSource<byte[]?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var ok = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                completion.TrySetResult(ExtractPngSafe(path));
+            }
+            catch (Exception ex)
+            {
+                Log($"ui-extract-err path={path} err={ex.Message}");
+                completion.TrySetResult(null);
+            }
+        });
+
+        if (!ok)
+        {
+            completion.TrySetResult(null);
+        }
+
+        return completion.Task;
+    }
+
+    public static void Log(string message)
+    {
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TrafficLens", "logs");
+            Directory.CreateDirectory(dir);
+            var file = Path.Combine(dir, $"icons-{DateTime.Now:yyyy-MM-dd}.log");
+            File.AppendAllText(file, $"{DateTime.Now:O} {message}{Environment.NewLine}");
+        }
+        catch
+        {
         }
     }
 
@@ -272,7 +329,27 @@ public sealed class ProcessIconCache
         {
             if (!File.Exists(path))
             {
+                Log($"missing path={path}");
                 return null;
+            }
+
+            try
+            {
+                using var associated = System.Drawing.Icon.ExtractAssociatedIcon(path);
+                if (associated is not null)
+                {
+                    using var associatedBitmap = associated.ToBitmap();
+                    using var associatedStream = new MemoryStream();
+                    associatedBitmap.Save(associatedStream, System.Drawing.Imaging.ImageFormat.Png);
+                    if (associatedStream.Length > 0)
+                    {
+                        return associatedStream.ToArray();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"associated-err path={path} err={ex.Message}");
             }
 
             var info = new ShFileInfo();
@@ -280,6 +357,7 @@ public sealed class ProcessIconCache
             var handle = ShGetFileInfo(path, FileAttributeNormal, ref info, size, ShgfiIcon | ShgfiLargeIcon);
             if (handle == IntPtr.Zero || info.hIcon == IntPtr.Zero)
             {
+                Log($"shfail path={path} handle={handle} icon={info.hIcon} size={size}");
                 return null;
             }
 
@@ -295,8 +373,9 @@ public sealed class ProcessIconCache
                 DestroyIcon(info.hIcon);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Log($"safe-err path={path} err={ex.Message}");
             return null;
         }
     }
