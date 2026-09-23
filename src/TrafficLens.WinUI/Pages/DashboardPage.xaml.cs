@@ -37,7 +37,6 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged += OnCultureChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += OnSizeChanged;
     }
 
     public DashboardViewModel ViewModel => _viewModel;
@@ -46,7 +45,6 @@ public sealed partial class DashboardPage : Page
     {
         _viewModel.SetActive(true);
         ApplyGraphData();
-        ApplyResponsiveLayout(ActualWidth);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -56,12 +54,8 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged -= OnCultureChanged;
         Loaded -= OnLoaded;
         Unloaded -= OnUnloaded;
-        SizeChanged -= OnSizeChanged;
         _viewModel.Dispose();
     }
-
-    private void OnSizeChanged(object sender, SizeChangedEventArgs e) =>
-        ApplyResponsiveLayout(ActualWidth);
 
     private void OnCultureChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
@@ -85,6 +79,8 @@ public sealed partial class DashboardPage : Page
             case nameof(DashboardViewModel.UploadTodayLabel):
             case nameof(DashboardViewModel.TotalTodayLabel):
             case nameof(DashboardViewModel.TopAppNowLabel):
+            case nameof(DashboardViewModel.TopAppApplicationLabel):
+            case nameof(DashboardViewModel.TopAppCurrentLabel):
             case nameof(DashboardViewModel.TopAppDownloadLabel):
             case nameof(DashboardViewModel.TopAppUploadLabel):
             case nameof(DashboardViewModel.GraphLiveTrafficLabel):
@@ -145,6 +141,8 @@ public sealed partial class DashboardPage : Page
         UploadTodayLabel.Text = _viewModel.UploadTodayLabel;
         TotalTodayLabel.Text = _viewModel.TotalTodayLabel;
         TopAppHeader.Text = _viewModel.TopAppNowLabel;
+        TopAppApplicationLabel.Text = _viewModel.TopAppApplicationLabel;
+        TopAppCurrentLabel.Text = _viewModel.TopAppCurrentLabel;
         TopAppDownloadLabel.Text = _viewModel.TopAppDownloadLabel;
         TopAppUploadLabel.Text = _viewModel.TopAppUploadLabel;
         ActiveAdapterHeader.Text = _viewModel.ActiveAdapterLabel;
@@ -221,82 +219,6 @@ public sealed partial class DashboardPage : Page
         RootLayout.FlowDirection = _localization.IsRightToLeft
             ? FlowDirection.RightToLeft
             : FlowDirection.LeftToRight;
-    }
-
-    private void ApplyResponsiveLayout(double width)
-    {
-        if (width <= 0)
-        {
-            return;
-        }
-
-        var narrow = width < 780;
-        if (narrow)
-        {
-            SummaryGrid.ColumnDefinitions[1].Width = new GridLength(0);
-            SummaryGrid.ColumnDefinitions[2].Width = new GridLength(0);
-            SummaryGrid.ColumnSpacing = 0;
-            SummaryGrid.RowSpacing = 12;
-
-            DownloadCard.SetValue(Grid.ColumnProperty, 0);
-            DownloadCard.SetValue(Grid.RowProperty, 0);
-            UploadCard.SetValue(Grid.ColumnProperty, 0);
-            UploadCard.SetValue(Grid.RowProperty, 1);
-            TotalCard.SetValue(Grid.ColumnProperty, 0);
-            TotalCard.SetValue(Grid.RowProperty, 2);
-
-            InsightGrid.ColumnDefinitions[1].Width = new GridLength(0);
-            InsightGrid.ColumnDefinitions[2].Width = new GridLength(0);
-            InsightGrid.ColumnSpacing = 0;
-            InsightGrid.RowSpacing = 12;
-
-            TodayCard.SetValue(Grid.ColumnProperty, 0);
-            TodayCard.SetValue(Grid.RowProperty, 0);
-            TopAppCard.SetValue(Grid.ColumnProperty, 0);
-            TopAppCard.SetValue(Grid.RowProperty, 1);
-            AdapterCard.SetValue(Grid.ColumnProperty, 0);
-            AdapterCard.SetValue(Grid.RowProperty, 2);
-
-            GraphPlotBorder.Height = 240;
-        }
-        else
-        {
-            SummaryGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-            SummaryGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
-            SummaryGrid.ColumnSpacing = 12;
-            SummaryGrid.RowSpacing = 0;
-
-            DownloadCard.SetValue(Grid.ColumnProperty, 0);
-            DownloadCard.SetValue(Grid.RowProperty, 0);
-            UploadCard.SetValue(Grid.ColumnProperty, 1);
-            UploadCard.SetValue(Grid.RowProperty, 0);
-            TotalCard.SetValue(Grid.ColumnProperty, 2);
-            TotalCard.SetValue(Grid.RowProperty, 0);
-
-            InsightGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
-            InsightGrid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
-            InsightGrid.ColumnSpacing = 12;
-            InsightGrid.RowSpacing = 0;
-
-            TodayCard.SetValue(Grid.ColumnProperty, 0);
-            TodayCard.SetValue(Grid.RowProperty, 0);
-            TopAppCard.SetValue(Grid.ColumnProperty, 1);
-            TopAppCard.SetValue(Grid.RowProperty, 0);
-            AdapterCard.SetValue(Grid.ColumnProperty, 2);
-            AdapterCard.SetValue(Grid.RowProperty, 0);
-
-            UpdateGraphPlotHeight();
-        }
-    }
-
-    private void UpdateGraphPlotHeight()
-    {
-        const double chrome = 500;
-        const double minPlot = 220;
-        const double maxPlot = 460;
-
-        var viewport = ActualHeight > 0 ? ActualHeight : 800;
-        GraphPlotBorder.Height = Math.Clamp(viewport - chrome, minPlot, maxPlot);
     }
 
     private void Range30s_Click(object sender, RoutedEventArgs e) =>
