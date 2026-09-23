@@ -83,6 +83,7 @@ public sealed class ProcessIconCache
 
         if (_extractionsThisRefresh >= MaxExtractionsPerRefresh)
         {
+            Log($"budget-deny path={executablePath}");
             return;
         }
 
@@ -92,6 +93,7 @@ public sealed class ProcessIconCache
         }
 
         _extractionsThisRefresh++;
+        Log($"extract-begin path={executablePath}");
         _ = ExtractAsync(executablePath);
     }
 
@@ -105,9 +107,13 @@ public sealed class ProcessIconCache
     {
         try
         {
+            Log($"extract-start path={path}");
             await EnsureFallbackAsync().ConfigureAwait(false);
 
-            var png = await Task.Run(() => ExtractPngSafe(path)).ConfigureAwait(false);
+            var extractTask = Task.Run(() => ExtractPngSafe(path));
+            var png = await Task.WhenAny(extractTask, Task.Delay(TimeSpan.FromSeconds(3))) == extractTask
+                ? await extractTask.ConfigureAwait(false)
+                : null;
             if (_disposed)
             {
                 return;
@@ -115,6 +121,11 @@ public sealed class ProcessIconCache
 
             if (png is null)
             {
+                if (extractTask.Status != TaskStatus.RanToCompletion)
+                {
+                    Log($"extract-timeout path={path}");
+                }
+
                 png = await ExtractOnUiAsync(path).ConfigureAwait(false);
             }
 
@@ -132,7 +143,7 @@ public sealed class ProcessIconCache
 
             Log($"extract-ok path={path} bytes={png.Length}");
 
-            await _dispatcherQueue.TryEnqueueAsync(async () =>
+            var enqueued = await _dispatcherQueue.TryEnqueueAsync(async () =>
             {
                 if (_disposed)
                 {
@@ -143,13 +154,19 @@ public sealed class ProcessIconCache
                 {
                     var image = await DecodePngAsync(png).ConfigureAwait(true);
                     CacheImage(path, image, notify: true);
+                    Log($"cached path={path}");
                 }
                 catch (Exception ex)
                 {
                     Log($"decode-fail path={path} err={ex.Message}");
                     CacheFallbackForPath(path);
                 }
-            });
+            }).ConfigureAwait(false);
+
+            if (!enqueued)
+            {
+                Log($"enqueue-fail path={path}");
+            }
         }
         catch (Exception ex)
         {
@@ -169,6 +186,7 @@ public sealed class ProcessIconCache
         {
             try
             {
+                Log($"ui-extract-begin path={path}");
                 completion.TrySetResult(ExtractPngSafe(path));
             }
             catch (Exception ex)
@@ -180,10 +198,11 @@ public sealed class ProcessIconCache
 
         if (!ok)
         {
+            Log($"ui-enqueue-fail path={path}");
             completion.TrySetResult(null);
         }
 
-        return completion.Task;
+        return completion.Task.WaitAsync(TimeSpan.FromSeconds(3));
     }
 
     public static void Log(string message)
@@ -290,10 +309,12 @@ public sealed class ProcessIconCache
             try
             {
                 _fallback = await DecodePngAsync(_fallbackPng).ConfigureAwait(true);
+                Log("fallback-ready");
                 IconReady?.Invoke(this, string.Empty);
             }
-            catch
+            catch (Exception ex)
             {
+                Log($"fallback-fail err={ex.Message}");
                 _fallback = new BitmapImage();
             }
             finally
@@ -343,8 +364,13 @@ public sealed class ProcessIconCache
                     associatedBitmap.Save(associatedStream, System.Drawing.Imaging.ImageFormat.Png);
                     if (associatedStream.Length > 0)
                     {
+                        Log($"associated-ok path={path} bytes={associatedStream.Length}");
                         return associatedStream.ToArray();
                     }
+                }
+                else
+                {
+                    Log($"associated-null path={path}");
                 }
             }
             catch (Exception ex)
@@ -366,6 +392,7 @@ public sealed class ProcessIconCache
                 using var bitmap = System.Drawing.Bitmap.FromHicon(info.hIcon);
                 using var stream = new MemoryStream();
                 bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                Log($"shok path={path} bytes={stream.Length}");
                 return stream.ToArray();
             }
             finally
