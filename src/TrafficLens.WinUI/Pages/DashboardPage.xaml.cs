@@ -11,6 +11,8 @@ namespace TrafficLens.WinUI.Pages;
 
 public sealed partial class DashboardPage : Page
 {
+    private const double MinCardWidth = 240;
+
     private readonly DashboardViewModel _viewModel;
     private readonly ILocalizationService _localization;
 
@@ -37,6 +39,7 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged += OnCultureChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        RootLayout.SizeChanged += OnRootLayoutSizeChanged;
     }
 
     public DashboardViewModel ViewModel => _viewModel;
@@ -45,6 +48,7 @@ public sealed partial class DashboardPage : Page
     {
         _viewModel.SetActive(true);
         ApplyGraphData();
+        ApplyCardLayout(RootLayout.ActualWidth);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -54,8 +58,12 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged -= OnCultureChanged;
         Loaded -= OnLoaded;
         Unloaded -= OnUnloaded;
+        RootLayout.SizeChanged -= OnRootLayoutSizeChanged;
         _viewModel.Dispose();
     }
+
+    private void OnRootLayoutSizeChanged(object sender, SizeChangedEventArgs e) =>
+        ApplyCardLayout(e.NewSize.Width);
 
     private void OnCultureChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
@@ -219,6 +227,74 @@ public sealed partial class DashboardPage : Page
         RootLayout.FlowDirection = _localization.IsRightToLeft
             ? FlowDirection.RightToLeft
             : FlowDirection.LeftToRight;
+    }
+
+    private void ApplyCardLayout(double contentWidth)
+    {
+        if (contentWidth <= 0)
+        {
+            return;
+        }
+
+        var columns = contentWidth switch
+        {
+            >= MinCardWidth * 3 + 24 => 3,
+            >= MinCardWidth * 2 + 12 => 2,
+            _ => 1
+        };
+
+        ApplyCardGrid(SummaryGrid, DownloadCard, UploadCard, TotalCard, columns);
+        ApplyCardGrid(TodayGrid, DownloadTodayCard, UploadTodayCard, TotalTodayCard, columns);
+    }
+
+    private static void ApplyCardGrid(
+        Grid grid,
+        UIElement first,
+        UIElement second,
+        UIElement third,
+        int columns)
+    {
+        switch (columns)
+        {
+            case 3:
+                grid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+                grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                grid.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+                grid.RowDefinitions[1].Height = new GridLength(0);
+                grid.RowDefinitions[2].Height = new GridLength(0);
+                Place(first, 0, 0);
+                Place(second, 1, 0);
+                Place(third, 2, 0);
+                break;
+
+            case 2:
+                grid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+                grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+                grid.ColumnDefinitions[2].Width = new GridLength(0);
+                grid.RowDefinitions[1].Height = new GridLength(0, GridUnitType.Auto);
+                grid.RowDefinitions[2].Height = new GridLength(0);
+                Place(first, 0, 0);
+                Place(second, 1, 0);
+                Place(third, 0, 1);
+                break;
+
+            default:
+                grid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+                grid.ColumnDefinitions[1].Width = new GridLength(0);
+                grid.ColumnDefinitions[2].Width = new GridLength(0);
+                grid.RowDefinitions[1].Height = new GridLength(0, GridUnitType.Auto);
+                grid.RowDefinitions[2].Height = new GridLength(0, GridUnitType.Auto);
+                Place(first, 0, 0);
+                Place(second, 0, 1);
+                Place(third, 0, 2);
+                break;
+        }
+    }
+
+    private static void Place(UIElement element, int column, int row)
+    {
+        element.SetValue(Grid.ColumnProperty, column);
+        element.SetValue(Grid.RowProperty, row);
     }
 
     private void Range30s_Click(object sender, RoutedEventArgs e) =>

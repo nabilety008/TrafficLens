@@ -19,7 +19,7 @@
                 Opacity="0.6"
                 Text="Dashboard" />
 
-            <Grid x:Name="SummaryGrid" ColumnSpacing="12">
+            <Grid x:Name="SummaryGrid" ColumnSpacing="12" RowSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -27,11 +27,14 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Border
                     x:Name="DownloadCard"
                     Grid.Column="0"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -51,8 +54,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="DownloadMbpsText"
                             FontSize="12"
@@ -65,6 +67,7 @@
                 <Border
                     x:Name="UploadCard"
                     Grid.Column="1"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -84,8 +87,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource SuccessFillColorDefaultBrush}"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="UploadMbpsText"
                             FontSize="12"
@@ -98,6 +100,7 @@
                 <Border
                     x:Name="TotalCard"
                     Grid.Column="2"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -116,8 +119,7 @@
                             FontSize="26"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="TotalMbpsText"
                             FontSize="12"
@@ -144,7 +146,7 @@
                 Opacity="0.6"
                 Text="Today at a Glance" />
 
-            <Grid x:Name="TodayGrid" ColumnSpacing="12">
+            <Grid x:Name="TodayGrid" ColumnSpacing="12" RowSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -152,11 +154,14 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Border
                     x:Name="DownloadTodayCard"
                     Grid.Column="0"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -175,14 +180,14 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
 
                 <Border
                     x:Name="UploadTodayCard"
                     Grid.Column="1"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -201,14 +206,14 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource SuccessFillColorDefaultBrush}"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
 
                 <Border
                     x:Name="TotalTodayCard"
                     Grid.Column="2"
+                    Grid.Row="0"
                     Padding="16,14"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -226,8 +231,7 @@
                             FontSize="22"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
             </Grid>
