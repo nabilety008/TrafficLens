@@ -11,6 +11,9 @@ namespace TrafficLens.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    private const double ExpandedModeThresholdWidth = 900;
+    private const double CompactModeThresholdWidth = 640;
+
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
     private readonly ISystemTrayService _trayService;
@@ -40,10 +43,12 @@ public sealed partial class MainWindow : Window
 
         _trayService.OpenRequested += OnOpenRequested;
         _localization.CultureChanged += OnCultureChanged;
+        RootGrid.SizeChanged += OnRootGridSizeChanged;
         ApplyLocalization();
 
         NavView.SelectedItem = DashboardNavItem;
         ContentFrame.Navigate(typeof(DashboardPage));
+        ApplyPaneDisplayMode(RootGrid.ActualWidth > 0 ? RootGrid.ActualWidth : 900);
     }
 
     public void ShowMainWindow()
@@ -128,6 +133,26 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OnRootGridSizeChanged(object sender, SizeChangedEventArgs e) =>
+        ApplyPaneDisplayMode(e.NewSize.Width);
+
+    private void ApplyPaneDisplayMode(double width)
+    {
+        var mode = width >= ExpandedModeThresholdWidth
+            ? NavigationViewPaneDisplayMode.Left
+            : width >= CompactModeThresholdWidth
+                ? NavigationViewPaneDisplayMode.LeftCompact
+                : NavigationViewPaneDisplayMode.LeftMinimal;
+
+        if (NavView.PaneDisplayMode == mode)
+        {
+            return;
+        }
+
+        NavView.PaneDisplayMode = mode;
+        NavView.IsPaneOpen = mode == NavigationViewPaneDisplayMode.Left;
+    }
+
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (_navigating)
@@ -165,6 +190,11 @@ public sealed partial class MainWindow : Window
         finally
         {
             _navigating = false;
+        }
+
+        if (NavView.PaneDisplayMode != NavigationViewPaneDisplayMode.Left)
+        {
+            NavView.IsPaneOpen = false;
         }
     }
 }

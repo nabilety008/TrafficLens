@@ -27,7 +27,7 @@
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False"
             OpenPaneLength="220"
-            PaneDisplayMode="Left"
+            PaneDisplayMode="Auto"
             SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem x:Name="DashboardNavItem" Content="Dashboard" Tag="Dashboard" />
