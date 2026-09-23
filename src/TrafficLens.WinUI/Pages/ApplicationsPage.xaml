@@ -9,7 +9,11 @@
         <infra:BoolToVisibilityConverter x:Key="BoolToVis" />
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+    <ScrollViewer
+        HorizontalScrollBarVisibility="Auto"
+        HorizontalScrollMode="Auto"
+        VerticalScrollBarVisibility="Auto"
+        VerticalScrollMode="Auto">
         <StackPanel
             x:Name="RootLayout"
             Margin="16,12,16,12"
