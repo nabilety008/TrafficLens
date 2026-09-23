@@ -37,6 +37,7 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged += OnCultureChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        RootLayout.SizeChanged += OnRootLayoutSizeChanged;
     }
 
     public DashboardViewModel ViewModel => _viewModel;
@@ -45,6 +46,7 @@ public sealed partial class DashboardPage : Page
     {
         _viewModel.SetActive(true);
         ApplyGraphData();
+        FitValues();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -54,8 +56,12 @@ public sealed partial class DashboardPage : Page
         _localization.CultureChanged -= OnCultureChanged;
         Loaded -= OnLoaded;
         Unloaded -= OnUnloaded;
+        RootLayout.SizeChanged -= OnRootLayoutSizeChanged;
         _viewModel.Dispose();
     }
+
+    private void OnRootLayoutSizeChanged(object sender, SizeChangedEventArgs e) =>
+        FitValues();
 
     private void OnCultureChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
@@ -204,6 +210,42 @@ public sealed partial class DashboardPage : Page
                 ? _viewModel.TopAppNoDataLabel
                 : _viewModel.TopAppStatusText;
         }
+
+        FitValues();
+    }
+
+    private void FitValues()
+    {
+        FitValue(DownloadCard, DownloadValueText, 26, 16);
+        FitValue(UploadCard, UploadValueText, 26, 16);
+        FitValue(TotalCard, TotalValueText, 26, 16);
+        FitValue(DownloadTodayCard, TodayDownloadValue, 22, 14);
+        FitValue(UploadTodayCard, TodayUploadValue, 22, 14);
+        FitValue(TotalTodayCard, TodayTotalValue, 22, 14);
+        FitValue(DownloadCard, DownloadMbpsText, 12, 10);
+        FitValue(UploadCard, UploadMbpsText, 12, 10);
+        FitValue(TotalCard, TotalMbpsText, 12, 10);
+    }
+
+    private static void FitValue(Border card, TextBlock value, double maxSize, double minSize)
+    {
+        var available = card.ActualWidth - 32;
+        if (available <= 0)
+        {
+            return;
+        }
+
+        for (var size = maxSize; size >= minSize; size -= 1)
+        {
+            value.FontSize = size;
+            value.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            if (value.DesiredSize.Width <= available)
+            {
+                return;
+            }
+        }
+
+        value.FontSize = minSize;
     }
 
     private void ApplyGraphData()

@@ -51,8 +51,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="DownloadMbpsText"
                             FontSize="12"
@@ -84,8 +83,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource SuccessFillColorDefaultBrush}"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="UploadMbpsText"
                             FontSize="12"
@@ -116,8 +114,7 @@
                             FontSize="26"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Text="0 B/s"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B/s" />
                         <TextBlock
                             x:Name="TotalMbpsText"
                             FontSize="12"
@@ -175,8 +172,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
 
@@ -201,8 +197,7 @@
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
                             Foreground="{ThemeResource SuccessFillColorDefaultBrush}"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
 
@@ -226,8 +221,7 @@
                             FontSize="22"
                             FontWeight="SemiBold"
                             FlowDirection="LeftToRight"
-                            Text="0 B"
-                            TextTrimming="CharacterEllipsis" />
+                            Text="0 B" />
                     </StackPanel>
                 </Border>
             </Grid>
