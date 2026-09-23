@@ -166,6 +166,8 @@ public partial class App : Application
         services.AddNetworkServices();
         services.AddHistoryServices(AppPaths.DatabaseFile);
         services.AddSingleton(DispatcherQueue.GetForCurrentThread()!);
+        services.AddSingleton(sp => new Infrastructure.ProcessIconCache(
+            sp.GetRequiredService<DispatcherQueue>()));
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
     }

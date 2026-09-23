@@ -3,12 +3,14 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Conversion;
 using TrafficLens.Core.Localization;
 using TrafficLens.Core.Models;
 using TrafficLens.Core.Selection;
 using TrafficLens.Network.Process;
+using TrafficLens.WinUI.Infrastructure;
 
 namespace TrafficLens.WinUI.ViewModels;
 
@@ -17,6 +19,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     private readonly IProcessTrafficCollector _collector;
     private readonly ILocalizationService _localization;
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly ProcessIconCache _iconCache;
     private readonly Dictionary<ProcessInstanceId, ProcessRowViewModel> _rows = new();
     private readonly List<ProcessInstanceId> _displayedIdentities = new();
 
@@ -44,6 +47,9 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     private string _topDownloadRateText = string.Empty;
     private string _topUploadName = string.Empty;
     private string _topUploadRateText = string.Empty;
+    private ImageSource? _topConsumerIcon;
+    private ImageSource? _topDownloadIcon;
+    private ImageSource? _topUploadIcon;
 
     private string _applicationsLabel = string.Empty;
     private string _topConsumerNowLabel = string.Empty;
@@ -76,16 +82,19 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     public ApplicationsViewModel(
         IProcessTrafficCollector collector,
         ILocalizationService localization,
-        DispatcherQueue dispatcherQueue)
+        DispatcherQueue dispatcherQueue,
+        ProcessIconCache iconCache)
     {
         _collector = collector;
         _localization = localization;
         _dispatcherQueue = dispatcherQueue;
+        _iconCache = iconCache;
         _culture = localization.CurrentCulture;
 
         _collector.StatusChanged += OnStatusChanged;
         _collector.SamplesReady += OnSamplesReady;
         _localization.CultureChanged += OnCultureChanged;
+        _iconCache.IconReady += OnIconReady;
 
         RefreshLocalizedStrings();
         UpdateStatus();
@@ -126,6 +135,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         _collector.StatusChanged -= OnStatusChanged;
         _collector.SamplesReady -= OnSamplesReady;
         _localization.CultureChanged -= OnCultureChanged;
+        _iconCache.IconReady -= OnIconReady;
     }
 
     public string SearchText
@@ -210,6 +220,24 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _topUploadRateText;
         private set => SetProperty(ref _topUploadRateText, value);
+    }
+
+    public ImageSource? TopConsumerIcon
+    {
+        get => _topConsumerIcon;
+        private set => SetProperty(ref _topConsumerIcon, value);
+    }
+
+    public ImageSource? TopDownloadIcon
+    {
+        get => _topDownloadIcon;
+        private set => SetProperty(ref _topDownloadIcon, value);
+    }
+
+    public ImageSource? TopUploadIcon
+    {
+        get => _topUploadIcon;
+        private set => SetProperty(ref _topUploadIcon, value);
     }
 
     public ProcessTrafficCollectorStatus CollectorStatus => _collectorStatus;
@@ -522,7 +550,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
                 _rows[identity] = row;
             }
 
-            row.Update(sample, _culture, _runningText, _exitedText);
+            row.Update(sample, _culture, _runningText, _exitedText, _iconCache);
         }
 
         if (seen.Count != _rows.Count)
@@ -549,6 +577,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
             TopConsumerDownloadRateText = string.Empty;
             TopConsumerUploadRateText = string.Empty;
             TopConsumerTotalRateText = string.Empty;
+            TopConsumerIcon = null;
             ClearSideCards();
             return;
         }
@@ -557,6 +586,7 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         TopConsumerDownloadRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.DownloadBytesPerSecond), _culture);
         TopConsumerUploadRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.UploadBytesPerSecond), _culture);
         TopConsumerTotalRateText = DataRateFormatter.FormatAdaptive((long)Math.Round(consumer.TotalBytesPerSecond), _culture);
+        TopConsumerIcon = ResolveCardIcon(consumer);
 
         var download = ProcessSampleSelection.TopDownload(_samples);
         var upload = ProcessSampleSelection.TopUpload(_samples);
@@ -568,6 +598,8 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         TopUploadRateText = upload is null
             ? string.Empty
             : DataRateFormatter.FormatAdaptive((long)Math.Round(upload.UploadBytesPerSecond), _culture);
+        TopDownloadIcon = ResolveCardIcon(download);
+        TopUploadIcon = ResolveCardIcon(upload);
     }
 
     private void ClearSideCards()
@@ -576,6 +608,46 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         TopDownloadRateText = string.Empty;
         TopUploadName = string.Empty;
         TopUploadRateText = string.Empty;
+        TopDownloadIcon = null;
+        TopUploadIcon = null;
+    }
+
+    private ImageSource? ResolveCardIcon(ProcessTrafficSample? sample)
+    {
+        if (sample is null)
+        {
+            return null;
+        }
+
+        var path = sample.ExecutablePath;
+        var available = sample.IconAvailable && !string.IsNullOrWhiteSpace(path);
+        var image = _iconCache.TryGet(path, available);
+        if (image is null)
+        {
+            _iconCache.Request(path, available);
+        }
+
+        return image;
+    }
+
+    private void OnIconReady(object? sender, string path)
+    {
+        if (!_isActive || _disposed)
+        {
+            return;
+        }
+
+        RunOnUi(() =>
+        {
+            foreach (var row in _rows.Values)
+            {
+                row.OnIconReady(_iconCache);
+            }
+
+            TopConsumerIcon = ResolveCardIcon(ProcessSampleSelection.TopConsumer(_samples));
+            TopDownloadIcon = ResolveCardIcon(ProcessSampleSelection.TopDownload(_samples));
+            TopUploadIcon = ResolveCardIcon(ProcessSampleSelection.TopUpload(_samples));
+        });
     }
 
     private void UpdateStatus()

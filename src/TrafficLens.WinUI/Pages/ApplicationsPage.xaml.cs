@@ -21,7 +21,8 @@ public sealed partial class ApplicationsPage : Page
         _viewModel = new ApplicationsViewModel(
             services.GetRequiredService<IProcessTrafficCollector>(),
             _localization,
-            services.GetRequiredService<Microsoft.UI.Dispatching.DispatcherQueue>());
+            services.GetRequiredService<Microsoft.UI.Dispatching.DispatcherQueue>(),
+            services.GetRequiredService<Infrastructure.ProcessIconCache>());
 
         Bindings.Update();
         ApplyFlowDirection();

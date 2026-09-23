@@ -118,15 +118,23 @@
                             FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopConsumerNowLabel, Mode=OneWay}" />
-                        <TextBlock
-                            x:Name="TopConsumerName"
-                            Margin="0,0,0,6"
-                            FontSize="15"
-                            FontWeight="SemiBold"
-                            MaxLines="2"
-                            TextWrapping="Wrap"
-                            TextTrimming="CharacterEllipsis"
-                            Text="{x:Bind ViewModel.TopConsumerName, Mode=OneWay}" />
+                        <StackPanel Margin="0,0,0,6" Orientation="Horizontal" Spacing="8">
+                            <Image
+                                Width="24"
+                                Height="24"
+                                VerticalAlignment="Center"
+                                Source="{x:Bind ViewModel.TopConsumerIcon, Mode=OneWay}"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                x:Name="TopConsumerName"
+                                VerticalAlignment="Center"
+                                FontSize="15"
+                                FontWeight="SemiBold"
+                                MaxLines="2"
+                                TextWrapping="Wrap"
+                                TextTrimming="CharacterEllipsis"
+                                Text="{x:Bind ViewModel.TopConsumerName, Mode=OneWay}" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                             <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" Text="↓" />
                             <TextBlock
@@ -178,15 +186,23 @@
                             FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopDownloadLabel, Mode=OneWay}" />
-                        <TextBlock
-                            x:Name="TopDownloadName"
-                            Margin="0,0,0,6"
-                            FontSize="14"
-                            FontWeight="SemiBold"
-                            MaxLines="2"
-                            TextWrapping="Wrap"
-                            TextTrimming="CharacterEllipsis"
-                            Text="{x:Bind ViewModel.TopDownloadName, Mode=OneWay}" />
+                        <StackPanel Margin="0,0,0,6" Orientation="Horizontal" Spacing="8">
+                            <Image
+                                Width="24"
+                                Height="24"
+                                VerticalAlignment="Center"
+                                Source="{x:Bind ViewModel.TopDownloadIcon, Mode=OneWay}"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                x:Name="TopDownloadName"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                MaxLines="2"
+                                TextWrapping="Wrap"
+                                TextTrimming="CharacterEllipsis"
+                                Text="{x:Bind ViewModel.TopDownloadName, Mode=OneWay}" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                             <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource AccentFillColorDefaultBrush}" Text="↓" />
                             <TextBlock
@@ -215,15 +231,23 @@
                             FontSize="11"
                             Opacity="0.6"
                             Text="{x:Bind ViewModel.TopUploadLabel, Mode=OneWay}" />
-                        <TextBlock
-                            x:Name="TopUploadName"
-                            Margin="0,0,0,6"
-                            FontSize="14"
-                            FontWeight="SemiBold"
-                            MaxLines="2"
-                            TextWrapping="Wrap"
-                            TextTrimming="CharacterEllipsis"
-                            Text="{x:Bind ViewModel.TopUploadName, Mode=OneWay}" />
+                        <StackPanel Margin="0,0,0,6" Orientation="Horizontal" Spacing="8">
+                            <Image
+                                Width="24"
+                                Height="24"
+                                VerticalAlignment="Center"
+                                Source="{x:Bind ViewModel.TopUploadIcon, Mode=OneWay}"
+                                Stretch="Uniform" />
+                            <TextBlock
+                                x:Name="TopUploadName"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                MaxLines="2"
+                                TextWrapping="Wrap"
+                                TextTrimming="CharacterEllipsis"
+                                Text="{x:Bind ViewModel.TopUploadName, Mode=OneWay}" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                             <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource SuccessFillColorDefaultBrush}" Text="↑" />
                             <TextBlock
@@ -364,13 +388,24 @@
                                     <ColumnDefinition Width="1.1*" MinWidth="68" />
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock
+                                <StackPanel
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    FontSize="13"
-                                    FontWeight="SemiBold"
-                                    Text="{x:Bind Name, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis" />
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                                    <Image
+                                        Width="20"
+                                        Height="20"
+                                        VerticalAlignment="Center"
+                                        Source="{x:Bind Icon, Mode=OneWay}"
+                                        Stretch="Uniform" />
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Text="{x:Bind Name, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
 
                                 <TextBlock
                                     Grid.Column="1"
