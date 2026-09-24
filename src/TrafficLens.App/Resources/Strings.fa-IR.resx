@@ -634,13 +634,13 @@
     <value>قوانین هشدار تنظیم شده</value>
   </data>
   <data name="AlertsNoConfiguredRulesLabel" xml:space="preserve">
-    <value>هنوز هیچ هشداری تنظیم نشده است</value>
+    <value>هنوز هیچ هشداری فعال نشده است.</value>
   </data>
   <data name="AlertsTriggeredSectionLabel" xml:space="preserve">
     <value>هشدارهای فعال شده</value>
   </data>
   <data name="AlertsNoTriggeredLabel" xml:space="preserve">
-    <value>هنوز هیچ هشداری فعال نشده است</value>
+    <value>هنوز هشدار اخیری ثبت نشده است</value>
   </data>
   <data name="AlertThresholdFormat" xml:space="preserve">
     <value>آستانه: {0}</value>

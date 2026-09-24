@@ -634,7 +634,7 @@
     <value>Configured Alert Rules</value>
   </data>
   <data name="AlertsNoConfiguredRulesLabel" xml:space="preserve">
-    <value>No alerts have been configured yet.</value>
+    <value>No alerts are enabled yet.</value>
   </data>
   <data name="AlertsTriggeredSectionLabel" xml:space="preserve">
     <value>Triggered Alerts</value>
