@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using TrafficLens.App.Services;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.History;
 using TrafficLens.Core.Localization;
@@ -134,10 +135,18 @@ public partial class App : Application
             logger.LogError(ex, "Failed to start traffic history service");
         }
 
-        var tray = _serviceProvider.GetRequiredService<ISystemTrayService>();
-        tray.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
-        tray.Show();
+        var trayService = _serviceProvider.GetRequiredService<ISystemTrayService>();
+        trayService.ExitRequested += (_, _) => exitCoordinator.RequestApplicationExit();
 
+        var alertService = _serviceProvider.GetRequiredService<IAlertService>();
+        alertService.AlertRaised += (_, alertArgs) =>
+        {
+            trayService.ShowAlert(
+                AlertMessageFormatter.Title(localization),
+                AlertMessageFormatter.Message(localization, alertArgs.Alert));
+        };
+
+        trayService.Show();
         _serviceProvider.GetRequiredService<IFloatingWidgetService>().RestoreIfEnabled();
     }
 
@@ -182,6 +191,7 @@ public partial class App : Application
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
         services.AddSingleton<DnsResolverService>();
+        services.AddSingleton<IAlertService, AlertService>();
     }
 
     private sealed class ServicesAccessor : IServicesAccessor

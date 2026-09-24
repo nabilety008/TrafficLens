@@ -29,6 +29,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\TrafficLens.App\Services\AlertService.cs" Link="Services\AlertService.cs" />
+    <Compile Include="..\TrafficLens.App\Services\AlertSettings.cs" Link="Services\AlertSettings.cs" />
+    <Compile Include="..\TrafficLens.App\Services\AlertNotification.cs" Link="Services\AlertNotification.cs" />
+    <Compile Include="..\TrafficLens.App\Services\IAlertService.cs" Link="Services\IAlertService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
