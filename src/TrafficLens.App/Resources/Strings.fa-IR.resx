@@ -420,6 +420,9 @@
   <data name="StartMinimizedLabel" xml:space="preserve">
     <value>راه‌اندازی کمینه در سینی سیستم</value>
   </data>
+  <data name="StartupLabel" xml:space="preserve">
+    <value>راه‌اندازی</value>
+  </data>
   <data name="SystemTrayLabel" xml:space="preserve">
     <value>سینی سیستم</value>
   </data>
@@ -455,6 +458,12 @@
   </data>
   <data name="ResetAreYouSureLabel" xml:space="preserve">
     <value>آیا از بازنشانی همه تنظیمات ترافیک‌لنز به مقادیر پیش‌فرض مطمئن هستید؟</value>
+  </data>
+  <data name="ResetConfirmLabel" xml:space="preserve">
+    <value>بازنشانی</value>
+  </data>
+  <data name="CancelLabel" xml:space="preserve">
+    <value>انصراف</value>
   </data>
   <data name="InvalidValueLabel" xml:space="preserve">
     <value>لطفاً مقادیر معتبر وارد کنید.</value>

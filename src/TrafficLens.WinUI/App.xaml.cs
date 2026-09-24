@@ -83,6 +83,13 @@ public partial class App : Application
                 _serviceProvider.GetRequiredService<ISystemTrayService>(),
                 exitCoordinator);
             MainWindow.Activate();
+            if (Environment.GetCommandLineArgs().Any(arg =>
+                    string.Equals(arg, "--minimized", StringComparison.OrdinalIgnoreCase)))
+            {
+                MainWindow.AppWindow.Hide();
+                logger.LogInformation("WinUI MainWindow started minimized to system tray");
+            }
+
             logger.LogInformation("WinUI MainWindow activated");
         }
         catch (Exception ex)
@@ -190,6 +197,7 @@ public partial class App : Application
             sp.GetRequiredService<DispatcherQueue>()));
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
+        services.AddSingleton<IStartupRegistrationService, StartupRegistrationService>();
         services.AddSingleton<DnsResolverService>();
         services.AddSingleton<IAlertService, AlertService>();
     }

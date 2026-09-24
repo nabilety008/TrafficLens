@@ -1,74 +1,283 @@
 <Page
     x:Class="TrafficLens.WinUI.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:pages="using:TrafficLens.WinUI.Pages">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <ScrollViewer Padding="24,20,24,24">
-        <StackPanel MaxWidth="720" Spacing="24">
-            <TextBlock
-                x:Name="PageTitleText"
-                FontSize="28"
-                FontWeight="SemiBold"
-                Text="Settings" />
+    <Grid x:Name="SettingsRoot">
+        <ScrollViewer
+            x:Name="PageScroller"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel
+                x:Name="RootLayout"
+                Margin="16,12,16,12"
+                Spacing="0">
 
-            <StackPanel Spacing="8">
                 <TextBlock
-                    x:Name="GeneralHeaderText"
-                    FontSize="16"
+                    x:Name="PageTitleText"
+                    Margin="0,0,0,8"
+                    FontSize="12"
                     FontWeight="SemiBold"
-                    Text="General" />
+                    Opacity="0.6" />
 
-                <StackPanel Spacing="6">
+                <TextBlock
+                    x:Name="GeneralHeader"
+                    Margin="0,0,0,6"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="LanguageText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ComboBox
+                                x:Name="LanguageCombo"
+                                Grid.Column="1"
+                                MinWidth="160"
+                                AutomationProperties.Name="SettingsLanguageCombo"
+                                SelectionChanged="LanguageCombo_SelectionChanged">
+                                <ComboBoxItem Content="English" Tag="en-US" />
+                                <ComboBoxItem Content="فارسی" Tag="fa-IR" />
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock
+                    x:Name="StartupHeader"
+                    Margin="0,0,0,6"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="StartWithWindowsText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="StartWithWindowsToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsStartWithWindows"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="StartWithWindowsToggle_Toggled" />
+                        </Grid>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="StartMinimizedText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="StartMinimizedToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsStartMinimized"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="StartMinimizedToggle_Toggled" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock
+                    x:Name="TrayHeader"
+                    Margin="0,0,0,6"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="MinimizeToTrayText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="MinimizeToTrayToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsMinimizeToTray"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="MinimizeToTrayToggle_Toggled" />
+                        </Grid>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="CloseToTrayText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="CloseToTrayToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsCloseToTray"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="CloseToTrayToggle_Toggled" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock
+                    x:Name="WidgetHeader"
+                    Margin="0,0,0,6"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="ShowWidgetText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="ShowWidgetToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsWidgetEnabled"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="ShowWidgetToggle_Toggled" />
+                        </Grid>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="AlwaysOnTopText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="AlwaysOnTopToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsWidgetAlwaysOnTop"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="AlwaysOnTopToggle_Toggled" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel
+                    Margin="0,4,0,0"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <Button
+                        x:Name="ResetButton"
+                        AutomationProperties.Name="SettingsReset"
+                        Click="Reset_Click" />
+
                     <TextBlock
-                        x:Name="LanguageLabelText"
-                        Opacity="0.85"
-                        Text="Language" />
-                    <ComboBox
-                        x:Name="LanguageCombo"
-                        MinWidth="220"
-                        HorizontalAlignment="Left"
-                        SelectionChanged="LanguageCombo_SelectionChanged">
-                        <ComboBoxItem Content="English" Tag="en-US" />
-                        <ComboBoxItem Content="فارسی" Tag="fa-IR" />
-                    </ComboBox>
+                        x:Name="SavedNoticeText"
+                        VerticalAlignment="Center"
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Visibility="Collapsed" />
                 </StackPanel>
             </StackPanel>
-
-            <StackPanel Spacing="8">
-                <TextBlock
-                    x:Name="SystemTrayHeaderText"
-                    FontSize="16"
-                    FontWeight="SemiBold"
-                    Text="System Tray" />
-
-                <ToggleSwitch
-                    x:Name="MinimizeToTrayToggle"
-                    OffContent=""
-                    OnContent=""
-                    Toggled="MinimizeToTrayToggle_Toggled" />
-
-                <ToggleSwitch
-                    x:Name="CloseToTrayToggle"
-                    OffContent=""
-                    OnContent=""
-                    Toggled="CloseToTrayToggle_Toggled" />
-            </StackPanel>
-
-            <StackPanel Spacing="8">
-                <TextBlock
-                    x:Name="WidgetHeaderText"
-                    FontSize="16"
-                    FontWeight="SemiBold"
-                    Text="Floating Widget" />
-
-                <ToggleSwitch
-                    x:Name="ShowWidgetToggle"
-                    OffContent=""
-                    OnContent=""
-                    Toggled="ShowWidgetToggle_Toggled" />
-            </StackPanel>
-
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Page>
