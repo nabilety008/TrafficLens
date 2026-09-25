@@ -139,6 +139,24 @@ public sealed class WindowsUpdateStateResolverTests
     }
 
     [Fact]
+    public void Resolve_OtherPolicyPresentWithStaleRecord_StaysManagedAndBlocksEnable()
+    {
+        var state = WindowsUpdateStateResolver.Resolve(new WindowsUpdateSnapshot
+        {
+            OtherPolicyPresent = true,
+            Record = new WindowsUpdateChangeRecord
+            {
+                PreviousKind = WindowsUpdatePreviousValueKind.Absent,
+                PreviousKeyExisted = false
+            }
+        });
+
+        Assert.Equal(WindowsUpdateStatus.ManagedByPolicy, state.Status);
+        Assert.True(state.OrganizationPolicyPresent);
+        Assert.False(state.CanEnable);
+    }
+
+    [Fact]
     public void Resolve_EmptySnapshot_ReturnsEnabled()
     {
         var state = WindowsUpdateStateResolver.Resolve(new WindowsUpdateSnapshot());

@@ -15,5 +15,7 @@ public sealed class WindowsUpdateChangeRecord
 
     public string? PreviousString { get; set; }
 
+    public bool? PreviousKeyExisted { get; set; }
+
     public DateTime ChangedAtUtc { get; set; }
 }

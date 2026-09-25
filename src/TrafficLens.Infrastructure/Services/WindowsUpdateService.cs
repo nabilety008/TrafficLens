@@ -87,7 +87,7 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
             return WindowsUpdateOperationResult.Failed;
         }
 
-        var run = RunElevated(WindowsUpdateCommandBuilder.BuildEnable(snapshot.Record));
+        var run = RunElevated(WindowsUpdateCommandBuilder.BuildEnable(snapshot.Record, snapshot));
         if (run.Canceled)
         {
             return WindowsUpdateOperationResult.Canceled;
@@ -105,7 +105,11 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
 
     private static WindowsUpdateChangeRecord CreateRecord(WindowsUpdateSnapshot snapshot)
     {
-        var record = new WindowsUpdateChangeRecord { ChangedAtUtc = DateTime.UtcNow };
+        var record = new WindowsUpdateChangeRecord
+        {
+            ChangedAtUtc = DateTime.UtcNow,
+            PreviousKeyExisted = snapshot.AuKeyExists
+        };
 
         if (!snapshot.NoAutoUpdatePresent)
         {
@@ -133,11 +137,16 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
             int? noAutoValue = null;
             string? noAutoRawString = null;
             var otherPolicy = false;
+            var auKeyExists = false;
+            var auOtherValues = 0;
+            var auSubKeys = 0;
 
             using (var auKey = Registry.LocalMachine.OpenSubKey(WindowsUpdateCommandBuilder.AutoUpdateKeyPath, false))
             {
                 if (auKey is not null)
                 {
+                    auKeyExists = true;
+                    auSubKeys = auKey.SubKeyCount;
                     foreach (var name in auKey.GetValueNames())
                     {
                         if (string.Equals(name, WindowsUpdateCommandBuilder.AutoUpdateValueName, StringComparison.OrdinalIgnoreCase))
@@ -161,6 +170,7 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
                         else
                         {
                             otherPolicy = true;
+                            auOtherValues++;
                         }
                     }
                 }
@@ -190,6 +200,9 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
                 NoAutoUpdateInvalid = noAutoInvalid,
                 NoAutoUpdateRawString = noAutoRawString,
                 OtherPolicyPresent = otherPolicy,
+                AuKeyExists = auKeyExists,
+                AuOtherValues = auOtherValues,
+                AuSubKeys = auSubKeys,
                 ServiceStart = serviceStart,
                 Record = LoadRecord()
             };

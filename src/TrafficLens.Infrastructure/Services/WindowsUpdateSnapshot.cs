@@ -16,6 +16,12 @@ public sealed class WindowsUpdateSnapshot
 
     public bool OtherPolicyPresent { get; init; }
 
+    public bool AuKeyExists { get; init; }
+
+    public int AuOtherValues { get; init; }
+
+    public int AuSubKeys { get; init; }
+
     public int? ServiceStart { get; init; }
 
     public WindowsUpdateChangeRecord? Record { get; init; }
