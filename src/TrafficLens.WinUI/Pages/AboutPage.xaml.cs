@@ -3,8 +3,10 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using TrafficLens.Core.Localization;
 using TrafficLens.Infrastructure.Services;
+using Windows.Storage.Streams;
 
 namespace TrafficLens.WinUI.Pages;
 
@@ -29,6 +31,7 @@ public sealed partial class AboutPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         ApplyFlowDirection();
+        _ = LoadBrandIconAsync();
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -78,6 +81,65 @@ public sealed partial class AboutPage : Page
         SettingsPathValueText.Text = AppPaths.SettingsFile;
         LogsPathLabelText.Text = _localization["LogsPathLabel"];
         LogsPathValueText.Text = AppPaths.LogsDirectory;
+    }
+
+    private async Task LoadBrandIconAsync()
+    {
+        if (AppIconImage.Source is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "TrafficLens-256.png");
+            var bytes = File.Exists(path)
+                ? await File.ReadAllBytesAsync(path)
+                : ReadEmbeddedBrandIcon();
+
+            if (bytes is null || bytes.Length == 0)
+            {
+                return;
+            }
+
+            using var stream = new InMemoryRandomAccessStream();
+            using (var outputStream = stream.GetOutputStreamAt(0))
+            using (var writer = new DataWriter(outputStream))
+            {
+                writer.WriteBytes(bytes);
+                await writer.StoreAsync();
+            }
+
+            stream.Seek(0);
+            var bitmap = new BitmapImage();
+            bitmap.SetSource(stream);
+            AppIconImage.Source = bitmap;
+        }
+        catch (Exception)
+        {
+            AppIconImage.Source = null;
+        }
+    }
+
+    private static byte[]? ReadEmbeddedBrandIcon()
+    {
+        try
+        {
+            using var resource = typeof(AboutPage).Assembly
+                .GetManifestResourceStream("TrafficLens.WinUI.Assets.TrafficLens-256.png");
+            if (resource is null)
+            {
+                return null;
+            }
+
+            using var buffer = new MemoryStream();
+            resource.CopyTo(buffer);
+            return buffer.ToArray();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static string GetVersionText()

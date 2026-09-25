@@ -660,4 +660,61 @@
   <data name="AlertStatusDisabledLabel" xml:space="preserve">
     <value>غیرفعال</value>
   </data>
+  <data name="WindowsUpdateLabel" xml:space="preserve">
+    <value>به‌روزرسانی ویندوز</value>
+  </data>
+  <data name="WindowsUpdateStatusEnabled" xml:space="preserve">
+    <value>فعال</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByTrafficLens" xml:space="preserve">
+    <value>غیرفعال شده توسط ترافیک‌لنز</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByPolicy" xml:space="preserve">
+    <value>غیرفعال شده بر اساس سیاست سیستم</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByService" xml:space="preserve">
+    <value>غیرفعال شده (سرویس به‌روزرسانی خاموش است)</value>
+  </data>
+  <data name="WindowsUpdateStatusManaged" xml:space="preserve">
+    <value>مدیریت‌شده توسط سیاست سازمان</value>
+  </data>
+  <data name="WindowsUpdateStatusUnknown" xml:space="preserve">
+    <value>نامشخص</value>
+  </data>
+  <data name="WindowsUpdateDisableLabel" xml:space="preserve">
+    <value>غیرفعال کردن به‌روزرسانی‌ها</value>
+  </data>
+  <data name="WindowsUpdateEnableLabel" xml:space="preserve">
+    <value>فعال کردن به‌روزرسانی‌ها</value>
+  </data>
+  <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
+    <value>تغییر این تنظیم در دسترس نیست</value>
+  </data>
+  <data name="WindowsUpdateWarningLabel" xml:space="preserve">
+    <value>این تغییر نیاز به تأیید مدیر (UAC) دارد.</value>
+  </data>
+  <data name="WindowsUpdateManagedExplanation" xml:space="preserve">
+    <value>به‌روزرسانی ویندوز توسط سیاست سازمان شما مدیریت می‌شود.</value>
+  </data>
+  <data name="WindowsUpdateServiceExplanation" xml:space="preserve">
+    <value>سرویس به‌روزرسانی ویندوز خاموش است.</value>
+  </data>
+  <data name="WindowsUpdateUnknownExplanation" xml:space="preserve">
+    <value>وضعیت به‌روزرسانی ویندوز قابل خواندن نیست.</value>
+  </data>
+  <data name="WindowsUpdateConfirmDisableText" xml:space="preserve">
+    <value>به‌روزرسانی‌های ویندوز غیرفعال شود؟ سیاست به‌روزرسانی ویندوز روی غیرفعال تنظیم می‌شود. هر زمان می‌توانید این تغییر را بازگردانید.</value>
+  </data>
+  <data name="WindowsUpdateConfirmEnableText" xml:space="preserve">
+    <value>به‌روزرسانی‌های ویندوز فعال شود؟ سیاست قبلی به‌روزرسانی ویندوز بازیابی می‌شود.</value>
+  </data>
+  <data name="WindowsUpdateConfirmLabel" xml:space="preserve">
+    <value>تأیید</value>
+  </data>
+  <data name="WindowsUpdateFailedLabel" xml:space="preserve">
+    <value>تغییر اعمال نشد.</value>
+  </data>
+  <data name="WindowsUpdateCanceledLabel" xml:space="preserve">
+    <value>تغییر لغو شد.</value>
+  </data>
 </root>

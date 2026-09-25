@@ -48,8 +48,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\assets\branding\TrafficLens-256.png" Link="Assets\TrafficLens-256.png" />
+    <Content Include="..\..\assets\branding\TrafficLens-256.png" Link="Assets\TrafficLens-256.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\assets\branding\TrafficLens.ico" Link="Assets\TrafficLens.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\branding\TrafficLens-256.png" LogicalName="TrafficLens.WinUI.Assets.TrafficLens-256.png" />
   </ItemGroup>
 
 </Project>

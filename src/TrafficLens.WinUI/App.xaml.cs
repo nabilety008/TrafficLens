@@ -198,6 +198,7 @@ public partial class App : Application
         services.AddSingleton<IFloatingWidgetService, FloatingWidgetService>();
         services.AddSingleton<ISystemTrayService, SystemTrayService>();
         services.AddSingleton<IStartupRegistrationService, StartupRegistrationService>();
+        services.AddSingleton<IWindowsUpdateService, WindowsUpdateService>();
         services.AddSingleton<DnsResolverService>();
         services.AddSingleton<IAlertService, AlertService>();
     }

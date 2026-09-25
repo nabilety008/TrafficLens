@@ -35,7 +35,7 @@
                                 x:Name="AppIconImage"
                                 Width="64"
                                 Height="64"
-                                Source="ms-appx:///Assets/TrafficLens-256.png"
+                                AutomationProperties.Name="AboutBrandIcon"
                                 Stretch="Uniform" />
 
                             <StackPanel VerticalAlignment="Center" Spacing="2">

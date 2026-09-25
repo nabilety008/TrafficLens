@@ -14,7 +14,11 @@ public sealed partial class SettingsPage : Page
     private readonly ISettingsService _settings;
     private readonly IFloatingWidgetService _widgetService;
     private readonly IStartupRegistrationService _startupRegistration;
+    private readonly IWindowsUpdateService _windowsUpdate;
     private bool _loading;
+    private bool _windowsUpdateBusy;
+    private WindowsUpdateState _windowsUpdateState = new();
+    private WindowsUpdateOperationResult? _windowsUpdateResult;
 
     public SettingsPage()
     {
@@ -25,6 +29,7 @@ public sealed partial class SettingsPage : Page
         _settings = services.GetRequiredService<ISettingsService>();
         _widgetService = services.GetRequiredService<IFloatingWidgetService>();
         _startupRegistration = services.GetRequiredService<IStartupRegistrationService>();
+        _windowsUpdate = services.GetRequiredService<IWindowsUpdateService>();
 
         LoadFromSettings();
         ApplyLocalization();
@@ -37,6 +42,7 @@ public sealed partial class SettingsPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         LoadFromSettings();
+        LoadWindowsUpdateState();
         ApplyFlowDirection();
     }
 
@@ -51,6 +57,7 @@ public sealed partial class SettingsPage : Page
         DispatcherQueue.TryEnqueue(() =>
         {
             ApplyLocalization();
+            LoadWindowsUpdateState();
             ApplyFlowDirection();
         });
 
@@ -78,6 +85,92 @@ public sealed partial class SettingsPage : Page
         ShowWidgetText.Text = _localization["EnableFloatingWidgetLabel"];
         AlwaysOnTopText.Text = _localization["AlwaysOnTopLabel"];
         ResetButton.Content = _localization["ResetToDefaultsLabel"];
+
+        WindowsUpdateHeader.Text = _localization["WindowsUpdateLabel"];
+        WindowsUpdateStatusText.Text = _localization["StatusLabel"];
+        WindowsUpdateDisableButton.Content = _localization["WindowsUpdateDisableLabel"];
+        WindowsUpdateEnableButton.Content = _localization["WindowsUpdateEnableLabel"];
+        RenderWindowsUpdateState();
+    }
+
+    private void LoadWindowsUpdateState()
+    {
+        _windowsUpdateState = _windowsUpdate.GetState();
+        RenderWindowsUpdateState();
+    }
+
+    private void RenderWindowsUpdateState()
+    {
+        WindowsUpdateStatusValueText.Text = _windowsUpdateState.Status switch
+        {
+            WindowsUpdateStatus.Enabled => _localization["WindowsUpdateStatusEnabled"],
+            WindowsUpdateStatus.Disabled when _windowsUpdateState.Reason == WindowsUpdateDisableReason.TrafficLens =>
+                _localization["WindowsUpdateStatusDisabledByTrafficLens"],
+            WindowsUpdateStatus.Disabled when _windowsUpdateState.Reason == WindowsUpdateDisableReason.Service =>
+                _localization["WindowsUpdateStatusDisabledByService"],
+            WindowsUpdateStatus.Disabled => _localization["WindowsUpdateStatusDisabledByPolicy"],
+            WindowsUpdateStatus.ManagedByPolicy => _localization["WindowsUpdateStatusManaged"],
+            _ => _localization["WindowsUpdateStatusUnknown"]
+        };
+
+        WindowsUpdateNoteText.Text = GetWindowsUpdateNote();
+        WindowsUpdateNoteText.Visibility = string.IsNullOrEmpty(WindowsUpdateNoteText.Text)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        WindowsUpdateDisableButton.Visibility = _windowsUpdateState.CanDisable
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        WindowsUpdateEnableButton.Visibility = _windowsUpdateState.CanEnable
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        var hasAction = _windowsUpdateState.CanDisable || _windowsUpdateState.CanEnable;
+        WindowsUpdateWarningText.Text = hasAction ? _localization["WindowsUpdateWarningLabel"] : string.Empty;
+        WindowsUpdateWarningText.Visibility = hasAction ? Visibility.Visible : Visibility.Collapsed;
+
+        if (_windowsUpdateResult is { } result)
+        {
+            WindowsUpdateResultText.Text = result switch
+            {
+                WindowsUpdateOperationResult.Success => _localization["ChangesSavedLabel"],
+                WindowsUpdateOperationResult.Canceled => _localization["WindowsUpdateCanceledLabel"],
+                _ => _localization["WindowsUpdateFailedLabel"]
+            };
+            WindowsUpdateResultText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            WindowsUpdateResultText.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private string GetWindowsUpdateNote()
+    {
+        if (_windowsUpdateState.Status == WindowsUpdateStatus.Unknown)
+        {
+            return _localization["WindowsUpdateUnknownExplanation"];
+        }
+
+        if (_windowsUpdateState.Status == WindowsUpdateStatus.Disabled &&
+            _windowsUpdateState.Reason == WindowsUpdateDisableReason.Service)
+        {
+            return _localization["WindowsUpdateServiceExplanation"];
+        }
+
+        if (_windowsUpdateState.Status == WindowsUpdateStatus.ManagedByPolicy ||
+            (_windowsUpdateState.Status == WindowsUpdateStatus.Disabled &&
+             _windowsUpdateState.Reason == WindowsUpdateDisableReason.Policy))
+        {
+            return _localization["WindowsUpdateManagedExplanation"];
+        }
+
+        if (!_windowsUpdateState.CanDisable && !_windowsUpdateState.CanEnable)
+        {
+            return _localization["WindowsUpdateUnavailableLabel"];
+        }
+
+        return string.Empty;
     }
 
     private void LoadFromSettings()
@@ -204,6 +297,83 @@ public sealed partial class SettingsPage : Page
         }
 
         _widgetService.SetAlwaysOnTop(AlwaysOnTopToggle.IsOn);
+    }
+
+    private async void WindowsUpdateDisable_Click(object sender, RoutedEventArgs e)
+    {
+        if (_windowsUpdateBusy)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = _localization["WindowsUpdateLabel"],
+            Content = _localization["WindowsUpdateConfirmDisableText"],
+            PrimaryButtonText = _localization["WindowsUpdateConfirmLabel"],
+            CloseButtonText = _localization["CancelLabel"],
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        await RunWindowsUpdateActionAsync(() => _windowsUpdate.DisableAsync());
+    }
+
+    private async void WindowsUpdateEnable_Click(object sender, RoutedEventArgs e)
+    {
+        if (_windowsUpdateBusy)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = _localization["WindowsUpdateLabel"],
+            Content = _localization["WindowsUpdateConfirmEnableText"],
+            PrimaryButtonText = _localization["WindowsUpdateConfirmLabel"],
+            CloseButtonText = _localization["CancelLabel"],
+            DefaultButton = ContentDialogButton.Close
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        await RunWindowsUpdateActionAsync(() => _windowsUpdate.EnableAsync());
+    }
+
+    private async Task RunWindowsUpdateActionAsync(Func<Task<WindowsUpdateOperationResult>> action)
+    {
+        if (_windowsUpdateBusy)
+        {
+            return;
+        }
+
+        _windowsUpdateBusy = true;
+        WindowsUpdateDisableButton.IsEnabled = false;
+        WindowsUpdateEnableButton.IsEnabled = false;
+        _windowsUpdateResult = null;
+        RenderWindowsUpdateState();
+
+        try
+        {
+            _windowsUpdateResult = await action();
+            LoadWindowsUpdateState();
+        }
+        finally
+        {
+            _windowsUpdateBusy = false;
+            WindowsUpdateDisableButton.IsEnabled = true;
+            WindowsUpdateEnableButton.IsEnabled = true;
+            RenderWindowsUpdateState();
+        }
     }
 
     private async void Reset_Click(object sender, RoutedEventArgs e)

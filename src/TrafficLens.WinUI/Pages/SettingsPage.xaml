@@ -261,6 +261,85 @@
                     </StackPanel>
                 </Border>
 
+                <TextBlock
+                    x:Name="WindowsUpdateHeader"
+                    Margin="0,0,0,6"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="WindowsUpdateStatusText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <TextBlock
+                                x:Name="WindowsUpdateStatusValueText"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                FontWeight="SemiBold"
+                                AutomationProperties.Name="WindowsUpdateStatusValue"
+                                TextWrapping="Wrap" />
+                        </Grid>
+
+                        <TextBlock
+                            x:Name="WindowsUpdateNoteText"
+                            AutomationProperties.Name="WindowsUpdateNote"
+                            FontSize="11"
+                            Opacity="0.7"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Name="WindowsUpdateDisableButton"
+                                AutomationProperties.Name="WindowsUpdateDisable"
+                                Click="WindowsUpdateDisable_Click"
+                                Visibility="Collapsed" />
+
+                            <Button
+                                x:Name="WindowsUpdateEnableButton"
+                                AutomationProperties.Name="WindowsUpdateEnable"
+                                Click="WindowsUpdateEnable_Click"
+                                Visibility="Collapsed" />
+                        </StackPanel>
+
+                        <TextBlock
+                            x:Name="WindowsUpdateWarningText"
+                            AutomationProperties.Name="WindowsUpdateWarning"
+                            FontSize="11"
+                            Opacity="0.6"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed" />
+
+                        <TextBlock
+                            x:Name="WindowsUpdateResultText"
+                            AutomationProperties.Name="WindowsUpdateResult"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
+
                 <StackPanel
                     Margin="0,4,0,0"
                     Orientation="Horizontal"

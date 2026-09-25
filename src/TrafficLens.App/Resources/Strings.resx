@@ -660,4 +660,61 @@
   <data name="AlertStatusDisabledLabel" xml:space="preserve">
     <value>Disabled</value>
   </data>
+  <data name="WindowsUpdateLabel" xml:space="preserve">
+    <value>Windows Update</value>
+  </data>
+  <data name="WindowsUpdateStatusEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByTrafficLens" xml:space="preserve">
+    <value>Disabled by TrafficLens</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByPolicy" xml:space="preserve">
+    <value>Disabled by system policy</value>
+  </data>
+  <data name="WindowsUpdateStatusDisabledByService" xml:space="preserve">
+    <value>Disabled (update service turned off)</value>
+  </data>
+  <data name="WindowsUpdateStatusManaged" xml:space="preserve">
+    <value>Managed by organization policy</value>
+  </data>
+  <data name="WindowsUpdateStatusUnknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="WindowsUpdateDisableLabel" xml:space="preserve">
+    <value>Disable Updates</value>
+  </data>
+  <data name="WindowsUpdateEnableLabel" xml:space="preserve">
+    <value>Enable Updates</value>
+  </data>
+  <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
+    <value>Changing this setting is not available</value>
+  </data>
+  <data name="WindowsUpdateWarningLabel" xml:space="preserve">
+    <value>This change requires administrator approval (UAC).</value>
+  </data>
+  <data name="WindowsUpdateManagedExplanation" xml:space="preserve">
+    <value>Windows Update is managed by your organization's policy.</value>
+  </data>
+  <data name="WindowsUpdateServiceExplanation" xml:space="preserve">
+    <value>The Windows Update service is turned off.</value>
+  </data>
+  <data name="WindowsUpdateUnknownExplanation" xml:space="preserve">
+    <value>The Windows Update state could not be read.</value>
+  </data>
+  <data name="WindowsUpdateConfirmDisableText" xml:space="preserve">
+    <value>Disable Windows Updates? This will set the Windows Update policy to disabled. You can revert this change at any time.</value>
+  </data>
+  <data name="WindowsUpdateConfirmEnableText" xml:space="preserve">
+    <value>Enable Windows Updates? This will restore the previous Windows Update policy.</value>
+  </data>
+  <data name="WindowsUpdateConfirmLabel" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="WindowsUpdateFailedLabel" xml:space="preserve">
+    <value>The change could not be applied.</value>
+  </data>
+  <data name="WindowsUpdateCanceledLabel" xml:space="preserve">
+    <value>The change was canceled.</value>
+  </data>
 </root>
