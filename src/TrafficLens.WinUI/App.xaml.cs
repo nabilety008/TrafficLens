@@ -23,6 +23,7 @@ public partial class App : Application
     private SingleInstanceGuard? _singleInstanceGuard;
     private IDisposable? _activationWatch;
     private ILogger<App>? _logger;
+    private DispatcherQueue? _dispatcherQueue;
 
     public App()
     {
@@ -41,6 +42,7 @@ public partial class App : Application
         _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
             SingleInstanceMutexName,
             SingleInstanceActivationEventName);
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         if (!_singleInstanceGuard.IsPrimary)
         {
@@ -159,7 +161,7 @@ public partial class App : Application
 
     private void OnActivationRequested()
     {
-        DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() => MainWindow?.ShowMainWindow());
+        _dispatcherQueue?.TryEnqueue(() => MainWindow?.ShowMainWindow());
     }
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

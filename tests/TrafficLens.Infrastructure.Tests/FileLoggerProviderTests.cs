@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.Extensions.Logging;
 using TrafficLens.Infrastructure.Logging;
 
 namespace TrafficLens.Infrastructure.Tests;
@@ -41,5 +43,25 @@ public sealed class FileLoggerProviderTests : IDisposable
     public void Constructor_DoesNotThrow_OnEmptyDirectory()
     {
         new FileLoggerProvider(_dir).Dispose();
+    }
+
+    [Fact]
+    public void CreateLogger_UsesInvariantDateFileName_UnderPersianCulture()
+    {
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("fa-IR");
+            using var provider = new FileLoggerProvider(_dir);
+            var logger = provider.CreateLogger("TrafficLens.Test");
+            logger.LogInformation("hello");
+
+            var expected = Path.Combine(_dir, $"trafficlens-{DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.log");
+            Assert.True(File.Exists(expected), "log file must use invariant yyyy-MM-dd date under fa-IR culture");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
     }
 }

@@ -20,46 +20,33 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" MinHeight="32">
+                <Grid Grid.Row="0" MinHeight="32" FlowDirection="LeftToRight">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="92" />
                     </Grid.ColumnDefinitions>
+
+                    <Button
+                        x:Name="PinButton"
+                        Grid.Column="0"
+                        Click="PinButton_Click"
+                        FontSize="11"
+                        MinWidth="20"
+                        MinHeight="24"
+                        Padding="4,1"
+                        Background="Transparent"
+                        BorderThickness="0" />
 
                     <TextBlock
                         x:Name="TitleText"
-                        Grid.Column="0"
+                        Grid.Column="1"
+                        Margin="8,0,0,0"
                         FontSize="11"
                         FontWeight="SemiBold"
                         Opacity="0.75"
                         TextTrimming="CharacterEllipsis"
                         VerticalAlignment="Center" />
-
-                    <StackPanel
-                        Grid.Column="1"
-                        Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        Spacing="6">
-                        <Button
-                            x:Name="PinButton"
-                            Click="PinButton_Click"
-                            FontSize="11"
-                            MinWidth="20"
-                            MinHeight="24"
-                            Padding="4,1"
-                            Background="Transparent"
-                            BorderThickness="0" />
-                        <Button
-                            x:Name="CloseButton"
-                            Click="CloseButton_Click"
-                            FontSize="11"
-                            MinWidth="20"
-                            MinHeight="24"
-                            Padding="4,1"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Content="&#10005;" />
-                    </StackPanel>
                 </Grid>
 
                 <StackPanel Grid.Row="1" Spacing="1">

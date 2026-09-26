@@ -573,7 +573,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
             var lines = new List<string> { "Period,DownloadBytes,UploadBytes,TotalBytes" };
             foreach (var p in series)
             {
-                lines.Add($"{p.Date:yyyy-MM-dd},{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
+                lines.Add($"{p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)},{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
             }
             WriteCsvFile(lines);
         }
@@ -581,7 +581,7 @@ public sealed class HistoryViewModel : ViewModelBase, IDisposable
 
     private void WriteCsvFile(List<string> lines)
     {
-        var defaultName = $"TrafficLens-History-{DateTime.Now:yyyy-MM-dd}.csv";
+        var defaultName = $"TrafficLens-History-{DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.csv";
         var dialog = new SaveFileDialog
         {
             Filter = _localization["CsvFileFilterLabel"],

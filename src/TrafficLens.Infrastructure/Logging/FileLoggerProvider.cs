@@ -18,7 +18,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
     public ILogger CreateLogger(string categoryName)
     {
-        var date = DateTime.Now.ToString("yyyy-MM-dd");
+        var date = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var filePath = Path.Combine(_directory, $"trafficlens-{date}.log");
         return new FileLogger(filePath, categoryName, _ => null);
     }

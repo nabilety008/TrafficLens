@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -213,7 +214,7 @@ public sealed class ProcessIconCache
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TrafficLens", "logs");
             Directory.CreateDirectory(dir);
-            var file = Path.Combine(dir, $"icons-{DateTime.Now:yyyy-MM-dd}.log");
+            var file = Path.Combine(dir, $"icons-{DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.log");
             File.AppendAllText(file, $"{DateTime.Now:O} {message}{Environment.NewLine}");
         }
         catch

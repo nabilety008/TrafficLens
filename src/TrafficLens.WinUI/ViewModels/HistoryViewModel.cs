@@ -380,7 +380,7 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
         {
             foreach (var p in SliceSeries(snapshot.DailySeries, _selectedRange))
             {
-                lines.Add($"{p.Date:yyyy-MM-dd},{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
+                lines.Add($"{p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)},{p.DownloadBytes},{p.UploadBytes},{p.TotalBytes}");
             }
         }
 
@@ -408,7 +408,8 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
         ExportFailed = false;
     }
 
-    public string CsvSuggestedFileName => $"TrafficLens-History-{DateTime.Now:yyyy-MM-dd}.csv";
+    public string CsvSuggestedFileName =>
+        $"TrafficLens-History-{DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.csv";
 
     public string CsvFilterLabel => _localization["CsvFileFilterLabel"];
 

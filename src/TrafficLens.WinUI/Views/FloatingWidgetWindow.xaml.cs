@@ -14,6 +14,15 @@ public sealed partial class FloatingWidgetWindow : Window
     public const int WidgetWidth = 340;
     public const int WidgetHeight = 140;
 
+    private const int GwlStyleIndex = -16;
+    private const int WsMaximizeBoxBit = 0x00010000;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpFrameChanged = 0x0020;
+    private const int SwRestore = 9;
+
     private readonly ILocalizationService _localization;
     private readonly FloatingWidgetViewModel _viewModel;
     private bool _dragging;
@@ -32,6 +41,7 @@ public sealed partial class FloatingWidgetWindow : Window
         AppWindow.Resize(new SizeInt32(WidgetWidth, WidgetHeight));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(RootGrid);
+        DisableMaximize();
 
         RootGrid.DataContext = _viewModel;
         TitleText.Text = _viewModel.WidgetTitleLabel;
@@ -50,8 +60,35 @@ public sealed partial class FloatingWidgetWindow : Window
 
     public void ShowWidget()
     {
+        var hwnd = WindowNative.GetWindowHandle(this);
         AppWindow.Show();
+        if (IsIconic(hwnd))
+        {
+            ShowWindow(hwnd, SwRestore);
+        }
+
         Activate();
+    }
+
+    private void DisableMaximize()
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+        var style = GetWindowLongPtr(hwnd, GwlStyleIndex).ToInt64();
+        var updated = style & ~WsMaximizeBoxBit;
+        if (updated == style)
+        {
+            return;
+        }
+
+        SetWindowLongPtr(hwnd, GwlStyleIndex, (IntPtr)updated);
+        SetWindowPos(
+            hwnd,
+            IntPtr.Zero,
+            0,
+            0,
+            0,
+            0,
+            SwpNoSize | SwpNoMove | SwpNoZOrder | SwpNoActivate | SwpFrameChanged);
     }
 
     public void HideWidget() => AppWindow.Hide();
@@ -138,8 +175,6 @@ public sealed partial class FloatingWidgetWindow : Window
 
     private void PinButton_Click(object sender, RoutedEventArgs e) => _viewModel.TogglePin();
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => _viewModel.RequestClose();
-
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (e.OriginalSource is Microsoft.UI.Xaml.Controls.Button)
@@ -184,6 +219,18 @@ public sealed partial class FloatingWidgetWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
