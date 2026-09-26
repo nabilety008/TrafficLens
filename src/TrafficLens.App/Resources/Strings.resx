@@ -682,10 +682,10 @@
     <value>Unknown</value>
   </data>
   <data name="WindowsUpdateDisableLabel" xml:space="preserve">
-    <value>Disable Updates</value>
+    <value>Disable Windows Update</value>
   </data>
   <data name="WindowsUpdateEnableLabel" xml:space="preserve">
-    <value>Enable Updates</value>
+    <value>Enable Windows Update</value>
   </data>
   <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
     <value>Changing this setting is not available</value>

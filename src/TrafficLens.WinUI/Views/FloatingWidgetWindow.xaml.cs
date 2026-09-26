@@ -11,8 +11,8 @@ namespace TrafficLens.WinUI.Views;
 
 public sealed partial class FloatingWidgetWindow : Window
 {
-    public const int WidgetWidth = 280;
-    public const int WidgetHeight = 110;
+    public const int WidgetWidth = 320;
+    public const int WidgetHeight = 128;
 
     private readonly ILocalizationService _localization;
     private readonly FloatingWidgetViewModel _viewModel;

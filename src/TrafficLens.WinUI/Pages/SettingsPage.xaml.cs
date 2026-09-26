@@ -91,6 +91,11 @@ public sealed partial class SettingsPage : Page
         WindowsUpdateDisableButton.Content = _localization["WindowsUpdateDisableLabel"];
         WindowsUpdateEnableButton.Content = _localization["WindowsUpdateEnableLabel"];
         RenderWindowsUpdateState();
+
+        if (SavedNoticeText.Visibility == Visibility.Visible)
+        {
+            SavedNoticeText.Text = _localization["ChangesSavedLabel"];
+        }
     }
 
     private void LoadWindowsUpdateState()

@@ -682,10 +682,10 @@
     <value>نامشخص</value>
   </data>
   <data name="WindowsUpdateDisableLabel" xml:space="preserve">
-    <value>غیرفعال کردن به‌روزرسانی‌ها</value>
+    <value>غیرفعال کردن به‌روزرسانی ویندوز</value>
   </data>
   <data name="WindowsUpdateEnableLabel" xml:space="preserve">
-    <value>فعال کردن به‌روزرسانی‌ها</value>
+    <value>فعال کردن به‌روزرسانی ویندوز</value>
   </data>
   <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
     <value>تغییر این تنظیم در دسترس نیست</value>
