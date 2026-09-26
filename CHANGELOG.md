@@ -2,21 +2,93 @@
   
 All notable changes are documented here in reverse chronological order.
 
-## [Unreleased] — WinUI 3 Migration (WUI-001 / WUI-002)
+## [0.1.4] — WinUI 3 Release Candidate
 
-Work on `feature/winui3-migration`. WPF remains the rollback path (`f9017f0`).
-No installer/publish; v0.1.3 artifacts untouched.
+Release candidate built on `feature/winui3-migration` with
+`scripts/build-release.ps1`. The WPF project is retained as rollback
+(`f9017f0`) but is no longer the release entry point. This build is **unsigned**
+(no code-signing certificate is available). Not merged, tagged or published.
+
+### Changed
+
+- **Release entry point switched to WinUI 3** — the pipeline publishes
+  `src/TrafficLens.WinUI` (unpackaged `TrafficLens.WinUI.exe`, Windows App SDK
+  2.5.1). The release fails if a WPF `TrafficLens.exe` appears in the output.
+- **Self-contained loose layout, no single-file** — `win-x64` self-contained
+  publish that ships the Windows App SDK runtime payload next to the executable,
+  so the app runs on a machine without the Windows App Runtime installed.
+  `PublishSingleFile=false`, trimming and ReadyToRun off, no PDBs. Still an
+  unpackaged EXE + Inno Setup installer: **no MSIX**.
+- **Installer targets the WinUI executable** — shortcuts, post-install launch,
+  the WMI process check and uninstall checks all use `{#AppExeName}`
+  (`TrafficLens.WinUI.exe`); the stable `AppId`
+  `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}` is unchanged. `[InstallDelete]`
+  removes a stale WPF `TrafficLens.exe` on upgrade.
+- **Signing-ready, unsigned by default** — optional `-Sign` performs SHA-256 +
+  RFC 3161 timestamp signing in the required order (publish → product binaries →
+  ZIP/installer → installer → SHA-256). The thumbprint is read from the Windows
+  certificate store at run time; no key material is stored in the repository.
+- **Version 0.1.4** in `Directory.Build.props`, the Inno script and both artifact
+  names. `ProductVersion`/`InformationalVersion` = `0.1.4`,
+  `AssemblyVersion`/`FileVersion` = `0.1.4.0`; About resolves the version from
+  `AssemblyInformationalVersion`.
+- **Release pipeline fixes** — `-p:Platform=x64` is now required for build,
+  test and publish (the Windows App SDK self-contained targets refuse to
+  evaluate under AnyCPU, and x64-only keeps the native payload x64-only); the
+  portable ZIP is written with spec-compliant forward-slash entry names instead
+  of `Compress-Archive` backslashes; `-ResumeFromPublish` re-packages an already
+  validated publish tree without repeating the build and test run; the
+  executable name is derived from the WinUI project's `<AssemblyName>` instead
+  of being hard-coded.
+- **Lifecycle harness** (`scripts/tl023-release-lifecycle.ps1`) follows the new
+  executable name and version.
 
 ### Added
 
 - **WinUI 3 shell (WUI-001)** — unpackaged `TrafficLens.WinUI` (Windows App SDK 2.5.1), custom title bar, NavigationView, 7 destinations, EN/FA localization + RTL, floating widget, system tray (WinForms host project), single-instance guard, settings language selector.
 - **WinUI Dashboard (WUI-002)** — live Download/Upload/Total cards, Today at a Glance, Top App Now, Active Adapter, and a lightweight Canvas live graph (30s / 1m / 5m ranges) reusing shared `INetworkTrafficCollector`, aggregator, formatters, `ITrafficHistoryService`, and `IProcessTrafficCollector` — no duplicate collectors, ETW sessions, or polling timers.
 - Process traffic collector and traffic history service startup wired once in WinUI `App` (mirrors WPF composition root).
+- Release validation: publish output is checked for the executable, x64 PE
+  machine type, version metadata, Windows App SDK runtime payload, branding
+  assets, embedded English resources + `fa-IR` satellite, and the absence of
+  PDBs, test assemblies and the WPF executable.
 
 ### Fixed
 
 - **WUI-009 audit fixes** - Floating Widget title bar: Pin moved to the left, native Minimize/Close caption group preserved, Maximize disabled (`WS_MAXIMIZE`/`WS_MAXIMIZEBOX` cleared) and a minimized widget restored on show; size (`340x140`), Pin/AOT behavior, live Download/Upload/Total, widget backend and page lifecycle unchanged, no new timer/poller/collector. Second launch now restores a hidden main window (UI-thread `DispatcherQueue` captured at launch). Log, icon-log and History CSV file names/dates are culture-invariant (`fa-IR` no longer yields `1405-*`). Added `fa-IR` regression tests for logger file names and History CSV output.
 - **WUI-009 verification state** - the extended audit was intentionally stopped before every planned long-duration phase completed. Completed evidence is preserved in `%TEMP%\opencode\wui009-*`. Final automated run: **571/571 tests PASS**, Release x64 build **0 warnings / 0 errors**. Long performance and soak phases: **NOT TESTED**. Human GUI verification of the widget title bar: **PENDING**.
+- **Window and widget icons** - a per-size HICON cache (`WindowIcon`) is shared
+  by the main window, the floating widget and the tray host, and `WM_SETICON` is
+  re-applied to the correct HWNDs. A widget window created after startup is
+  covered by a one-shot deferred `DispatcherQueue` reapply, and the post-show
+  reapply runs once per show. Persian widget layout keeps all rows visible at
+  `340x140` DIP and the title bar / pin behavior is unchanged. Human
+  verification of the final icon state: **PENDING**.
+
+### Verification (v0.1.4)
+
+- Release pipeline: **571/571 tests PASS** (270 App / 212 Network / 84
+  Infrastructure / 5 WinUI), Release x64 build **0 warnings / 0 errors**.
+- Installer `TrafficLens-Setup-0.1.4-win-x64.exe` (85.50 MB,
+  `ProductVersion 0.1.4`) and portable `TrafficLens-Portable-0.1.4-win-x64.zip`
+  (123.09 MB, 814 entries), each with a `.sha256` sidecar. Installer SHA-256
+  `3E9DEA0EB6594DE7055C6FAF73746467AA40D9256C672FF9685A77FD7269146A`, ZIP
+  SHA-256 `660E1D4C9F502F179CB249E7A36AAF9F4A0943583E37C4A66E8A7973E96AF7FE`.
+- Publish output (814 files / 323.5 MB): `TrafficLens.WinUI.exe` 0.28 MB valid
+  x64 PE, `ProductVersion 0.1.4` / `FileVersion 0.1.4.0`, Windows App SDK
+  runtime payload present, no PDBs, no test assemblies, no WPF executable,
+  branding assets and both localizations present.
+- **Unsigned:** the installer reports `NotSigned`; the published checksums
+  describe this unsigned build and must be recomputed after any signing.
+- **Runtime verification not possible on the release host:** Smart App Control
+  is ON (policy `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`,
+  `VerifiedAndReputablePolicyState=1`, no enterprise-authored policy) and
+  blocks fresh unsigned binaries with `0x800711C7`. No security setting was
+  changed. Install/launch/reputation validation is **PENDING** a signed or
+  otherwise trusted build; v0.1.4 was verified statically (archive structure,
+  entry names, extraction, version metadata, signature status, checksums,
+  payload contents).
+- The v0.1.3 artifacts were left unchanged (installer SHA-256 `55EBCCD8…`).
 
 ---
 

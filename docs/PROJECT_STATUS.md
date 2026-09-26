@@ -4,18 +4,41 @@ Updated: 2026-09-26
 
 ## Current Milestone
 
-**WinUI 3 migration** on `feature/winui3-migration` (WPF rollback `f9017f0`):
-WUI-001 through WUI-008 implemented; **WUI-009 extended audit intentionally stopped**
-before every planned long-duration phase completed. Final automated run:
-**571/571 tests PASS**, Release x64 **0 warnings / 0 errors**; completed audit
-evidence preserved in `%TEMP%\opencode\wui009-*`. WUI-009 production fixes
-(widget title bar, single-instance restore, invariant log/CSV dates) committed in
-`21ca7c1`. Long performance/soak phases: **NOT TESTED**. Human GUI verification
-of the final state: **PENDING**. No merge/tag/publish; v0.1.3 artifacts preserved.
-WUI-001 shell **human PASS** (`5677e14`); WUI-002 **Dashboard implemented** —
-cards, Today/TopApp/Adapter, live Canvas graph, shared services only; solution
-**0 warnings/0 errors**, **542/542 tests**. **Human GUI verification for WUI-002: PENDING.**
-No merge/tag/publish; v0.1.3 artifacts preserved.
+**v0.1.4 WinUI 3 release candidate** on `feature/winui3-migration` (WPF
+rollback `f9017f0`). WUI-001 through WUI-008 implemented; **WUI-009 extended
+audit intentionally stopped** before every planned long-duration phase
+completed (long performance/soak: **NOT TESTED**). Completed audit evidence is
+preserved in `%TEMP%\opencode\wui009-*`; WUI-009 production fixes committed in
+`21ca7c1`.
+
+- **Release pipeline run once, green:** Release x64 build **0 warnings / 0
+  errors**, **571/571 tests PASS** (270 App / 212 Network / 84 Infrastructure /
+  5 WinUI).
+- **Entry point is WinUI 3** (`TrafficLens.WinUI.exe`, unpackaged, Windows App
+  SDK 2.5.1, self-contained `win-x64` loose layout, no single-file, no MSIX).
+  The WPF project is retained as rollback/reference and is not published.
+- **Artifacts:** installer `TrafficLens-Setup-0.1.4-win-x64.exe` (85.50 MB,
+  `ProductVersion 0.1.4`) + portable `TrafficLens-Portable-0.1.4-win-x64.zip`
+  (123.09 MB, 814 entries), each with a `.sha256` sidecar. Installer SHA-256
+  `3E9DEA0E…`, ZIP SHA-256 `660E1D4C…`.
+- **Unsigned RC:** no code-signing certificate exists, so
+  `Get-AuthenticodeSignature` reports `NotSigned` and the published checksums
+  describe the unsigned build only. The pipeline is signing-ready (`-Sign`).
+- **Runtime verification PENDING / not possible on this host:** Smart App
+  Control is ON (policy `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`,
+  `VerifiedAndReputablePolicyState=1`, no enterprise-authored policy) and blocks
+  fresh unsigned binaries (`0x800711C7`). No security setting was changed and
+  no bypass was attempted. v0.1.4 was verified **statically**: publish payload
+  (x64 PE, Windows App SDK runtime, no PDBs/test assemblies/WPF exe, branding
+  assets, embedded en + `fa-IR` satellite), archive structure and entry names,
+  clean extraction, version metadata, signature status and checksums.
+  Install/launch/reputation checks and the TL-023 lifecycle harness are
+  **PENDING** a signed or otherwise trusted build.
+- **Human GUI verification PENDING** for the WUI-009 widget title bar and for
+  the final window/widget icon state (`6710e4c`, `452e650`, `6381601`).
+  WUI-001 shell **human PASS** (`5677e14`).
+- No merge, tag or publish was performed. v0.1.3 artifacts were preserved
+  unchanged (installer SHA-256 `55EBCCD8…`).
 
 **Prior: v0.1.3** released on `hotfix/ui-polish-after-0.1.2`: dark theme
 consistency, white content background removal, ComboBox/ContextMenu dark

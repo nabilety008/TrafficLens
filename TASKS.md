@@ -8,6 +8,20 @@
 
 ## Backlog
 
+### WUI-010 WinUI 3 Release Candidate v0.1.4 — **BUILT + STATICALLY VERIFIED / RUNTIME PENDING**
+- [x] Version `0.1.4` in `Directory.Build.props`, `packaging/TrafficLens.iss` and both artifact names; `ProductVersion`/`InformationalVersion` `0.1.4`, `AssemblyVersion`/`FileVersion` `0.1.4.0`; About resolves the version from `AssemblyInformationalVersion` (no production-code change)
+- [x] Release entry point switched to WinUI 3: self-contained `win-x64`, Windows App SDK 2.5.1 **loose** layout, `PublishSingleFile=false`, no trimming/ReadyToRun, no PDBs, **no MSIX**. WPF project retained as rollback/reference and never published (the pipeline fails if `TrafficLens.exe` appears in the output)
+- [x] Installer targets `TrafficLens.WinUI.exe` (Start Menu/Desktop shortcuts, post-install launch, WMI process check, uninstall checks); stable `AppId` `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}` unchanged; `[InstallDelete]` removes a stale WPF `TrafficLens.exe` on upgrade
+- [x] Signing-ready and unsigned by default: opt-in `-Sign` with thumbprint resolved from the Windows certificate store, SHA-256 + RFC 3161 timestamp, order publish → product binaries → packages → installer → SHA-256; no key material in the repository
+- [x] Pipeline correctness fixes: `-p:Platform=x64` required (Windows App SDK self-contained targets fail under AnyCPU), portable ZIP written with spec-compliant forward-slash entry names, `-ResumeFromPublish` for re-packaging without repeating build+tests, executable name derived from the WinUI project's `<AssemblyName>`
+- [x] Release run: **571/571 tests PASS** (270 App / 212 Network / 84 Infrastructure / 5 WinUI), Release x64 build **0 warnings / 0 errors**
+- [x] Artifacts: `TrafficLens-Setup-0.1.4-win-x64.exe` (85.50 MB) + `TrafficLens-Portable-0.1.4-win-x64.zip` (123.09 MB, 814 entries) with `.sha256` sidecars; v0.1.3 artifacts preserved unchanged
+- [x] Static verification: x64 PE, Windows App SDK runtime payload, no PDBs/test assemblies/WPF exe, branding assets, embedded English + `fa-IR` satellite, clean extraction (814 files), version metadata, `NotSigned`, sidecars match recomputed hashes
+- [ ] Runtime verification — install / launch / reputation and the TL-023 lifecycle harness. **Blocked** by Smart App Control for fresh unsigned builds (`0x800711C7`); **PENDING** a signed or otherwise trusted build. No security setting was changed and no bypass attempted
+- [ ] Human GUI verification of the WUI-009 widget title bar and the final window/widget icon state — **PENDING**
+- [ ] Code signing with a real public CA certificate, then re-hash the artifacts — future release step
+- **Status: release candidate built and statically verified** — not merged, tagged or published
+
 ### WUI-009 WinUI 3 Migration — Extended Audit + Hardening — **PARTIAL (stopped intentionally)**
 - [x] Phases A-E: build/test baseline, single instance + tray exit/relaunch, 20 navigation cycles, EN/FA language stress, 10/10 tray hide/restore cycles (evidence in `%TEMP%\opencode\wui009-*`)
 - [x] Fixes (commit `21ca7c1`): widget title bar (Pin left, native Min/Close, Maximize disabled, minimized restore), second-launch restore of hidden main window, invariant logger/icon-log/History CSV dates, `fa-IR` regression tests
