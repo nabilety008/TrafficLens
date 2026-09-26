@@ -4,16 +4,16 @@
 ;   scripts\build-release.ps1   (preferred — passes /D defines)
 ;
 ; Or manually (using defines with defaults):
-;   ISCC.exe /DAppVersion=0.1.3 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.3-win-x64.exe TrafficLens.iss
+;   ISCC.exe /DAppVersion=0.1.4 /DSourceDir=... /DOutputDir=... /DOutputFile=TrafficLens-Setup-0.1.4-win-x64.exe TrafficLens.iss
 ;
 ; Per-user install into %LOCALAPPDATA%\Programs\TrafficLens — NO elevation.
 ; Program files only; user data (%LOCALAPPDATA%\TrafficLens) is never touched.
 
 #ifndef AppVersion
-  #define AppVersion "0.1.3"
+  #define AppVersion "0.1.4"
 #endif
 #ifndef AppVersionShort
-  #define AppVersionShort "0.1.3"
+  #define AppVersionShort "0.1.4"
 #endif
 #ifndef SourceDir
   #error "Define /DSourceDir=<publish directory>"
@@ -24,11 +24,20 @@
 #ifndef OutputFile
   #error "Define /DOutputFile=TrafficLens-Setup-<version>-win-x64.exe"
 #endif
+; Release entry point. v0.1.4 ships the WinUI 3 application; the WPF
+; TrafficLens.exe is retained in the repository as rollback/reference only and
+; is never the release entry point. The publish script passes the actual
+; executable name discovered from the published output.
+#ifndef AppExeName
+  #define AppExeName "TrafficLens.WinUI.exe"
+#endif
 
 #define AppName "TrafficLens"
 #define AppId "{{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}}"
 #define AppPublisher "TrafficLens Contributors"
-#define AppExe "TrafficLens.exe"
+; Note: use {#AppExeName} directly at each use site. ISPP does not expand
+; constants nested inside another #define, so an alias defined as
+; #define AppExe <AppExeName> would resolve to literal text and fail to compile.
 ; Shared brand icon produced by scripts\generate-icons.ps1 (replaceable asset).
 #define BrandIcon SourcePath + "\..\assets\branding\TrafficLens.ico"
 
@@ -52,7 +61,7 @@ PrivilegesRequired=lowest
 OutputDir={#OutputDir}
 OutputBaseFilename={#OutputFile}
 SetupIconFile={#BrandIcon}
-UninstallDisplayIcon={app}\{#AppExe}
+UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes
@@ -80,12 +89,20 @@ Name: "desktopicon"; Description: "{cm:TaskDesktopShortcut}"; GroupDescription: 
 ; Program files only. PDBs (debug symbols) are not shipped.
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.pdb"
 
+[InstallDelete]
+; Upgrade continuity only: v0.1.3 and earlier shipped the WPF executable. The
+; v0.1.4 release entry point is the WinUI executable, so the superseded WPF
+; launcher is removed on upgrade to avoid leaving (or accidentally launching) a
+; second, older application in the install directory. User data under
+; %LOCALAPPDATA%\TrafficLens is never touched.
+Type: files; Name: "{app}\TrafficLens.exe"
+
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; Only remove the empty install-dir shell (files themselves are removed by
@@ -116,7 +133,7 @@ begin
     WbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
     WbemService := WbemLocator.ConnectServer('localhost', 'root\cimv2');
     WbemObjectSet := WbemService.ExecQuery(
-      'SELECT Name FROM Win32_Process WHERE Name = ''TrafficLens.exe''');
+      'SELECT Name FROM Win32_Process WHERE Name = ''{#AppExeName}''');
     Result := WbemObjectSet.Count > 0;
   except
     // WMI unavailable (rare) — fall through; Inno's file-in-use dialog still
@@ -146,6 +163,7 @@ end;
 //   - never creates a second startup mechanism
 //   - never auto-enables start-with-Windows
 //   - never deletes the user's existing Run value on upgrade/uninstall
-//     (it points at %LOCALAPPDATA%\Programs\TrafficLens\TrafficLens.exe and
-//     the app re-writes it from Environment.ProcessPath if the user changes
-//     the setting, so a stale path self-corrects on next save).
+//     (an entry written by an older release points at
+//     %LOCALAPPDATA%\Programs\TrafficLens\TrafficLens.exe, and the app
+//     re-writes it from Environment.ProcessPath if the user changes the
+//     setting, so a stale path self-corrects on next save).

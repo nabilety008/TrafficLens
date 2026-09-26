@@ -23,8 +23,14 @@ if ([System.Threading.Thread]::CurrentThread.ApartmentState -ne [System.Threadin
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Installer)   { $Installer   = Join-Path $repoRoot "artifacts\installer\TrafficLens-Setup-0.1.2-win-x64.exe" }
-if (-not $PortableZip) { $PortableZip = Join-Path $repoRoot "artifacts\portable\TrafficLens-Portable-0.1.2-win-x64.zip" }
+# Release version comes from the single source of truth (Directory.Build.props),
+# and the release entry point is the WinUI executable (v0.1.4+).
+$versionProps = [xml](Get-Content -LiteralPath (Join-Path $repoRoot "Directory.Build.props") -Raw)
+$releaseVersion = $versionProps.Project.PropertyGroup.Version
+$appProjectXml = [xml](Get-Content -LiteralPath (Join-Path $repoRoot "src\TrafficLens.WinUI\TrafficLens.WinUI.csproj") -Raw)
+$appExeName = "$($appProjectXml.Project.PropertyGroup.AssemblyName).exe"
+if (-not $Installer)   { $Installer   = Join-Path $repoRoot "artifacts\installer\TrafficLens-Setup-$releaseVersion-win-x64.exe" }
+if (-not $PortableZip) { $PortableZip = Join-Path $repoRoot "artifacts\portable\TrafficLens-Portable-$releaseVersion-win-x64.zip" }
 if (-not $ChecksumFile){ $ChecksumFile = "$Installer.sha256" }
 
 $script:anyFail = $false
@@ -158,9 +164,9 @@ try {
         Fail "2.1: Installer exit code" "$($installProc.ExitCode)"
     }
 
-    $installedExe = Join-Path $installDir "TrafficLens.exe"
+    $installedExe = Join-Path $installDir $appExeName
     if (Test-Path $installedExe) {
-        Pass "2.2: Install directory created with TrafficLens.exe"
+        Pass "2.2: Install directory created with $appExeName"
     } else {
         Fail "2.2: Installed exe" "not found at $installedExe"
     }
@@ -267,14 +273,14 @@ try {
     }
 
     # 5b) Simulate enabling startup by writing the registry value
-    $testExePath = Join-Path $testRoot "FakePath\TrafficLens.exe"
+    $testExePath = Join-Path $testRoot "FakePath\$appExeName"
     $testCmd = "`"$testExePath`" --minimized"
     try {
         $k = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -ErrorAction SilentlyContinue
         if (-not $k) { New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Force | Out-Null }
         Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "TrafficLens" -Value $testCmd -Type String
         $readBack = Get-StartupValue
-        if ($readBack -match "TrafficLens.exe" -and $readBack -match "--minimized") {
+        if ($readBack -match [regex]::Escape($appExeName) -and $readBack -match "--minimized") {
             Pass "5.2: Startup entry write/read with --minimized works"
         } else {
             Fail "5.2: Startup entry write" "read='$readBack'"
@@ -433,9 +439,9 @@ try {
     Info "Extracting portable ZIP to: $testPortable"
     Expand-Archive -Path $PortableZip -DestinationPath $testPortable -Force
 
-    $portableExe = Join-Path $testPortable "TrafficLens.exe"
+    $portableExe = Join-Path $testPortable $appExeName
     if (Test-Path $portableExe) {
-        Pass "8.1: Portable TrafficLens.exe extracted"
+        Pass "8.1: Portable $appExeName extracted"
     } else {
         Fail "8.1: Portable exe" "not found"
     }
@@ -489,15 +495,15 @@ try {
     } else {
         Fail "9.1: Installer ProductName" "'$productName'"
     }
-    if ($productVer -eq '0.1.2') {
+    if ($productVer -eq $releaseVersion) {
         Pass "9.2: Installer ProductVersion = $productVer"
     } else {
-        Fail "9.2: Installer ProductVersion" "'$productVer' (expected 0.1.2)"
+        Fail "9.2: Installer ProductVersion" "'$productVer' (expected $releaseVersion)"
     }
-    if ($fileVer -eq '0.1.2') {
+    if ($fileVer -eq $releaseVersion) {
         Pass "9.3: Installer FileVersion = $fileVer"
     } else {
-        Fail "9.3: Installer FileVersion" "'$fileVer'"
+        Fail "9.3: Installer FileVersion" "'$fileVer' (expected $releaseVersion)"
     }
     if ($productVer -eq $fileVer) {
         Pass "9.4: ProductVersion matches FileVersion"
