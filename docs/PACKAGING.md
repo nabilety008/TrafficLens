@@ -203,11 +203,27 @@ wanted; the installer does not own them beyond the shortcuts it creates.)
   (`Get-AuthenticodeSignature` → `NotSigned`).
 - The pipeline is **signing-ready**: `-Sign -CertificateThumbprint <thumbprint>
   -TimestampUrl <rfc3161-tsa-url>` resolves the certificate from the Windows
-  certificate store (`CurrentUser\My`, then `LocalMachine\My`), refuses a
-  certificate without a private key, and signs in the required order —
+  certificate store (`CurrentUser\My`, then `LocalMachine\My`, passing `/sm` for
+  the machine store), refuses a certificate without a private key or an expired
+  one, and signs in the required order —
   publish → product binaries → ZIP/installer → installer → SHA-256. No
   thumbprint, password or key is ever stored in the repository, and SHA-256
   checksums are always computed **after** signing.
+- **The certificate must be RSA.** Smart App Control's signature check accepts
+  RSA certificates only and does not support elliptic-curve (ECC) signatures, so
+  the pipeline rejects an ECC certificate up front rather than emitting a
+  correctly signed build that still cannot launch on a protected device.
+- **The sign set is discovered, not hard-coded.** Every TrafficLens-owned PE
+  image in the publish output is signed, which is currently 7 files:
+  `TrafficLens.WinUI.exe` (native apphost), `TrafficLens.WinUI.dll`,
+  `TrafficLens.Core.dll`, `TrafficLens.Network.dll`,
+  `TrafficLens.Infrastructure.dll`, `TrafficLens.WinUI.Tray.dll`, and the
+  Persian satellite `fa-IR/TrafficLens.WinUI.resources.dll`. Discovery exists
+  because a *partially* signed application is treated as untrusted: omitting
+  the satellite would leave the release unlaunchable even though every signing
+  call succeeded. Microsoft/.NET/Windows App SDK binaries are never re-signed.
+  After signing, the whole set is re-verified (`Valid` **and** a present RFC 3161
+  timestamp countersignature) so a partial signature fails the release.
 - **Smart App Control** is ON on the release machine (policy
   `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`, `VerifiedAndReputablePolicyState=1`,
   no enterprise-authored policy). Fresh unsigned binaries are therefore blocked
@@ -215,6 +231,19 @@ wanted; the installer does not own them beyond the shortcuts it creates.)
   on this host. No SmartScreen bypass is attempted and no Windows security
   settings are weakened. A trusted (signed) build is required for the
   install/launch/reputation checks.
+- **There is no supported deterministic way to run this release unsigned on a
+  Smart App Control-enforced host.** An app runs when Microsoft app intelligence
+  can classify it as safe, or when it is signed with an RSA certificate chaining
+  to a CA in the Microsoft Trusted Root Program. Cloud reputation can only
+  accumulate after real-world distribution, so it is not a reproducible release
+  gate, and a self-signed certificate is not trusted for this purpose. Signing
+  is therefore the only supported route; the checks that require it stay
+  unchecked below.
+- **EV is no longer a shortcut.** Since 2024 EV-signed files build SmartScreen
+  reputation on the same schedule as OV, so EV is not required and is not
+  recommended purely for reputation reasons. OV from a Trusted Root Program CA
+  is sufficient. Microsoft's own docs recommend *Azure Artifact Signing*
+  (formerly Trusted Signing) for non-Store distribution.
 
 ## Checksum
 
@@ -335,3 +364,59 @@ Get-Content artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe.sha256
   is dropped into `assets\branding\` (or the generator is updated) and the
   pipeline re-run. See the section above and `docs/BRANDING.md`.
 - No `[Setup]` structural changes are required to swap artwork.
+
+## Final release checklist (v0.1.4)
+
+Only items that were actually verified on this machine are ticked. Everything
+that needs a signed build or a human eye is deliberately left unticked.
+
+### Automated — static and build-time (verified)
+
+- [x] Release configuration is `AnyCPU`-free; x64 is required end to end.
+- [x] `dotnet build` Release: 0 warnings, 0 errors.
+- [x] Full automated test suite: 571/571 pass.
+- [x] Publish is WinUI 3 self-contained `win-x64`, loose layout, no single-file, no PDBs.
+- [x] Publish output contains no PDBs, no test assemblies, no WPF executable.
+- [x] Entry point is `TrafficLens.WinUI.exe`.
+- [x] Version metadata consistent: product/informational `0.1.4`, assembly/file `0.1.4.0`.
+- [x] Publish output validated before packaging (rejects PDBs, tests, WPF binary).
+- [x] Portable ZIP built with forward-slash entry names and verified entry count (814).
+- [x] SHA-256 sidecars written for installer and ZIP, computed last.
+- [x] Signing path statically verified: correct order, discovered sign set, RSA-only guard, no secrets in repo.
+
+### Automated — signing (NOT yet executed; no certificate available)
+
+- [ ] Installer Authenticode signature is `Valid` after signing.
+- [ ] All 7 TrafficLens-owned product binaries signed, `Valid`, and RFC 3161 timestamped.
+- [ ] No Microsoft/.NET/Windows App SDK binary was re-signed.
+- [ ] Post-sign re-verification of the full product set passes.
+- [ ] Checksums re-generated after signing and match the shipped files.
+
+### Runtime / human verification (NOT possible on this host)
+
+Blocked because Smart App Control is enforcing and the release is unsigned
+(`0x800711C7`). Re-run these on a signed build.
+
+- [ ] Installer launches and completes a clean install.
+- [ ] App window opens with the correct title bar and icon.
+- [ ] Taskbar icon correct.
+- [ ] Alt+Tab entry shows the correct icon and name.
+- [ ] Thumbnail preview (DWM) correct.
+- [ ] Floating Widget icon correct in the Widgets board.
+- [ ] Persian (`fa-IR`) layout verified: no clipping, correct RTL flow, numerals.
+- [ ] Persian widget controls render correctly.
+- [ ] Upgrade from the previous installed version preserves settings and history.
+- [ ] Uninstall removes program files and (per policy) retains user data.
+- [ ] Long-duration stability/soak run completed (WUI-009).
+- [ ] Clean-machine / clean-VM install and launch verified.
+- [ ] Smart App Control reputation confirmed to no longer block the signed build.
+
+### Release decision
+
+- [ ] Certificate obtained and identity validation completed.
+- [ ] Signed release candidate built with `-Sign` and re-verified.
+- [ ] All runtime items above completed.
+- [ ] Tag and publish approved by a human.
+
+Not approved for public release while the signing and runtime sections remain
+unticked.

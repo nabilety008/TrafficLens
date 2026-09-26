@@ -24,6 +24,28 @@ preserved in `%TEMP%\opencode\wui009-*`; WUI-009 production fixes committed in
 - **Unsigned RC:** no code-signing certificate exists, so
   `Get-AuthenticodeSignature` reports `NotSigned` and the published checksums
   describe the unsigned build only. The pipeline is signing-ready (`-Sign`).
+- **Trust-path conclusion (researched, not assumed):** there is **no supported
+  deterministic way to launch this release unsigned** on a Smart App
+  Control-enforced host. Microsoft app intelligence may allow a file it can
+  classify as safe, or the file may be signed with an **RSA** certificate
+  chaining into the Microsoft Trusted Root Program — but cloud reputation only
+  accrues through real-world distribution, so it is not a reproducible release
+  gate, and a self-signed certificate is not honoured for this purpose. EV
+  certificates are no longer a shortcut (same reputation schedule as OV since
+  2024); OV from a Trusted Root Program CA is sufficient, and Microsoft's docs
+  recommend Azure Artifact Signing for non-Store distribution. Signing is the
+  only supported route, so signing- and human-dependent checks stay PENDING.
+- **Signing-pipeline audit (static, no certificate used):** the sign set is now
+  *discovered* rather than hard-coded. It was previously a 6-name list that
+  **omitted the shipped Persian satellite `fa-IR/TrafficLens.WinUI.resources.dll`** —
+  a partial signature is treated as untrusted, so that release would have been
+  unlaunchable despite every signing call succeeding. Discovery now selects all
+  7 TrafficLens-owned PE images, re-verifies the whole set afterwards (status
+  `Valid` **and** an RFC 3161 timestamp countersignature), rejects ECC and
+  expired certificates up front (SAC is RSA-only), and passes `/sm` when the
+  certificate is in `LocalMachine\My`. Microsoft/.NET/WinAppSDK binaries are
+  never re-signed. No certificate, thumbprint or key exists in the repo and
+  none was purchased or generated.
 - **Runtime verification PENDING / not possible on this host:** Smart App
   Control is ON (policy `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`,
   `VerifiedAndReputablePolicyState=1`, no enterprise-authored policy) and blocks

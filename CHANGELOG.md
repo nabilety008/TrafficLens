@@ -9,6 +9,33 @@ Release candidate built on `feature/winui3-migration` with
 (`f9017f0`) but is no longer the release entry point. This build is **unsigned**
 (no code-signing certificate is available). Not merged, tagged or published.
 
+### Fixed (signing-pipeline audit)
+
+- **The sign set no longer misses the Persian satellite assembly.** The opt-in
+  `-Sign` path used a hard-coded list of six binaries that omitted the shipped
+  `fa-IR/TrafficLens.WinUI.resources.dll`. Because a *partially* signed
+  application is treated as untrusted, a signed release would have been
+  unlaunchable even though every individual signing call succeeded. The set is
+  now discovered from the publish output and covers all seven TrafficLens-owned
+  PE images.
+- **The whole sign set is re-verified after signing.** Each file must report
+  `Valid` *and* carry an RFC 3161 timestamp countersignature, so a partial
+  signature fails the release instead of shipping.
+- **ECC certificates are rejected up front.** Smart App Control's signature
+  check accepts RSA certificates only and does not support ECC, so an ECC
+  certificate would have produced a correctly signed build that still could not
+  launch. Expired certificates are rejected too.
+- **Certificate store handling corrected.** A certificate in
+  `LocalMachine\My` is now found and signed with `/sm`; previously the pipeline
+  searched the machine store but then asked signtool to look only in the
+  current user's store.
+- **Signing no longer attempts to sign non-executable files.**
+  `Get-ChildItem -LiteralPath -Recurse -Include` silently ignores `-Include`, so
+  the extension test is now explicit; otherwise `.ico`, `.png`, `.deps.json` and
+  `.runtimeconfig.json` would have been selected.
+- Microsoft/.NET/Windows App SDK binaries are still never re-signed, and signing
+  remains opt-in with no key material in the repository.
+
 ### Changed
 
 - **Release entry point switched to WinUI 3** — the pipeline publishes

@@ -125,20 +125,31 @@ function Invoke-SignFile {
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$SignTool,
         [Parameter(Mandatory = $true)][string]$Thumbprint,
-        [Parameter(Mandatory = $true)][string]$Timestamp
+        [Parameter(Mandatory = $true)][string]$Timestamp,
+        [string]$MachineStore = $false
     )
-    # SHA-256 file digest + SHA-256 RFC 3161 timestamp. The signature must
-    # outlive the certificate, so the timestamp is mandatory.
-    & $SignTool sign /sha1 $Thumbprint /fd SHA256 /td SHA256 /tr $Timestamp $Path | Out-Host
+    # SHA-256 file digest + SHA-256 RFC 3161 timestamp. The timestamp is
+    # mandatory: without it the signature stops validating when the certificate
+    # expires, which would break Smart App Control and SmartScreen later.
+    # /sm is required when the certificate lives in LocalMachine\My, otherwise
+    # signtool only searches the current user's store.
+    $signArgs = @("sign", "/sha1", $Thumbprint, "/fd", "SHA256", "/td", "SHA256", "/tr", $Timestamp)
+    if ($MachineStore -eq "true") { $signArgs += "/sm" }
+    $signArgs += $Path
+    & $SignTool @signArgs | Out-Host
     if ($LASTEXITCODE -ne 0) { Fail "signtool sign failed for $Path (exit $LASTEXITCODE)" }
     $sig = Get-AuthenticodeSignature -LiteralPath $Path
     if ($sig.Status -ne 'Valid') {
         Fail "Signature is not valid after signing: $Path (status=$($sig.Status))"
     }
-    Write-Done "Signed $(Split-Path -Leaf $Path)"
+    if (-not $sig.TimeStamperCertificate) {
+        Fail "Signature on $Path has no RFC 3161 timestamp countersignature. The signature would not outlive the certificate."
+    }
+    Write-Done "Signed $(Split-Path -Leaf $Path) (timestamped by $($sig.TimeStamperCertificate.Subject))"
 }
 
 $signToolPath = $null
+$signMachineStore = $false
 if ($Sign) {
     Write-Step "Validating signing prerequisites"
     if (-not $CertificateThumbprint) {
@@ -151,17 +162,38 @@ if ($Sign) {
     if (-not $signToolPath) {
         Fail "signtool.exe not found on PATH or under Windows Kits\10\bin. Install the Windows SDK, or omit -Sign to produce an unsigned release."
     }
-    $cert = Get-ChildItem -Path Cert:\CurrentUser\My, Cert:\LocalMachine\My -ErrorAction SilentlyContinue |
+    $cert = Get-ChildItem -Path Cert:\CurrentUser\My -ErrorAction SilentlyContinue |
         Where-Object { $_.Thumbprint -eq $CertificateThumbprint } |
         Select-Object -First 1
+    if ($cert) {
+        $signMachineStore = $false
+    } else {
+        $cert = Get-ChildItem -Path Cert:\LocalMachine\My -ErrorAction SilentlyContinue |
+            Where-Object { $_.Thumbprint -eq $CertificateThumbprint } |
+            Select-Object -First 1
+        $signMachineStore = $true
+    }
     if (-not $cert) {
         Fail "Certificate '$CertificateThumbprint' was not found in Cert:\CurrentUser\My or Cert:\LocalMachine\My."
     }
     if (-not $cert.HasPrivateKey) {
         Fail "Certificate '$CertificateThumbprint' has no private key and cannot sign."
     }
+    # Smart App Control's signature check accepts RSA certificates only; it does
+    # not support elliptic-curve (ECC) signatures. Signing with an ECC
+    # certificate would succeed here and still be blocked at launch, so it is
+    # rejected up front instead of producing an unusable release.
+    $publicKeyOid = $cert.PublicKey.Oid.Value
+    if ($publicKeyOid -ne '1.2.840.113549.1.1.1') {
+        $oidName = if ($publicKeyOid -eq '1.2.840.10045.2.1') { 'ECDSA (ECC)' } else { "OID $publicKeyOid" }
+        Fail "Certificate '$CertificateThumbprint' uses $oidName. Smart App Control only accepts RSA code-signing certificates, so this release could not launch on a protected device. Obtain an RSA certificate instead."
+    }
+    if ($cert.NotAfter -le (Get-Date)) {
+        Fail "Certificate '$CertificateThumbprint' expired on $($cert.NotAfter)."
+    }
     Write-Done "signtool: $signToolPath"
     Write-Done "Certificate subject: $($cert.Subject)"
+    Write-Done "Certificate store: $(if ($signMachineStore) { 'LocalMachine\My' } else { 'CurrentUser\My' }) (RSA, valid to $($cert.NotAfter))"
 }
 
 # ---------------------------------------------------------------------------
@@ -408,23 +440,46 @@ Write-Done "Localization present (embedded en + fa-IR satellite)"
 # Smart App Control (VerifiedAndReputableDesktop) and SmartScreen evaluate the
 # product binaries themselves, so they are signed BEFORE the portable ZIP and
 # the installer are produced.
-$productBinaryNames = @(
-    "$appAssemblyName.exe",
-    "$appAssemblyName.dll",
-    "TrafficLens.Core.dll",
-    "TrafficLens.Network.dll",
-    "TrafficLens.Infrastructure.dll",
-    "TrafficLens.WinUI.Tray.dll"
-)
+#
+# The set is DISCOVERED, not hard-coded: every TrafficLens-owned PE image in the
+# publish output is signed, wherever it lives (the fa-IR satellite assembly sits
+# in a culture subdirectory). Smart App Control treats a partially signed
+# application as untrusted, so a new assembly must never be silently left
+# unsigned.
+# Microsoft/.NET/Windows App SDK binaries are NOT touched - they are already
+# signed by their vendor and re-signing them would be both wrong and harmful.
+#
+# NOTE: the extension test is applied explicitly rather than with -Include.
+# Get-ChildItem -LiteralPath -Recurse -Include silently IGNORES -Include and
+# returns every file, which would make signtool attempt to sign .json/.ico/.png.
+$productBinaryNames = Get-ChildItem -LiteralPath $publishDir -Recurse -File |
+    Where-Object { $_.Extension -in '.exe', '.dll' -and $_.Name -like 'TrafficLens*' } |
+    Sort-Object -Property FullName -Unique
+if (-not $productBinaryNames) {
+    Fail "No TrafficLens-owned binaries found in $publishDir; refusing to produce an unsigned release."
+}
+Write-Step "TrafficLens-owned binaries to sign: $($productBinaryNames.Count)"
+foreach ($b in $productBinaryNames) {
+    Write-Host "    $($b.FullName.Substring($publishDir.Length + 1))"
+}
+
 if ($Sign) {
     Write-Step "Signing product binaries (SHA-256 + RFC 3161 timestamp)"
-    foreach ($name in $productBinaryNames) {
-        $path = Join-Path $publishDir $name
-        if (-not (Test-Path -LiteralPath $path)) {
-            Fail "Product binary missing for signing: $path"
-        }
-        Invoke-SignFile -Path $path -SignTool $signToolPath -Thumbprint $CertificateThumbprint -Timestamp $TimestampUrl
+    foreach ($file in $productBinaryNames) {
+        Invoke-SignFile -Path $file.FullName -SignTool $signToolPath -Thumbprint $CertificateThumbprint `
+            -Timestamp $TimestampUrl -MachineStore $signMachineStore
     }
+    # Re-verify the whole set: a partial signature would leave the release
+    # unlaunchable under Smart App Control even though every sign call succeeded.
+    $unsigned = @()
+    foreach ($file in $productBinaryNames) {
+        $s = Get-AuthenticodeSignature -LiteralPath $file.FullName
+        if ($s.Status -ne 'Valid' -or -not $s.TimeStamperCertificate) { $unsigned += "$($file.Name) ($($s.Status))" }
+    }
+    if ($unsigned) {
+        Fail "Product binaries are not fully validly signed: $($unsigned -join ', ')"
+    }
+    Write-Done "All $($productBinaryNames.Count) TrafficLens binaries signed, verified and timestamped"
 } else {
     Write-Host "    (unsigned build - release artifacts and their checksums describe an UNSIGNED candidate)" -ForegroundColor Yellow
 }
@@ -514,7 +569,8 @@ if (-not $SkipInstaller) {
 # ---------------------------------------------------------------------------
 if ($Sign -and (Test-Path -LiteralPath $installerPath)) {
     Write-Step "Signing installer (SHA-256 + RFC 3161 timestamp)"
-    Invoke-SignFile -Path $installerPath -SignTool $signToolPath -Thumbprint $CertificateThumbprint -Timestamp $TimestampUrl
+    Invoke-SignFile -Path $installerPath -SignTool $signToolPath -Thumbprint $CertificateThumbprint `
+        -Timestamp $TimestampUrl -MachineStore $signMachineStore
 }
 
 # ---------------------------------------------------------------------------
