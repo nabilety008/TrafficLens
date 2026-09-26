@@ -8,6 +8,14 @@
 
 ## Backlog
 
+### WUI-009 WinUI 3 Migration — Extended Audit + Hardening — **PARTIAL (stopped intentionally)**
+- [x] Phases A-E: build/test baseline, single instance + tray exit/relaunch, 20 navigation cycles, EN/FA language stress, 10/10 tray hide/restore cycles (evidence in `%TEMP%\opencode\wui009-*`)
+- [x] Fixes (commit `21ca7c1`): widget title bar (Pin left, native Min/Close, Maximize disabled, minimized restore), second-launch restore of hidden main window, invariant logger/icon-log/History CSV dates, `fa-IR` regression tests
+- [x] Final full test run: **571/571 PASS**; Release x64 build: **0 warnings / 0 errors**
+- [ ] Long-duration phases (extended performance, long soak, elevated Windows Update toggle) — **NOT TESTED**
+- [ ] Human GUI verification of the final widget title bar and `fa-IR` state — **PENDING**
+- **Status: partial** — audit stopped on request before all planned phases completed; completed evidence preserved
+
 ### WUI-002 WinUI 3 Migration — Dashboard Page + Live Bindings — **AWAITING HUMAN GUI VERIFICATION**
 - [x] `ViewModels/DashboardViewModel.cs` — port of WPF dashboard (shared collector/aggregator/formatters/history/process services; coalesced DispatcherQueue refresh; no new timers/collectors)
 - [x] `Controls/TrafficGraphView` — Canvas polyline live graph (points, scale, window, reference time; theme brushes; no third-party chart lib)

@@ -13,6 +13,11 @@ No installer/publish; v0.1.3 artifacts untouched.
 - **WinUI Dashboard (WUI-002)** — live Download/Upload/Total cards, Today at a Glance, Top App Now, Active Adapter, and a lightweight Canvas live graph (30s / 1m / 5m ranges) reusing shared `INetworkTrafficCollector`, aggregator, formatters, `ITrafficHistoryService`, and `IProcessTrafficCollector` — no duplicate collectors, ETW sessions, or polling timers.
 - Process traffic collector and traffic history service startup wired once in WinUI `App` (mirrors WPF composition root).
 
+### Fixed
+
+- **WUI-009 audit fixes** - Floating Widget title bar: Pin moved to the left, native Minimize/Close caption group preserved, Maximize disabled (`WS_MAXIMIZE`/`WS_MAXIMIZEBOX` cleared) and a minimized widget restored on show; size (`340x140`), Pin/AOT behavior, live Download/Upload/Total, widget backend and page lifecycle unchanged, no new timer/poller/collector. Second launch now restores a hidden main window (UI-thread `DispatcherQueue` captured at launch). Log, icon-log and History CSV file names/dates are culture-invariant (`fa-IR` no longer yields `1405-*`). Added `fa-IR` regression tests for logger file names and History CSV output.
+- **WUI-009 verification state** - the extended audit was intentionally stopped before every planned long-duration phase completed. Completed evidence is preserved in `%TEMP%\opencode\wui009-*`. Final automated run: **571/571 tests PASS**, Release x64 build **0 warnings / 0 errors**. Long performance and soak phases: **NOT TESTED**. Human GUI verification of the widget title bar: **PENDING**.
+
 ---
 
 ## [0.1.3] — Dark Theme & Localization Hotfix

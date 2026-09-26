@@ -1,10 +1,17 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-23
+Updated: 2026-09-26
 
 ## Current Milestone
 
 **WinUI 3 migration** on `feature/winui3-migration` (WPF rollback `f9017f0`):
+WUI-001 through WUI-008 implemented; **WUI-009 extended audit intentionally stopped**
+before every planned long-duration phase completed. Final automated run:
+**571/571 tests PASS**, Release x64 **0 warnings / 0 errors**; completed audit
+evidence preserved in `%TEMP%\opencode\wui009-*`. WUI-009 production fixes
+(widget title bar, single-instance restore, invariant log/CSV dates) committed in
+`21ca7c1`. Long performance/soak phases: **NOT TESTED**. Human GUI verification
+of the final state: **PENDING**. No merge/tag/publish; v0.1.3 artifacts preserved.
 WUI-001 shell **human PASS** (`5677e14`); WUI-002 **Dashboard implemented** —
 cards, Today/TopApp/Adapter, live Canvas graph, shared services only; solution
 **0 warnings/0 errors**, **542/542 tests**. **Human GUI verification for WUI-002: PENDING.**
