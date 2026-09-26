@@ -59,6 +59,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Show();
         Activate();
         WindowIcon.Apply(this);
+        DispatcherQueue.TryEnqueue(() => WindowIcon.Apply(this));
     }
 
     private void OnOpenRequested(object? sender, EventArgs e) =>
