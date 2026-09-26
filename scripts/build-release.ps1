@@ -339,6 +339,71 @@ if ($exeSize -lt 100KB) {
 }
 Write-Done "$appExeName present ($([math]::Round($exeSize/1MB,2)) MB)"
 
+# ---------------------------------------------------------------------------
+# WinUI PRI / compiled XAML resources - MANDATORY
+# ---------------------------------------------------------------------------
+# MRT Core packages the compiled XAML (XBF) for every page ONLY inside
+# $(TargetName).pri. TrafficLens.WinUI.dll embeds no XBF resources at all, so a
+# publish tree without TrafficLens.WinUI.pri builds, publishes, packages and
+# installs cleanly and then dies at startup with
+#   Microsoft.UI.Xaml.Markup.XamlParseException: XAML parsing failed
+#   at MainWindow.InitializeComponent() -> Application.LoadComponent
+# (Windows Application Error 1000, faulting module Microsoft.UI.Xaml.dll,
+#  exception 0xc000027b).
+#
+# This is a resource-packaging failure, not Smart App Control and not signing:
+# the process starts normally and no Code Integrity event is written.
+#
+# It shipped once (the first v0.1.4 RC) because the PRI is registered as a
+# publishable item only when AppxPackage=true, and this app is unpackaged. The
+# guard below runs during publish validation, i.e. BEFORE the ZIP and installer
+# are created, so a missing PRI can never reach an artifact again.
+$priName = "$appAssemblyName.pri"
+$priPath = Join-Path $publishDir $priName
+if (-not (Test-Path -LiteralPath $priPath)) {
+    Fail "REQUIRED WinUI resource missing: '$priName' is not in the publish output. The compiled XAML (XBF) is packaged only inside this PRI, so the release would start and then crash with XamlParseException in MainWindow.InitializeComponent(). Check that the project publishes the MRT Core generated project PRI (see IncludeProjectPriFileInPublish in the csproj)."
+}
+$priSize = (Get-Item -LiteralPath $priPath).Length
+if ($priSize -le 0) {
+    Fail "REQUIRED WinUI resource '$priName' is empty (0 bytes)."
+}
+# A truncated PRI loses its resource index and fails the same way at runtime.
+# The real file is ~2 MB; anything under 256 KB cannot hold this app's XBF set.
+if ($priSize -lt 256KB) {
+    Fail "WinUI resource '$priName' is only $priSize bytes, which is implausibly small for the compiled XAML of this app; the PRI is likely truncated or incomplete."
+}
+# A PRI is a PRI container. MRT Core emits the 'mrm_pri2' container (classic
+# MakePri 'PRIC' files are not produced by this toolchain), so validate the real
+# magic rather than assuming one. A truncated or mis-copied PRI fails at runtime
+# exactly like a missing one.
+$priFs = [System.IO.File]::OpenRead($priPath)
+try {
+    $magic = [byte[]]::new(8)
+    $read = $priFs.Read($magic, 0, 8)
+} finally {
+    $priFs.Dispose()
+}
+$magicText = if ($read -eq 8) { [System.Text.Encoding]::ASCII.GetString($magic) } else { '' }
+if (-not ($magicText.StartsWith('mrm_') -or $magicText -eq 'PRIC')) {
+    Fail "WinUI resource '$priName' is not a valid PRI container (header '$magicText'); expected the MRT Core 'mrm_' container. The file is truncated, mis-copied, or not a PRI."
+}
+$priHash = (Get-FileHash -LiteralPath $priPath -Algorithm SHA256).Hash
+Write-Done "$priName present and valid ($([math]::Round($priSize/1MB,2)) MB, header '$magicText', SHA-256 $priHash)"
+
+# The Persian satellite must survive publishing; a missing satellite silently
+# downgrades to English instead of failing, so assert it is present.
+$satellite = Join-Path $publishDir "fa-IR\$appAssemblyName.resources.dll"
+if (-not (Test-Path -LiteralPath $satellite)) {
+    Fail "Persian (fa-IR) satellite assembly missing: $satellite"
+}
+Write-Done "fa-IR satellite present ($([math]::Round((Get-Item -LiteralPath $satellite).Length/1KB,1)) KB)"
+
+# The self-contained Windows App SDK runtime must be alongside the executable.
+if (-not (Test-Path -LiteralPath (Join-Path $publishDir "Microsoft.ui.xaml.dll"))) {
+    Fail "Windows App SDK runtime missing from publish output (Microsoft.ui.xaml.dll not found); the self-contained deployment is incomplete."
+}
+Write-Done "Windows App SDK runtime payload present"
+
 # The WPF application must never be shipped as, or become, the entry point.
 $legacyWpfExe = Join-Path $publishDir $legacyWpfExeName
 if (Test-Path -LiteralPath $legacyWpfExe) {

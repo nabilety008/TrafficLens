@@ -17,10 +17,37 @@ preserved in `%TEMP%\opencode\wui009-*`; WUI-009 production fixes committed in
 - **Entry point is WinUI 3** (`TrafficLens.WinUI.exe`, unpackaged, Windows App
   SDK 2.5.1, self-contained `win-x64` loose layout, no single-file, no MSIX).
   The WPF project is retained as rollback/reference and is not published.
-- **Artifacts:** installer `TrafficLens-Setup-0.1.4-win-x64.exe` (85.50 MB,
+- **Artifacts:** installer `TrafficLens-Setup-0.1.4-win-x64.exe` (85.78 MB,
   `ProductVersion 0.1.4`) + portable `TrafficLens-Portable-0.1.4-win-x64.zip`
-  (123.09 MB, 814 entries), each with a `.sha256` sidecar. Installer SHA-256
-  `3E9DEA0E…`, ZIP SHA-256 `660E1D4C…`.
+  (123.61 MB, 815 entries), each with a `.sha256` sidecar. Installer SHA-256
+  `E03C4B00…`, ZIP SHA-256 `0539049C…`.
+- **Superseded broken RC — DO NOT DISTRIBUTE.** The first v0.1.4 RC (installer
+  `3E9DEA0E…`, ZIP `660E1D4C…`, 814 entries) was **invalid**: `dotnet publish`
+  omitted `TrafficLens.WinUI.pri`, so the compiled XAML was absent. It is kept
+  only as history and must not be shipped.
+- **RC defect found and fixed — publish/resource packaging.** MRT Core writes
+  the project PRI straight to `$(TargetDir)` (bin) and only registers it as a
+  publishable item when `AppxPackage == true` (MSIX). This app is unpackaged, so
+  `dotnet publish -o` silently dropped the PRI. `TrafficLens.WinUI.dll` embeds
+  zero XBF resources, so the app started, set its culture, and then died with
+  `XamlParseException: XAML parsing failed` in `MainWindow.InitializeComponent()`
+  (Application Error 1000, `Microsoft.UI.Xaml.dll`, `0xc000027b`). Fixed by an
+  explicit `IncludeProjectPriFileInPublish` target that adds the generated PRI
+  to `ResolvedFileToPublish`, and by a release guard that fails the run before
+  ZIP/installer creation when the PRI is absent, empty, truncated or not a
+  valid PRI container (`mrm_`).
+- **Smart App Control did NOT block the runtime attempt.** The process started
+  normally and **no Code Integrity event was written**; the earlier
+  `0x800711C7` framing for this build was wrong. The failure was purely the
+  incomplete publish output. SAC remains ON and unchanged
+  (`VerifiedAndReputablePolicyState=1`).
+- **Runtime launch now PASSES** (one attempt, PID 12484): `WinUI MainWindow
+  activated`, culture `fa-IR`, 7 nav items with داشبورد selected, live
+  dashboard data (دانلود 8.55 KB/s, آپلود 666 B/s, مجموع 9.2 KB/s), network +
+  connection + history services started, SQLite ready. Floating Widget is
+  visible at **340x140** with `Always On Top` active. The app was left running
+  for human visual inspection. **Icon/widget/Persian human verification is
+  still PENDING** — nothing here is a human PASS.
 - **Unsigned RC:** no code-signing certificate exists, so
   `Get-AuthenticodeSignature` reports `NotSigned` and the published checksums
   describe the unsigned build only. The pipeline is signing-ready (`-Sign`).

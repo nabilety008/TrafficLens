@@ -56,4 +56,37 @@
     <EmbeddedResource Include="..\..\assets\branding\TrafficLens-256.png" LogicalName="TrafficLens.WinUI.Assets.TrafficLens-256.png" />
   </ItemGroup>
 
+  <!--
+    Publish the MRT Core generated project PRI.
+
+    MRT Core (Microsoft.Windows.SDK.BuildTools.MSIX.MrtCore.PriGen.targets) writes
+    the project PRI straight to $(TargetDir) - i.e. bin/... - and only registers it
+    as a publishable ProjectPriFile item when '$(AppxPackage)' == 'true' (MSIX).
+    This app is unpackaged (WindowsPackageType=None), so that item is never
+    created and 'dotnet publish -o' silently omits TrafficLens.WinUI.pri.
+
+    The compiled XAML (XBF) is packaged only inside that PRI - the managed
+    assembly embeds zero XBF resources - so a publish without it produces a
+    release that starts, sets its culture, and then dies with
+    Microsoft.UI.Xaml.Markup.XamlParseException ("XAML parsing failed") in
+    MainWindow.InitializeComponent(). That is exactly how the first v0.1.4 RC
+    failed, and it is unrelated to Smart App Control or code signing.
+
+    Add the generated PRI to the publish item list explicitly. Build runs before
+    the publish file list is computed (Publish -> _PublishBuildAlternative ->
+    Build;$(...) -> ComputeResolvedFilesToPublishList), and Build -> PrepareForRun
+    -> _GenerateProjectPriFile, so the file already exists at this point.
+  -->
+  <Target Name="IncludeProjectPriFileInPublish"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(ProjectPriFullPath)' != '' And '$(ProjectPriFileName)' != ''">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(ProjectPriFullPath)"
+                             Condition="Exists('$(ProjectPriFullPath)')">
+        <RelativePath>$(ProjectPriFileName)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
 </Project>

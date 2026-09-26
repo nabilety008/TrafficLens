@@ -9,6 +9,56 @@ Release candidate built on `feature/winui3-migration` with
 (`f9017f0`) but is no longer the release entry point. This build is **unsigned**
 (no code-signing certificate is available). Not merged, tagged or published.
 
+### Fixed (release-critical: the first v0.1.4 RC could not start)
+
+- **`TrafficLens.WinUI.pri` was missing from the published output, so the app
+  crashed at startup.** MRT Core (`Microsoft.Windows.SDK.BuildTools.MSIX.MrtCore.PriGen.targets`)
+  writes the project PRI straight to `$(TargetDir)` and only registers it as a
+  publishable item when `AppxPackage == true`, i.e. for MSIX. This app is
+  unpackaged (`WindowsPackageType=None`), so `dotnet publish -o` silently omitted
+  it. Because the compiled XAML (XBF) is packaged *only* inside that PRI — the
+  managed assembly embeds zero XBF resources — the release started, set its
+  culture to `fa-IR`, and then died with
+  `Microsoft.UI.Xaml.Markup.XamlParseException: XAML parsing failed` in
+  `MainWindow.InitializeComponent()` (Windows Application Error 1000, faulting
+  module `Microsoft.UI.Xaml.dll`, exception `0xc000027b`). It built, tested,
+  published, packaged, installed and checksummed cleanly, so no earlier gate
+  caught it. The first v0.1.4 RC (installer `3E9DEA0E…`, ZIP `660E1D4C…`) is
+  **invalid and must not be distributed**.
+- **Fixed with an explicit publish hook.** `IncludeProjectPriFileInPublish` adds
+  the MRT-generated PRI to `ResolvedFileToPublish` after
+  `ComputeResolvedFilesToPublishList`. `Build` (and therefore `PrepareForRun` →
+  `_GenerateProjectPriFile`) runs before the publish file list is computed, so
+  the file is always present. This uses the supported MSBuild publish mechanism
+  rather than copying arbitrary `bin` contents.
+- **Regression guard added to the release pipeline.** Publish validation now
+  fails the run **before** the ZIP and installer are created when the PRI is
+  missing, empty, implausibly small (<256 KB), or not a valid PRI container. MRT
+  Core emits the `mrm_pri2` container, so the header is validated as `mrm_`
+  (accepting legacy `PRIC` too) rather than assuming a magic that this
+  toolchain never produces. The guard was verified to fail on the broken tree
+  and to pass on the fixed one.
+
+### Clarified (previously reported incorrectly)
+
+- **Smart App Control did not block this release.** The single launch of the
+  broken RC started normally and wrote **no Code Integrity event**; the earlier
+  `0x800711C7` attribution for this artifact was wrong. The crash was entirely
+  the incomplete publish output. SAC is still ON and was not modified.
+
+### Verified after the fix (one launch, PID 12484)
+
+- `WinUI MainWindow activated`; culture `fa-IR`; 7 nav items with داشبورد
+  selected; live dashboard figures (دانلود 8.55 KB/s, آپلود 666 B/s,
+  مجموع 9.2 KB/s); network, connection and history services started; SQLite
+  schema v2 ready. Floating Widget visible at 340x140 with Always On Top.
+- New publish tree: 815 files, includes `TrafficLens.WinUI.pri`
+  (2,230,712 bytes, `mrm_pri2`, SHA-256 `64DE369D…`), no PDBs, no test
+  assemblies, no WPF executable, `fa-IR` satellite and branding intact.
+- New RC supersedes the broken one: installer `E03C4B00…` (85.78 MB), ZIP
+  `0539049C…` (123.61 MB).
+- Icon, widget and Persian **human** visual verification is still PENDING.
+
 ### Fixed (signing-pipeline audit)
 
 - **The sign set no longer misses the Persian satellite assembly.** The opt-in

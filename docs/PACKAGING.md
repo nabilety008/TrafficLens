@@ -226,11 +226,15 @@ wanted; the installer does not own them beyond the shortcuts it creates.)
   timestamp countersignature) so a partial signature fails the release.
 - **Smart App Control** is ON on the release machine (policy
   `{0283ac0f-fff1-49ae-ada1-8a933130cad6}`, `VerifiedAndReputablePolicyState=1`,
-  no enterprise-authored policy). Fresh unsigned binaries are therefore blocked
-  with `0x800711C7` and the installer cannot be launched for runtime validation
-  on this host. No SmartScreen bypass is attempted and no Windows security
-  settings are weakened. A trusted (signed) build is required for the
-  install/launch/reputation checks.
+  no enterprise-authored policy). It was **not** modified, bypassed or weakened,
+  and no SmartScreen override was used.
+- **Correction: Smart App Control did not block this release.** An earlier
+  revision of this document reported `0x800711C7` for the v0.1.4 RC. That was
+  wrong. The single launch of the broken RC started normally and wrote **no**
+  Code Integrity event; the application crashed for an unrelated packaging
+  reason (see below). Enforcement remains in place, so a signed build is still
+  the supported route for any *reputation*-dependent check, but it is not what
+  prevented the v0.1.4 launch from being validated.
 - **There is no supported deterministic way to run this release unsigned on a
   Smart App Control-enforced host.** An app runs when Microsoft app intelligence
   can classify it as safe, or when it is signed with an RSA certificate chaining
@@ -293,6 +297,35 @@ Get-Content artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe.sha256
 - The launch test is performed from the isolated publish directory, so
   resolution is verified against the shipped payload only.
 
+## Project resources (PRI) — release-critical
+
+- **The project PRI must ship, or the app cannot start.** This is an unpackaged
+  app (`WindowsPackageType=None`), but its XAML is still compiled by MRT Core
+  and delivered **only** inside `TrafficLens.WinUI.pri`; the managed assembly
+  embeds zero XBF resources. A publish tree without that file builds, tests,
+  packages, installs and checksums cleanly and then dies at runtime with
+  `Microsoft.UI.Xaml.Markup.XamlParseException: XAML parsing failed` in
+  `MainWindow.InitializeComponent()` (Application Error 1000,
+  `Microsoft.UI.Xaml.dll`, `0xc000027b`).
+- **Why the default publish drops it.** MRT Core
+  (`Microsoft.Windows.SDK.BuildTools.MSIX.MrtCore.PriGen.targets`) writes the
+  PRI straight to `$(TargetDir)` and only adds it as a publishable item when
+  `AppxPackage == true`, i.e. for MSIX. With `AppxPackage=false` the PRI is
+  never registered in `ResolvedFileToPublish`, so `dotnet publish -o` silently
+  omits it. Nothing warns and the build stays green.
+- **The fix is an explicit publish hook,** not a copy of `bin` contents:
+  `IncludeProjectPriFileInPublish` runs after
+  `ComputeResolvedFilesToPublishList` and adds `$(ProjectPriFullPath)` with
+  `RelativePath=$(ProjectPriFileName)`. `Build` (and therefore
+  `PrepareForRun` → `_GenerateProjectPriFile`) has already run by that point.
+- **The pipeline now refuses to package without it.** Publish validation fails
+  the run **before** the ZIP and installer are produced when the PRI is missing,
+  empty, implausibly small (<256 KB), or not a valid PRI container. MRT Core
+  emits the `mrm_pri2` container, so the header is validated as `mrm_` (legacy
+  `PRIC` is also accepted) instead of assuming a magic this toolchain never
+  produces. The guard was verified to fail on the broken tree and pass on the
+  fixed one.
+
 ## Clean-machine coverage (limitation)
 
 - **No disposable clean Windows VM is available in this environment.** The
@@ -302,29 +335,39 @@ Get-Content artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe.sha256
   install → launch → use → uninstall → reinstall lifecycle through the real
   installer (which installs into a fresh `{app}`). True from-scratch clean-VM
   verification should be performed on the first real release pipeline.
-- **v0.1.4 could not be launched on the release host:** Smart App Control blocks
-  fresh unsigned binaries (`0x800711C7`), so install/launch/reputation checks
-  and `scripts/tl023-release-lifecycle.ps1` are **PENDING** a signed or
-  otherwise trusted build. Verification of v0.1.4 was therefore **static**:
-  archive structure, entry names, extraction, version metadata, signature
-  status, checksums and payload contents.
+- **v0.1.4 launches on the release host.** The earlier claim that Smart App
+  Control blocked the release was wrong (see above). The defect that actually
+  stopped the first RC was the missing project PRI; after the publish fix a
+  single launch started cleanly and was left running for human inspection. The
+  signed-build-dependent *reputation* checks and
+  `scripts/tl023-release-lifecycle.ps1` remain **PENDING** a signed build.
 
 ## v0.1.4 release artifacts (verified)
 
-| Artifact | Size | SHA-256 |
+> The first v0.1.4 RC below was **invalid** (missing PRI) and is kept only as
+> history. The authoritative RC is the second table.
+
+| Superseded artifact (broken) | Size | SHA-256 |
 |---|---|---|
-| `artifacts/installer/TrafficLens-Setup-0.1.4-win-x64.exe` | 85.50 MB | `3E9DEA0EB6594DE7055C6FAF73746467AA40D9256C672FF9685A77FD7269146A` |
-| `artifacts/portable/TrafficLens-Portable-0.1.4-win-x64.zip` | 123.09 MB | `660E1D4C9F502F179CB249E7A36AAF9F4A0943583E37C4A66E8A7973E96AF7FE` |
+| `TrafficLens-Setup-0.1.4-win-x64.exe` | 85.50 MB | `3E9DEA0EB6594DE7055C6FAF73746467AA40D9256C672FF9685A77FD7269146A` |
+| `TrafficLens-Portable-0.1.4-win-x64.zip` | 123.09 MB | `660E1D4C9F502F179CB249E7A36AAF9F4A0943583E37C4A66E8A7973E96AF7FE` |
+
+| **Current artifact (valid)** | Size | SHA-256 |
+|---|---|---|
+| `artifacts/installer/TrafficLens-Setup-0.1.4-win-x64.exe` | 85.78 MB | `E03C4B00B7A724F702D294D38EC82F415622988FAFEBC5000C44C7DA08F7CBAF` |
+| `artifacts/portable/TrafficLens-Portable-0.1.4-win-x64.zip` | 123.61 MB | `0539049C57B4214632592382648524E8D7BA40E2F5571CFBE4A6210A6E1289F6` |
 
 - Installer: `ProductVersion 0.1.4`, `TrafficLens` / `TrafficLens Contributors`
   / `TrafficLens Network Monitor Setup`, `NotSigned`.
-- ZIP: 814 entries, 0 PDB entries, no WPF `TrafficLens.exe`, forward-slash entry
-  names, extracts to a runnable tree (verified by extracting to a temp
-  directory: 814 files, `TrafficLens.WinUI.exe` `ProductVersion 0.1.4` /
-  `FileVersion 0.1.4.0`, Windows App SDK payload, `fa-IR` satellite and
-  branding assets present).
-- Publish tree: 814 files / 323.5 MB, `TrafficLens.WinUI.exe` 0.28 MB valid x64
-  PE, Windows App SDK runtime present, no PDB/test assemblies.
+- ZIP: 815 entries, 0 PDB entries, no WPF `TrafficLens.exe`, forward-slash entry
+  names, and it **contains `TrafficLens.WinUI.pri`** plus the `fa-IR` satellite.
+  Verified by extracting to a temp directory: 815 files, `TrafficLens.WinUI.exe`
+  `ProductVersion 0.1.4` / `FileVersion 0.1.4.0`, Windows App SDK payload,
+  `fa-IR` satellite and branding assets present.
+- Publish tree: 815 files, `TrafficLens.WinUI.exe` 0.28 MB valid x64 PE,
+  Windows App SDK runtime present, no PDB/test assemblies.
+- Project PRI: 2,230,712 bytes, `mrm_pri2` container, SHA-256
+  `64DE369DAABE580E496ECAEFD118F60FD5922ADC164FE6BEFBBAEFE15AA7E886`.
 - Both hashes describe the **unsigned** build and must be recomputed for a
   signed release.
 - The v0.1.3 artifacts were preserved unchanged next to these outputs
@@ -380,7 +423,8 @@ that needs a signed build or a human eye is deliberately left unticked.
 - [x] Entry point is `TrafficLens.WinUI.exe`.
 - [x] Version metadata consistent: product/informational `0.1.4`, assembly/file `0.1.4.0`.
 - [x] Publish output validated before packaging (rejects PDBs, tests, WPF binary).
-- [x] Portable ZIP built with forward-slash entry names and verified entry count (814).
+- [x] Portable ZIP built with forward-slash entry names and verified entry count (815).
+- [x] Project PRI present and validated before packaging (present, size, `mrm_` header).
 - [x] SHA-256 sidecars written for installer and ZIP, computed last.
 - [x] Signing path statically verified: correct order, discovered sign set, RSA-only guard, no secrets in repo.
 
@@ -392,31 +436,49 @@ that needs a signed build or a human eye is deliberately left unticked.
 - [ ] Post-sign re-verification of the full product set passes.
 - [ ] Checksums re-generated after signing and match the shipped files.
 
-### Runtime / human verification (NOT possible on this host)
+### Runtime — automated observations (v0.1.4)
 
-Blocked because Smart App Control is enforcing and the release is unsigned
-(`0x800711C7`). Re-run these on a signed build.
+Performed with one launch (PID 12484) of the fixed publish output. Smart App
+Control did **not** block it; no Code Integrity event was written.
 
-- [ ] Installer launches and completes a clean install.
-- [ ] App window opens with the correct title bar and icon.
+- [x] Published app starts, stays responsive, and opens a real window.
+- [x] `WinUI MainWindow activated` and culture `fa-IR` in the app log.
+- [x] All 7 nav items present; داشبورد (Dashboard) selected.
+- [x] Live data flowing from the collectors (دانلود / آپلود / مجموع populated).
+- [x] Network, connection and history services started; SQLite schema v2 ready.
+- [x] Floating Widget visible at 340x140 with `Always On Top` active.
+- [x] No new Code Integrity events during the launch.
+- Note: the ETW process collector reports `permission denied` without elevation;
+  it needs an Administrator process. This is expected and non-fatal.
+
+### Human visual verification (PENDING — a person must look at the screen)
+
+Machine-checkable state is green, but these require human eyes and are **not**
+claimed as passing. The app was left running for inspection.
+
+- [ ] App window icon renders correctly.
 - [ ] Taskbar icon correct.
 - [ ] Alt+Tab entry shows the correct icon and name.
 - [ ] Thumbnail preview (DWM) correct.
-- [ ] Floating Widget icon correct in the Widgets board.
+- [ ] Floating Widget appearance confirmed visually.
 - [ ] Persian (`fa-IR`) layout verified: no clipping, correct RTL flow, numerals.
 - [ ] Persian widget controls render correctly.
+
+### Human / signed-build-gated
+
+- [ ] Installer launches and completes a clean install.
 - [ ] Upgrade from the previous installed version preserves settings and history.
 - [ ] Uninstall removes program files and (per policy) retains user data.
 - [ ] Long-duration stability/soak run completed (WUI-009).
 - [ ] Clean-machine / clean-VM install and launch verified.
-- [ ] Smart App Control reputation confirmed to no longer block the signed build.
+- [ ] Smart App Control reputation confirmed on the signed build.
 
 ### Release decision
 
 - [ ] Certificate obtained and identity validation completed.
 - [ ] Signed release candidate built with `-Sign` and re-verified.
-- [ ] All runtime items above completed.
+- [ ] All human visual items above completed.
 - [ ] Tag and publish approved by a human.
 
-Not approved for public release while the signing and runtime sections remain
-unticked.
+Not approved for public release while the human visual and signing sections
+remain unticked.
