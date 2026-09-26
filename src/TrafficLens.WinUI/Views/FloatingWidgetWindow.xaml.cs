@@ -1,7 +1,9 @@
+using System;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using TrafficLens.Core.Localization;
+using TrafficLens.WinUI.Infrastructure;
 using TrafficLens.WinUI.ViewModels;
 using Windows.Graphics;
 using Windows.System;
@@ -14,6 +16,7 @@ public sealed partial class FloatingWidgetWindow : Window
     public const int WidgetWidth = 340;
     public const int WidgetHeight = 140;
 
+    private const double BaseDpi = 96.0;
     private const int GwlStyleIndex = -16;
     private const int WsMaximizeBoxBit = 0x00010000;
     private const uint SwpNoSize = 0x0001;
@@ -38,10 +41,11 @@ public sealed partial class FloatingWidgetWindow : Window
         _localization = localization;
         InitializeComponent();
 
-        AppWindow.Resize(new SizeInt32(WidgetWidth, WidgetHeight));
+        ApplyFixedSize();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(RootGrid);
         DisableMaximize();
+        WindowIcon.Apply(this);
 
         RootGrid.DataContext = _viewModel;
         TitleText.Text = _viewModel.WidgetTitleLabel;
@@ -61,6 +65,7 @@ public sealed partial class FloatingWidgetWindow : Window
     public void ShowWidget()
     {
         var hwnd = WindowNative.GetWindowHandle(this);
+        ApplyFixedSize();
         AppWindow.Show();
         if (IsIconic(hwnd))
         {
@@ -68,6 +73,14 @@ public sealed partial class FloatingWidgetWindow : Window
         }
 
         Activate();
+    }
+
+    private void ApplyFixedSize()
+    {
+        var scale = Math.Max(1.0, GetDpiForWindow(WindowNative.GetWindowHandle(this)) / BaseDpi);
+        AppWindow.Resize(new SizeInt32(
+            (int)Math.Round(WidgetWidth * scale),
+            (int)Math.Round(WidgetHeight * scale)));
     }
 
     private void DisableMaximize()
@@ -231,6 +244,9 @@ public sealed partial class FloatingWidgetWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hWnd);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT

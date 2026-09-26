@@ -192,11 +192,12 @@ public sealed class FloatingWidgetService : IFloatingWidgetService
         double left = ParseDouble(_settings.Get(FloatingWidgetSettings.LeftKey, string.Empty));
         double top = ParseDouble(_settings.Get(FloatingWidgetSettings.TopKey, string.Empty));
 
+        var windowSize = _window.AppWindow.Size;
         var (clampedLeft, clampedTop) = WidgetPositionHelper.Clamp(
             left,
             top,
-            Views.FloatingWidgetWindow.WidgetWidth,
-            Views.FloatingWidgetWindow.WidgetHeight);
+            windowSize.Width,
+            windowSize.Height);
 
         _window.MoveTo((int)clampedLeft, (int)clampedTop);
     }

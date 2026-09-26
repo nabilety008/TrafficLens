@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Windowing;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
+using TrafficLens.WinUI.Infrastructure;
 using TrafficLens.WinUI.Pages;
 using TrafficLens.WinUI.Services;
 using Windows.Graphics;
@@ -31,6 +32,7 @@ public sealed partial class MainWindow : Window
 
         var appWindow = AppWindow;
         appWindow.Resize(new SizeInt32(900, 560));
+        WindowIcon.Apply(this);
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
