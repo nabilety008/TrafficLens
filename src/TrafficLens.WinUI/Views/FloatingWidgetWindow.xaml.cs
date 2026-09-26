@@ -73,6 +73,7 @@ public sealed partial class FloatingWidgetWindow : Window
         }
 
         Activate();
+        WindowIcon.Apply(this);
     }
 
     private void ApplyFixedSize()
