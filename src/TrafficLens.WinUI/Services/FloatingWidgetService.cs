@@ -287,10 +287,14 @@ public static class WidgetPositionHelper
 
     public static IReadOnlyList<Rect> GetWorkAreas()
     {
-        var result = new List<Rect>();
-        foreach (var display in DisplayArea.FindAll())
+        // CsWinRT's IReadOnlyListImpl enumerator throws InvalidCastException for the
+        // DisplayArea.FindAll projection, which aborted Show() before the window was
+        // ever displayed. Index the list instead of foreach-ing it.
+        var displays = DisplayArea.FindAll();
+        var result = new List<Rect>(displays.Count);
+        for (var i = 0; i < displays.Count; i++)
         {
-            var work = display.WorkArea;
+            var work = displays[i].WorkArea;
             result.Add(new Rect(work.X, work.Y, work.Width, work.Height));
         }
 
