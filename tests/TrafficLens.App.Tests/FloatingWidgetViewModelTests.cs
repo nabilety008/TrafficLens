@@ -116,11 +116,11 @@ public sealed class FloatingWidgetViewModelTests : IDisposable
     [Fact]
     public void AlwaysOnTopLabel_IsLocalized_AndRefreshesOnCultureChange()
     {
-        Assert.Equal("Always on Top", _vm.AlwaysOnTopLabel);
+        Assert.Equal("Always On Top", _vm.AlwaysOnTopLabel);
 
         _localization.SetCulture("fa-IR");
 
-        Assert.NotEqual("Always on Top", _vm.AlwaysOnTopLabel);
+        Assert.NotEqual("Always On Top", _vm.AlwaysOnTopLabel);
         Assert.DoesNotContain("[", _vm.AlwaysOnTopLabel);
     }
 

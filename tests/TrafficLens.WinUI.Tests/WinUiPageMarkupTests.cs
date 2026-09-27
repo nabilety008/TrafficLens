@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml.Linq;
 using TrafficLens.WinUI.Services;
 
@@ -50,13 +51,13 @@ public class WinUiPageMarkupTests
     }
 
     [Fact]
-    public void AllSevenNavigationItemsArePresentAndHaveIcons()
+    public void AllEightNavigationItemsArePresentAndHaveIcons()
     {
         var items = Doc("MainWindow.xaml").Descendants()
             .Where(e => e.Name.LocalName == "NavigationViewItem")
             .ToList();
 
-        Assert.Equal(7, items.Count);
+        Assert.Equal(8, items.Count);
         Assert.All(items, item =>
         {
             Assert.NotNull(item.Attribute("Tag"));
@@ -181,9 +182,18 @@ public class WinUiPageMarkupTests
             .Single(e => e.Name.LocalName == "ItemsWrapGrid");
 
         Assert.Equal("216", wrapGrid.Attribute("ItemWidth")?.Value);
-        Assert.Equal("104", wrapGrid.Attribute("ItemHeight")?.Value);
         Assert.Equal("Horizontal", wrapGrid.Attribute("Orientation")?.Value);
         Assert.Equal("4", wrapGrid.Attribute("MaximumRowsOrColumns")?.Value);
+
+        // The card must be tall enough for a usable threshold editor; ItemsWrapGrid
+        // clips whatever does not fit in the uniform item height.
+        var height = double.Parse(
+            wrapGrid.Attribute("ItemHeight")!.Value,
+            CultureInfo.InvariantCulture);
+
+        Assert.True(
+            height >= 120,
+            $"ItemHeight {height} squeezes the threshold editor; it needs at least 120.");
     }
 
     [Fact]

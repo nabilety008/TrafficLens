@@ -897,6 +897,44 @@ collector, monitoring or packaging changes; no new timer, poller or background w
 - **Status: automated checks pass, awaiting human verification**
 - Not merged, tagged, pushed or published.
 
+### TL-028 Alert threshold and Floating Widget navigation fixes (v0.1.4) — **AUTOMATED PASS, HUMAN PENDING**
+
+Two human-found functional defects, scoped strictly to those two. No alert backend,
+collector, monitoring or packaging changes; no new timer, poller or background worker.
+
+- [x] **Alert thresholds visible and editable** — every rule card renders its numeric
+      threshold at a real height again. `ItemsWrapGrid` item height 104 → 120 with
+      auto rows above a trailing spacer (the old `*` row above the editor crushed it
+      to ~6 px), and the editor is no longer gated on the rule's own enabled state,
+      which all five rules ship as disabled. `ThresholdText` and `UnitIndex` remain
+      two-way; LTR digits with right alignment; `KB/s, MB/s, GB/s` for the two speed
+      rules and `MB, GB, TB` for the three limit rules; parse, validation, range and
+      save mapping untouched, so the backend reads the same persisted values.
+- [x] **Floating Widget in the main navigation** — new `NavigationViewItem` with a
+      native Segoe Fluent Icons glyph between `Alerts` and `Settings`, routed to the
+      new `FloatingWidgetPage` showing the existing Enable and Always On Top switches.
+      The page is a view onto the existing `IFloatingWidgetService`: both switches
+      write through the service, service change events push results back into the
+      switches, no second copy of the flags, no polling. Collapsed navigation stays
+      icon-only; name, tooltip and accessibility come from the resource string.
+- [x] Lifecycle hardening: the page attaches its service/localization handlers in
+      `Loaded` behind a guard instead of only in the constructor, so a cached page
+      that is unloaded and loaded again keeps following the service.
+- [x] Wording aligned with the new page: `AlwaysOnTopLabel` is now "Always On Top" /
+      "همیشه روی سایر پنجره‌ها" and the widget nav label is "ویجت شناور". The resource
+      is shared with the WPF surface, so its pinned test expectation was updated to
+      the new casing rather than the value being reverted.
+- [x] Focused tests: 139 passed, 0 failed (`TrafficLens.WinUI.Tests`)
+- [x] Full solution suite: 705 passed, 0 failed (App 270 / Network 212 /
+      Infrastructure 84 / WinUI 139)
+- [x] Release x64 build: 0 warnings, 0 errors
+- [ ] **Human verification of the two items — PENDING**
+- [ ] Installer/ZIP regeneration — deferred until human verification passes; no
+      artifact was produced for this change and the v0.1.4 artifacts built from
+      `99397a4` remain superseded and are not final
+- **Status: automated checks pass, awaiting human verification**
+- Not merged, tagged, pushed or published.
+
 ## Milestones
 
 | Milestone | Title | Tasks | Status |

@@ -73,6 +73,56 @@ or packaging changes, and no new timer, poller or background worker.
 this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
 not be treated as final.
 
+## [0.1.4] - Alert threshold and Floating Widget navigation fixes
+
+Two human-found functional defects, addressed strictly on their own. No alert
+backend, collector, monitoring or packaging changes, and no new timer, poller or
+background worker.
+
+### Fixed
+
+- **Alert rule thresholds were invisible and unusable.** Every rule card rendered
+  its numeric threshold collapsed to roughly six physical pixels, and the editor was
+  disabled whenever the rule itself was off. Because all five rules ship disabled by
+  default, none of the thresholds could be seen or edited. `ItemsWrapGrid` now uses
+  an item height of 120 with auto-sized rows above a trailing spacer, so the numeric
+  field and unit selector keep their real height, and the editor is no longer gated
+  on the rule's enabled state. The enable switch and the threshold editor are now
+  independent controls. Bindings are unchanged: `ThresholdText` and `UnitIndex`
+  remain two-way, the field keeps left-to-right digits with right alignment, units
+  stay `KB/s, MB/s, GB/s` for the two speed rules and `MB, GB, TB` for the three
+  limit rules, and the existing parse, validation, range and save mapping are
+  untouched, so the alert backend still reads the same persisted values.
+
+- **The Floating Widget had no place in the main navigation.** It could only be
+  reached indirectly, so its two settings were not discoverable. The `NavigationView`
+  now carries a `Floating Widget` item with a native Segoe Fluent Icons glyph
+  between `Alerts` and `Settings`, and the new `FloatingWidgetPage` shows the
+  existing Enable and Always On Top switches. The page is a view onto the existing
+  `IFloatingWidgetService`: both switches write through the service, the service's
+  change events push the result back into the switches, and the page holds no second
+  copy of the flags and starts no polling. Settings, the new page and the widget's
+  own close button therefore cannot disagree, including after a restart. Collapsed
+  navigation stays icon-only, and the item is named, tooltipped and described for
+  assistive technology from the resource string like every other item.
+
+### Changed
+
+- `AlwaysOnTopLabel` now reads "Always On Top" in English and
+  "همیشه روی سایر پنجره‌ها" in Persian, and the widget navigation label is
+  "ویجت شناور" in Persian, matching the wording used on the new page. The shared
+  resource is also used by the WPF surface, so its pinned test expectation was
+  updated to the new casing.
+
+### Verification
+
+- Focused tests: 139 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 705 passed, 0 failed.
+- Release x64 build: 0 warnings, 0 errors.
+
+**Human verification is still pending.** No installer or ZIP has been produced for
+this change and none should be until human verification passes.
+
 ## [0.1.4] — WinUI 3 Release Candidate
 
 Release candidate built on `feature/winui3-migration` with

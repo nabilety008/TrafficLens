@@ -89,6 +89,15 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem
+                    x:Name="FloatingWidgetNavItem"
+                    Content="Floating Widget"
+                    Tag="FloatingWidget"
+                    ToolTipService.ToolTip="Floating Widget">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE992;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
                     x:Name="SettingsNavItem"
                     Content="Settings"
                     Tag="Settings"

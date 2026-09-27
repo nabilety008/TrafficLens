@@ -37,6 +37,7 @@ public sealed partial class SettingsPage : Page
         _localization.CultureChanged += OnCultureChanged;
         _widgetService.EnabledChanged += OnWidgetEnabledChanged;
         _widgetService.IsVisibleChanged += OnWidgetVisibleChanged;
+        _widgetService.AlwaysOnTopChanged += OnAlwaysOnTopChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -53,6 +54,7 @@ public sealed partial class SettingsPage : Page
         _localization.CultureChanged -= OnCultureChanged;
         _widgetService.EnabledChanged -= OnWidgetEnabledChanged;
         _widgetService.IsVisibleChanged -= OnWidgetVisibleChanged;
+        _widgetService.AlwaysOnTopChanged -= OnAlwaysOnTopChanged;
         Loaded -= OnLoaded;
         Unloaded -= OnUnloaded;
     }
@@ -64,6 +66,25 @@ public sealed partial class SettingsPage : Page
     private void OnWidgetEnabledChanged(object? sender, bool enabled) => SyncWidgetToggles();
 
     private void OnWidgetVisibleChanged(object? sender, EventArgs e) => SyncWidgetToggles();
+
+    /// <summary>
+    /// Always On Top can also be changed from the Floating Widget navigation page,
+    /// so this switch follows the service instead of only its own edits.
+    /// </summary>
+    private void OnAlwaysOnTopChanged(object? sender, bool alwaysOnTop) => SyncAlwaysOnTopToggle();
+
+    private void SyncAlwaysOnTopToggle()
+    {
+        _loading = true;
+        try
+        {
+            AlwaysOnTopToggle.IsOn = _widgetService.IsAlwaysOnTop;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
 
     private void SyncWidgetToggles()
     {
@@ -221,7 +242,7 @@ public sealed partial class SettingsPage : Page
             StartMinimizedToggle.IsOn = GetBool(JsonSettingsService.StartMinimizedKey, defaultValue: false);
             MinimizeToTrayToggle.IsOn = TrayBehavior.GetMinimizeToTray(_settings);
             CloseToTrayToggle.IsOn = TrayBehavior.GetCloseToTray(_settings);
-            AlwaysOnTopToggle.IsOn = GetBool(FloatingWidgetSettings.AlwaysOnTopKey, defaultValue: true);
+            AlwaysOnTopToggle.IsOn = _widgetService.IsAlwaysOnTop;
 
             // Both widget switches show the one value the service owns.
             WidgetToggleSync.Apply(

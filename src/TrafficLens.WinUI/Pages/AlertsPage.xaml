@@ -59,7 +59,7 @@
                                 Orientation="Horizontal"
                                 MaximumRowsOrColumns="4"
                                 ItemWidth="216"
-                                ItemHeight="104" />
+                                ItemHeight="120" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
@@ -75,8 +75,8 @@
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
 
                                     <Grid Grid.Row="0" ColumnSpacing="8">
@@ -109,9 +109,17 @@
                                         Text="{x:Bind StatusText, Mode=OneWay}"
                                         TextTrimming="CharacterEllipsis" />
 
+                                    <!--
+                                        The threshold editor sits above the slack row on
+                                        purpose. ItemsWrapGrid gives every card the same
+                                        fixed height, so any spare room has to be taken by
+                                        the trailing star row; when the editor was below it
+                                        the row was crushed to a few pixels and the numeric
+                                        input could not be seen or clicked.
+                                    -->
                                     <Grid
-                                        Grid.Row="3"
-                                        Margin="0,4,0,0"
+                                        Grid.Row="2"
+                                        Margin="0,2,0,0"
                                         ColumnSpacing="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -120,18 +128,20 @@
 
                                         <TextBox
                                             Grid.Column="0"
+                                            MinHeight="32"
                                             FlowDirection="LeftToRight"
                                             FontSize="11"
                                             HorizontalAlignment="Stretch"
-                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                            VerticalAlignment="Center"
                                             Text="{x:Bind ThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             TextAlignment="Right" />
 
                                         <ComboBox
                                             Grid.Column="1"
                                             MinWidth="78"
+                                            MinHeight="32"
                                             HorizontalAlignment="Stretch"
-                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                            VerticalAlignment="Center"
                                             ItemsSource="{x:Bind ActiveUnitOptions, Mode=OneWay}"
                                             SelectedIndex="{x:Bind UnitIndex, Mode=TwoWay}" />
                                     </Grid>

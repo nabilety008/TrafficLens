@@ -197,6 +197,31 @@ Diagnostics block, suite at 410 tests).
 
 ## Active
 
+- TL-028 (Alert threshold + Floating Widget navigation fixes, v0.1.4, on
+  `feature/winui3-migration`): two human-found functional defects, scoped strictly to
+  those two. No alert backend, collector, monitoring or packaging changes; no new
+  timer, poller or background worker.
+  - **Alert thresholds visible and editable**: all five rule cards render their
+    numeric threshold at a real height again (`ItemsWrapGrid` item height 104 → 120,
+    auto rows above a trailing spacer; the old `*` row crushed the editor to ~6 px)
+    and the editor is no longer gated on the rule's own enabled state, which all five
+    rules ship as disabled. `ThresholdText`/`UnitIndex` still two-way, LTR digits,
+    right-aligned, same units, same parse/validation/save mapping, so the backend
+    reads the same persisted values.
+  - **Floating Widget in the main navigation**: new `NavigationViewItem` with a native
+    Segoe Fluent Icons glyph between `Alerts` and `Settings`, routed to the new
+    `FloatingWidgetPage` showing the existing Enable and Always On Top switches. The
+    page is a view onto the existing `IFloatingWidgetService` — both switches write
+    through the service, service events push results back, no second copy of the
+    flags, no polling — so Settings, the new page and the widget's own close button
+    cannot disagree. Collapsed navigation stays icon-only.
+  - **Verified**: focused 139/139 (`TrafficLens.WinUI.Tests`), full suite 705/705
+    (App 270 / Network 212 / Infrastructure 84 / WinUI 139), Release x64 build 0
+    warnings / 0 errors.
+  - **Status**: automated checks pass, human verification pending. No artifact
+    produced; the v0.1.4 artifacts from `99397a4` remain superseded. Not merged,
+    tagged, pushed or published.
+
 - TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
   - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.
   - **Release candidate built**: installer (69 MB), portable ZIP (68.6 MB). Final SHA256: `9FABE44055AA9EE91E537ECFB365B2B5CECAED0D86BB1D3AE2EF230223E0079A`.

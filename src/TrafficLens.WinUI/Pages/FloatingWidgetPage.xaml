@@ -1,0 +1,84 @@
+<Page
+    x:Class="TrafficLens.WinUI.Pages.FloatingWidgetPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid x:Name="PageRoot">
+        <ScrollViewer
+            x:Name="PageScroller"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,12,16,12" Spacing="8">
+
+                <TextBlock
+                    x:Name="PageTitleText"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Opacity="0.6" />
+
+                <Border
+                    Padding="12,10"
+                    MaxWidth="420"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="8">
+
+                        <TextBlock
+                            x:Name="DescriptionText"
+                            FontSize="10"
+                            Opacity="0.6"
+                            TextWrapping="Wrap" />
+
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="EnableText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="EnableToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="EnableToggle_Toggled" />
+                        </Grid>
+
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="AlwaysOnTopText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="AlwaysOnTopToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="AlwaysOnTopToggle_Toggled" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

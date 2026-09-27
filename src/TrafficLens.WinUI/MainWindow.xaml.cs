@@ -148,6 +148,7 @@ public sealed partial class MainWindow : Window
         SetNavItem(ConnectionsNavItem, _localization["ConnectionsLabel"]);
         SetNavItem(HistoryNavItem, _localization["HistoryLabel"]);
         SetNavItem(AlertsNavItem, _localization["AlertsNavLabel"]);
+        SetNavItem(FloatingWidgetNavItem, _localization["FloatingWidgetLabel"]);
         SetNavItem(SettingsNavItem, _localization["SettingsNavLabel"]);
         SetNavItem(AboutNavItem, _localization["AboutNavLabel"]);
         ApplyFlowDirection();
@@ -201,6 +202,7 @@ public sealed partial class MainWindow : Window
             "Connections" => typeof(ConnectionsPage),
             "History" => typeof(HistoryPage),
             "Alerts" => typeof(AlertsPage),
+            "FloatingWidget" => typeof(FloatingWidgetPage),
             "Settings" => typeof(SettingsPage),
             "About" => typeof(AboutPage),
             _ => null
