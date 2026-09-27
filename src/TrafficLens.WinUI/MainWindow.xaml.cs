@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Windowing;
 using TrafficLens.Core.Abstractions;
@@ -7,6 +8,7 @@ using TrafficLens.WinUI.Infrastructure;
 using TrafficLens.WinUI.Pages;
 using TrafficLens.WinUI.Services;
 using Windows.Graphics;
+using WinRT.Interop;
 
 namespace TrafficLens.WinUI;
 
@@ -36,6 +38,7 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+        ApplyCaptionSafeArea();
 
         appWindow.Closing += OnAppWindowClosing;
         appWindow.Changed += OnAppWindowChanged;
@@ -80,6 +83,14 @@ public sealed partial class MainWindow : Window
 
     private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
+        // The caption-button area is re-resolved whenever the window is resized,
+        // maximized/restored or moved to a monitor with a different scale, and it
+        // sits on the opposite edge in right-to-left layouts.
+        if (args.DidPresenterChange || args.DidSizeChange || args.DidPositionChange)
+        {
+            ApplyCaptionSafeArea();
+        }
+
         if (AppWindow.Presenter is not OverlappedPresenter presenter ||
             presenter.State != OverlappedPresenterState.Minimized)
         {
@@ -91,6 +102,27 @@ public sealed partial class MainWindow : Window
             AppWindow.Hide();
         }
     }
+
+    /// <summary>
+    /// Reserves the caption-button area on the edge the shell actually put it on.
+    /// The insets come from the live window, so this is caption geometry rather than
+    /// a fixed margin, and it holds for both layout directions, for any title
+    /// length and in both the normal and the maximized state.
+    /// </summary>
+    private void ApplyCaptionSafeArea()
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+        var scale = TitleBarCaptionLayout.ScaleFromDpi(GetDpiForWindow(hwnd));
+        var (left, right) = TitleBarCaptionLayout.ResolvePadding(
+            AppWindow.TitleBar.LeftInset,
+            AppWindow.TitleBar.RightInset,
+            scale);
+
+        AppTitleBar.Padding = new Thickness(left, 0, right, 0);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hWnd);
 
     private void OnCultureChanged(object? sender, EventArgs e)
     {
@@ -106,14 +138,27 @@ public sealed partial class MainWindow : Window
     {
         Title = _localization["WindowTitle"];
         TitleText.Text = _localization["WindowTitle"];
-        DashboardNavItem.Content = _localization["DashboardLabel"];
-        ApplicationsNavItem.Content = _localization["ApplicationsLabel"];
-        ConnectionsNavItem.Content = _localization["ConnectionsLabel"];
-        HistoryNavItem.Content = _localization["HistoryLabel"];
-        AlertsNavItem.Content = _localization["AlertsNavLabel"];
-        SettingsNavItem.Content = _localization["SettingsNavLabel"];
-        AboutNavItem.Content = _localization["AboutNavLabel"];
+        SetNavItem(DashboardNavItem, _localization["DashboardLabel"]);
+        SetNavItem(ApplicationsNavItem, _localization["ApplicationsLabel"]);
+        SetNavItem(ConnectionsNavItem, _localization["ConnectionsLabel"]);
+        SetNavItem(HistoryNavItem, _localization["HistoryLabel"]);
+        SetNavItem(AlertsNavItem, _localization["AlertsNavLabel"]);
+        SetNavItem(SettingsNavItem, _localization["SettingsNavLabel"]);
+        SetNavItem(AboutNavItem, _localization["AboutNavLabel"]);
         ApplyFlowDirection();
+        ApplyCaptionSafeArea();
+    }
+
+    /// <summary>
+    /// Keeps the expanded label, the compact-mode tooltip and the accessibility
+    /// name on the same localized text, so the collapsed pane never shows a
+    /// leftover or clipped label and the icon-only mode stays accessible.
+    /// </summary>
+    private static void SetNavItem(NavigationViewItem item, string label)
+    {
+        item.Content = label;
+        ToolTipService.SetToolTip(item, label);
+        AutomationProperties.SetName(item, label);
     }
 
     private void ApplyFlowDirection()

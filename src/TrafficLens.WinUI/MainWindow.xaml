@@ -11,32 +11,101 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="48">
+        <!--
+            The padding on this grid is the caption safe area. It is applied from the
+            insets the shell reports for the real caption buttons (see
+            TitleBarCaptionLayout), on whichever edge those buttons sit on, so the
+            title can never run underneath Minimize / Maximize / Close in either
+            layout direction and no per-language offset is involved.
+        -->
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            Height="48"
+            Padding="16,0,16,0">
             <TextBlock
                 x:Name="TitleText"
-                Margin="16,0,0,0"
                 VerticalAlignment="Center"
                 FontSize="14"
                 FontWeight="SemiBold"
-                Text="TrafficLens" />
+                Text="TrafficLens"
+                TextTrimming="CharacterEllipsis" />
         </Grid>
 
         <NavigationView
             x:Name="NavView"
             Grid.Row="1"
+            CompactPaneLength="48"
             IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="True"
             IsSettingsVisible="False"
             OpenPaneLength="220"
             PaneDisplayMode="Left"
             SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="DashboardNavItem" Content="Dashboard" Tag="Dashboard" />
-                <NavigationViewItem x:Name="ApplicationsNavItem" Content="Applications" Tag="Applications" />
-                <NavigationViewItem x:Name="ConnectionsNavItem" Content="Connections" Tag="Connections" />
-                <NavigationViewItem x:Name="HistoryNavItem" Content="History" Tag="History" />
-                <NavigationViewItem x:Name="AlertsNavItem" Content="Alerts" Tag="Alerts" />
-                <NavigationViewItem x:Name="SettingsNavItem" Content="Settings" Tag="Settings" />
-                <NavigationViewItem x:Name="AboutNavItem" Content="About" Tag="About" />
+                <NavigationViewItem
+                    x:Name="DashboardNavItem"
+                    Content="Dashboard"
+                    Tag="Dashboard"
+                    ToolTipService.ToolTip="Dashboard">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="ApplicationsNavItem"
+                    Content="Applications"
+                    Tag="Applications"
+                    ToolTipService.ToolTip="Applications">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE71D;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="ConnectionsNavItem"
+                    Content="Connections"
+                    Tag="Connections"
+                    ToolTipService.ToolTip="Connections">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE71B;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="HistoryNavItem"
+                    Content="History"
+                    Tag="History"
+                    ToolTipService.ToolTip="History">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="AlertsNavItem"
+                    Content="Alerts"
+                    Tag="Alerts"
+                    ToolTipService.ToolTip="Alerts">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7BA;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="SettingsNavItem"
+                    Content="Settings"
+                    Tag="Settings"
+                    ToolTipService.ToolTip="Settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="AboutNavItem"
+                    Content="About"
+                    Tag="About"
+                    ToolTipService.ToolTip="About">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE946;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame" />

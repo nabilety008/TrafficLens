@@ -1,10 +1,47 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-26
+Updated: 2026-09-27
 
 ## Current Milestone
 
-**v0.1.4 WinUI 3 release candidate** on `feature/winui3-migration` (WPF
+**v0.1.4 final human UI polish** on `feature/winui3-migration`, from the approved
+baseline `99397a4`. Six defects found in human review were fixed, scoped strictly
+to those items — no backend, collector, monitoring or packaging changes, and no new
+timer, poller or background worker.
+
+- **Focused tests: 95 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
+- **Full solution suite: 661 passed, 0 failed** (270 App / 212 Network /
+  84 Infrastructure / 95 WinUI).
+- **Release x64 build: 0 warnings, 0 errors.**
+- **Minimum publish check:** 815 files, no PDBs, no test assemblies,
+  `TrafficLens.WinUI.pri` present and a valid `mrm_` container, canonical icon
+  unchanged (`9F8DD468…`), `fa-IR` satellite present.
+- **Fixed:** title-bar/caption-button collision (padding now resolved from the live
+  `AppWindow.TitleBar` insets and the window DPI rather than a per-language
+  margin); widget X button did not disable or persist the widget (it bypassed the
+  service and hid the window directly); no quick widget toggle at the top of
+  Settings (both switches are now views of one idempotent state owner); Alerts was
+  one long vertical form (five uniform cards in a wrapping grid, cooldown kept
+  separate); collapsed navigation clipped labels (all seven items now have native
+  Segoe Fluent Icons and an icon-only compact pane); the widget could be dragged
+  off-screen (now clamped to the monitor work area using the real DPI-scaled size,
+  with nearest-work-area recovery for a disconnected monitor).
+- **Bugs found while implementing and fixed:** `SelectWorkArea` let a zero-overlap
+  work area override a positive-overlap one, so a widget near the right edge of one
+  monitor would jump to the next; `RestoreIfEnabled` reloaded the state and then
+  called the idempotent `SetEnabled(true)`, so an enabled widget was never recreated
+  on start-up; the drag delta mixed DIPs with physical pixels; and
+  `AppWindowChangedEventArgs` has no `DidLayoutChange`, so the caption safe area was
+  not re-applied on resize.
+- **Human verification of all six items: PENDING.** Automated checks are not a
+  visual PASS; title-bar spacing in Persian, card sizing, collapsed navigation and
+  widget dragging all still need a human look.
+- **No installer or ZIP has been produced for this change.** The v0.1.4 artifacts
+  generated from `99397a4` are **superseded and are not final**; they must be
+  regenerated only after human verification passes. No merge, tag, push or publish
+  was performed.
+
+**Prior: v0.1.4 WinUI 3 release candidate** on `feature/winui3-migration` (WPF
 rollback `f9017f0`). WUI-001 through WUI-008 implemented; **WUI-009 extended
 audit intentionally stopped** before every planned long-duration phase
 completed (long performance/soak: **NOT TESTED**). Completed audit evidence is

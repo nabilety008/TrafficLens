@@ -2,6 +2,61 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.4] — Final human UI polish (automated checks pass, human verification pending)
+
+A polish pass over the approved baseline `99397a4` addressing six defects found by
+human review. Scoped strictly to those six items: no backend, collector, monitoring
+or packaging changes, and no new timer, poller or background worker.
+
+### Fixed
+
+- **Window title collided with the caption buttons.** The custom title bar grid had
+  no awareness of the caption-button area. `TitleBarCaptionLayout` now resolves the
+  padding from the live `AppWindow.TitleBar.LeftInset`/`RightInset` reported by the
+  shell, converted from physical pixels to DIPs using the window DPI, and reapplied
+  on presenter, size and position changes. Because it follows caption geometry and
+  not the title string, English and Persian right-to-left both work in normal and
+  maximized states with no language-specific margin.
+- **Closing the widget did not disable it.** The widget window cancelled its own
+  close and hid itself directly, bypassing the service, so the enabled flag was
+  never persisted and the widget came back on the next start. The native close
+  button now raises `UserCloseRequested`, which the service turns into the same
+  `SetEnabled(false)` path the Settings switches use. Closing the widget no longer
+  affects the main window, tray or monitoring.
+- **No quick way to toggle the widget.** Settings had the widget switch only inside
+  the full widget section. A quick control now sits at the top of the page. Both
+  switches are views of one state owner (`WidgetEnabledState`), so they cannot drift
+  apart; the write is idempotent, which is what prevents the close path from
+  looping back through itself.
+- **Alert rules were one long vertical form.** The five rules are now uniform cards
+  in a wrapping grid, so they are equal width and height, evenly spaced and reflow
+  to fewer or more columns instead of scrolling horizontally. Cooldown is kept in
+  its own separate section. Rule identity, order, thresholds, units, validation and
+  the save path are unchanged.
+- **Collapsed navigation clipped its labels.** All seven items now have built-in
+  `Segoe Fluent Icons` glyphs, the pane collapses to a native icon-only width, and
+  the tooltip and accessibility name are set from the same localized label as the
+  expanded text. No external icon library is referenced.
+- **The widget could be dragged off-screen.** Pointer movement now clamps the window
+  to the work area of the monitor it is on, using the real DPI-scaled
+  `AppWindow.Size`, and recovers a saved position from a disconnected monitor into
+  the nearest remaining work area instead of an arbitrary one. The pointer delta is
+  scaled before being applied, so DIPs are never mixed with physical pixels.
+
+### Verification
+
+- Focused tests: 95 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 661 passed, 0 failed.
+- Release x64 build: 0 warnings, 0 errors.
+- Minimum publish check: 815 files, no PDBs, no test assemblies,
+  `TrafficLens.WinUI.pri` present and valid, canonical icon unchanged
+  (`9F8DD468D671D648367E345109118EEF6C3B2E78A6F4B07054D292B12F8C60BE`),
+  `fa-IR` satellite present.
+
+**Human verification is still pending.** No installer or ZIP has been produced for
+this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
+not be treated as final.
+
 ## [0.1.4] — WinUI 3 Release Candidate
 
 Release candidate built on `feature/winui3-migration` with

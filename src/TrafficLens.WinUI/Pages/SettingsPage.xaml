@@ -63,6 +63,52 @@
                     </StackPanel>
                 </Border>
 
+                <!--
+                    Quick access to the Floating Widget at the top of the page. This is
+                    a view of the same widget setting as the full widget section below;
+                    neither owns the value and both are kept in step.
+                -->
+                <Border
+                    Margin="0,0,0,12"
+                    Padding="12,10"
+                    MaxWidth="640"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="2">
+                        <TextBlock
+                            x:Name="WidgetQuickHeader"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Opacity="0.6" />
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock
+                                x:Name="WidgetQuickText"
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                FontSize="11"
+                                TextWrapping="Wrap" />
+
+                            <ToggleSwitch
+                                x:Name="WidgetQuickToggle"
+                                Grid.Column="1"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="SettingsWidgetQuickToggle"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="WidgetQuickToggle_Toggled" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock
                     x:Name="StartupHeader"
                     Margin="0,0,0,6"

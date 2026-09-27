@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using TrafficLens.Core.Localization;
 using TrafficLens.WinUI.Infrastructure;
+using TrafficLens.WinUI.Services;
 using TrafficLens.WinUI.ViewModels;
 using Windows.Graphics;
 using Windows.System;
@@ -79,7 +80,7 @@ public sealed partial class FloatingWidgetWindow : Window
 
     private void ApplyFixedSize()
     {
-        var scale = Math.Max(1.0, GetDpiForWindow(WindowNative.GetWindowHandle(this)) / BaseDpi);
+        var scale = CurrentScale();
         AppWindow.Resize(new SizeInt32(
             (int)Math.Round(WidgetWidth * scale),
             (int)Math.Round(WidgetHeight * scale)));
@@ -107,6 +108,14 @@ public sealed partial class FloatingWidgetWindow : Window
     }
 
     public void HideWidget() => AppWindow.Hide();
+
+    /// <summary>
+    /// Raised when the user closes the widget with its native close button. The
+    /// window cancels that close; the service decides what it means, which is how
+    /// "close the widget" becomes "disable the widget" without this window knowing
+    /// anything about settings.
+    /// </summary>
+    public event EventHandler? UserCloseRequested;
 
     public void CloseWidget()
     {
@@ -137,8 +146,11 @@ public sealed partial class FloatingWidgetWindow : Window
             return;
         }
 
+        // The widget is a panel, not the application: closing it must never reach
+        // MainWindow, the tray or the collectors. Cancel the close and let the
+        // service apply the single "disable the widget" path.
         args.Cancel = true;
-        HideWidget();
+        UserCloseRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -217,10 +229,37 @@ public sealed partial class FloatingWidgetWindow : Window
             return;
         }
 
+        // The pointer reports DIPs but AppWindow.Position is in physical pixels, so
+        // the drag delta is scaled before it is applied. Without this the widget
+        // would lag behind the pointer on any display above 100%.
         var point = e.GetCurrentPoint(RootGrid);
-        var deltaX = (int)(point.Position.X - _dragStartX);
-        var deltaY = (int)(point.Position.Y - _dragStartY);
-        AppWindow.Move(new PointInt32(_windowStartX + deltaX, _windowStartY + deltaY));
+        var scale = CurrentScale();
+        var deltaX = (int)Math.Round((point.Position.X - _dragStartX) * scale);
+        var deltaY = (int)Math.Round((point.Position.Y - _dragStartY) * scale);
+        MoveClamped(_windowStartX + deltaX, _windowStartY + deltaY);
+    }
+
+    /// <summary>The DPI scale of this window, re-read on every move.</summary>
+    private double CurrentScale() =>
+        Math.Max(1.0, GetDpiForWindow(WindowNative.GetWindowHandle(this)) / BaseDpi);
+
+    /// <summary>
+    /// Moves the widget, keeping it entirely inside the work area of the monitor it
+    /// is on. The window still moves freely; it just cannot be dragged past an edge
+    /// where part of it would become unreachable. AppWindow.Position and
+    /// AppWindow.Size are both in physical pixels, so the DPI-scaled size of this
+    /// window is the size the clamp uses.
+    /// </summary>
+    private void MoveClamped(int targetX, int targetY)
+    {
+        var size = AppWindow.Size;
+        var (left, top) = WidgetPositionHelper.Clamp(
+            targetX,
+            targetY,
+            size.Width,
+            size.Height);
+
+        AppWindow.Move(new PointInt32((int)left, (int)top));
     }
 
     private void OnPointerReleased(object sender, PointerRoutedEventArgs e)

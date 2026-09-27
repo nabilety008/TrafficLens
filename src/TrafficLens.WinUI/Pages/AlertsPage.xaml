@@ -45,8 +45,108 @@
                     Text="{x:Bind ViewModel.NoConfiguredRulesText, Mode=OneWay}"
                     Visibility="{x:Bind ViewModel.HasNoConfiguredRules, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
 
+                <!--
+                    One card per alert rule in a native wrapping grid. Every card uses
+                    the same item size, so the cards are equal height, equal width and
+                    evenly spaced, and the grid reflows to fewer or more columns as the
+                    window is resized instead of scrolling horizontally. The rule
+                    order and the data behind each card are unchanged.
+                -->
+                <ItemsControl ItemsSource="{x:Bind ViewModel.Rules, Mode=OneWay}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid
+                                Orientation="Horizontal"
+                                MaximumRowsOrColumns="4"
+                                ItemWidth="216"
+                                ItemHeight="104" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:AlertRuleRowViewModel">
+                            <Border
+                                Margin="0,0,8,8"
+                                Padding="12,10"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <Grid RowSpacing="4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.Row="0" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock
+                                            Grid.Column="0"
+                                            VerticalAlignment="Center"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            Text="{x:Bind RuleName, Mode=OneWay}"
+                                            TextTrimming="CharacterEllipsis" />
+
+                                        <ToggleSwitch
+                                            Grid.Column="1"
+                                            MinWidth="0"
+                                            VerticalAlignment="Center"
+                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                            OffContent=""
+                                            OnContent="" />
+                                    </Grid>
+
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        FontSize="10"
+                                        Opacity="0.55"
+                                        Text="{x:Bind StatusText, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+
+                                    <Grid
+                                        Grid.Row="3"
+                                        Margin="0,4,0,0"
+                                        ColumnSpacing="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="78" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox
+                                            Grid.Column="0"
+                                            FlowDirection="LeftToRight"
+                                            FontSize="11"
+                                            HorizontalAlignment="Stretch"
+                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                            Text="{x:Bind ThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            TextAlignment="Right" />
+
+                                        <ComboBox
+                                            Grid.Column="1"
+                                            MinWidth="78"
+                                            HorizontalAlignment="Stretch"
+                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                                            ItemsSource="{x:Bind ActiveUnitOptions, Mode=OneWay}"
+                                            SelectedIndex="{x:Bind UnitIndex, Mode=TwoWay}" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!--
+                    Cooldown is its own compact section, kept out of the rule cards.
+                    Its value, unit, validation and allowed range are unchanged.
+                -->
                 <Border
-                    x:Name="RulesCard"
+                    x:Name="CooldownCard"
                     Margin="0,0,0,12"
                     Padding="12,10"
                     MaxWidth="640"
@@ -54,62 +154,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="8">
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.Rules, Mode=OneWay}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="viewModels:AlertRuleRowViewModel">
-                                    <Grid ColumnSpacing="8" Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="88" />
-                                            <ColumnDefinition Width="78" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                                            <TextBlock
-                                                MaxWidth="220"
-                                                FontSize="11"
-                                                FontWeight="SemiBold"
-                                                Text="{x:Bind RuleName, Mode=OneWay}"
-                                                TextTrimming="CharacterEllipsis" />
-                                            <TextBlock
-                                                FontSize="10"
-                                                Opacity="0.55"
-                                                Text="{x:Bind StatusText, Mode=OneWay}" />
-                                        </StackPanel>
-
-                                        <TextBox
-                                            Grid.Column="1"
-                                            Width="88"
-                                            FlowDirection="LeftToRight"
-                                            FontSize="11"
-                                            HorizontalAlignment="Right"
-                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-                                            Text="{x:Bind ThresholdText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            TextAlignment="Right" />
-
-                                        <ComboBox
-                                            Grid.Column="2"
-                                            MinWidth="78"
-                                            HorizontalAlignment="Stretch"
-                                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-                                            ItemsSource="{x:Bind ActiveUnitOptions, Mode=OneWay}"
-                                            SelectedIndex="{x:Bind UnitIndex, Mode=TwoWay}" />
-
-                                        <ToggleSwitch
-                                            Grid.Column="3"
-                                            MinWidth="0"
-                                            Margin="4,0,0,0"
-                                            VerticalAlignment="Center"
-                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
-                                            OffContent=""
-                                            OnContent="" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
+                    <StackPanel Spacing="6">
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -165,9 +210,12 @@
 
                         <Button
                             x:Name="SaveRulesButton"
+                            Margin="0,4,0,0"
+                            Padding="20,8"
                             HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
                             Click="Save_Click"
-                            FontWeight="SemiBold"
+                            Style="{StaticResource AccentButtonStyle}"
                             Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}" />
                     </StackPanel>
                 </Border>

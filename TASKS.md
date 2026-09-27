@@ -854,6 +854,49 @@
 - **Status: done** (merged into `master` at `21dabb9`)
 - **Commit:** see `docs/PROJECT_STATUS.md` Git Commit section
 
+### TL-027 Final human UI polish (v0.1.4) — **AUTOMATED PASS, HUMAN PENDING**
+
+Scope limited to the six defects found in human review of `99397a4`. No backend,
+collector, monitoring or packaging changes; no new timer, poller or background worker.
+
+- [x] **Title bar / caption buttons** — padding resolved from the live
+      `AppWindow.TitleBar.LeftInset`/`RightInset` and the window DPI, reapplied on
+      presenter, size and position change. Geometry-driven, so EN and FA RTL both
+      work in normal and maximized states with no per-language margin.
+- [x] **Widget X button** — native close raises `UserCloseRequested`; the service
+      turns it into `SetEnabled(false)`, which persists the existing setting.
+      Closes only the widget: main window, tray and monitoring unaffected.
+- [x] **Settings quick widget toggle** — new control at the top of the page; both
+      switches are views of one idempotent state owner, so they cannot drift.
+- [x] **Alerts cards** — five rules as uniform cards in a wrapping grid, cooldown
+      in its own section, Accent-style Save. Rule identity, order, thresholds,
+      units, validation and save path unchanged.
+- [x] **Navigation icons** — all seven items use built-in Segoe Fluent Icons; the
+      pane collapses to a native icon-only width; tooltip and accessibility name
+      come from the same localized label. No external icon library.
+- [x] **Widget movement** — clamped to the work area of the monitor it is on using
+      the real DPI-scaled `AppWindow.Size`; saved positions on a disconnected
+      monitor recover into the nearest remaining work area; pointer delta scaled so
+      DIPs are never mixed with physical pixels.
+- [x] Bugs found and fixed while implementing the above: `SelectWorkArea` could let
+      a zero-overlap area override a positive-overlap one (a widget near the right
+      edge of one monitor would jump to the next); `RestoreIfEnabled` reloaded the
+      state and then called the idempotent `SetEnabled(true)`, so an enabled widget
+      was never recreated on start-up; the drag delta mixed DIPs with physical
+      pixels; `AppWindowChangedEventArgs` has no `DidLayoutChange`, so the caption
+      safe area was not re-applied on resize.
+- [x] Focused tests: 95 passed, 0 failed (`TrafficLens.WinUI.Tests`)
+- [x] Full solution suite: 661 passed, 0 failed (App 270 / Network 212 /
+      Infrastructure 84 / WinUI 95)
+- [x] Release x64 build: 0 warnings, 0 errors
+- [x] Minimum publish check: 815 files, no PDBs, no test assemblies, PRI present
+      and valid, canonical icon unchanged, `fa-IR` satellite present
+- [ ] **Human verification of all six items — PENDING**
+- [ ] Installer/ZIP regeneration — deferred until human verification passes; the
+      v0.1.4 artifacts built from `99397a4` are superseded and are not final
+- **Status: automated checks pass, awaiting human verification**
+- Not merged, tagged, pushed or published.
+
 ## Milestones
 
 | Milestone | Title | Tasks | Status |
