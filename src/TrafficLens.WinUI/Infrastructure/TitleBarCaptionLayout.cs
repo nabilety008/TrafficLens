@@ -5,12 +5,23 @@ namespace TrafficLens.WinUI.Infrastructure;
 /// padding a custom title bar has to keep clear.
 /// </summary>
 /// <remarks>
-/// The insets are reported in physical pixels by
-/// <c>AppWindow.TitleBar.LeftInset</c> / <c>RightInset</c> and move to the other
-/// edge when the window is right-to-left, so the safe area follows the real
-/// caption-button geometry instead of a fixed or per-language margin. Nothing
-/// here looks at the title text, which is what keeps a long Persian title and a
-/// long English title on exactly the same rule.
+/// <para>
+/// <c>AppWindow.TitleBar.LeftInset</c> and <c>RightInset</c> are reported in
+/// <b>flow order</b>, not as physical left and right: in a right-to-left window the
+/// shell places the caption buttons on the leading edge, which is physically the
+/// right, and still reports that inset as <c>LeftInset</c>. Measured on a Persian
+/// window at 150% DPI, the buttons occupied the physical right (x 796..1003) while
+/// <c>LeftInset</c> was the non-zero 207 and <c>RightInset</c> was 0.
+/// </para>
+/// <para>
+/// Applying those values straight onto the physical sides therefore puts the safe
+/// area on the wrong edge in right-to-left and lets the title run under Minimize /
+/// Maximize / Close. <see cref="ResolvePadding"/> takes the insets in flow order and
+/// the layout direction, and returns the padding for the physical left and right, so
+/// the caller never has to know which way round the shell reported them. Nothing here
+/// looks at the title text, which is what keeps a long Persian title and a long
+/// English title on exactly the same rule.
+/// </para>
 /// </remarks>
 public static class TitleBarCaptionLayout
 {
@@ -22,21 +33,27 @@ public static class TitleBarCaptionLayout
     /// <summary>
     /// Resolves the physical left/right padding (in DIPs) for the custom title bar.
     /// </summary>
-    /// <param name="leftInsetPixels">
-    /// Caption-button inset reported for the physical left edge. Non-zero when the
-    /// shell has placed the caption buttons there, which is the right-to-left case.
+    /// <param name="leadingInsetPixels">
+    /// Caption-button inset the shell reported for the leading edge: the physical
+    /// left in a left-to-right window, the physical right in a right-to-left one.
     /// </param>
-    /// <param name="rightInsetPixels">Caption-button inset for the physical right edge.</param>
+    /// <param name="trailingInsetPixels">The inset for the opposite, trailing edge.</param>
     /// <param name="dpiScale">Window DPI divided by 96.</param>
+    /// <param name="isRightToLeft">
+    /// Whether the window lays out right-to-left, which is what decides whether the
+    /// leading inset belongs on the physical right.
+    /// </param>
     public static (double Left, double Right) ResolvePadding(
-        int leftInsetPixels,
-        int rightInsetPixels,
-        double dpiScale)
+        int leadingInsetPixels,
+        int trailingInsetPixels,
+        double dpiScale,
+        bool isRightToLeft)
     {
         var scale = dpiScale > 0 ? dpiScale : 1.0;
-        return (
-            BasePaddingDip + Math.Max(0, leftInsetPixels) / scale,
-            BasePaddingDip + Math.Max(0, rightInsetPixels) / scale);
+        var leading = BasePaddingDip + Math.Max(0, leadingInsetPixels) / scale;
+        var trailing = BasePaddingDip + Math.Max(0, trailingInsetPixels) / scale;
+
+        return isRightToLeft ? (trailing, leading) : (leading, trailing);
     }
 
     /// <summary>
@@ -47,6 +64,6 @@ public static class TitleBarCaptionLayout
         dpi == 0 ? 1.0 : Math.Max(1.0, dpi / BaseDpi);
 
     /// <summary>True when either edge has a caption-button area that must stay clear.</summary>
-    public static bool HasCaptionArea(int leftInsetPixels, int rightInsetPixels) =>
-        leftInsetPixels > 0 || rightInsetPixels > 0;
+    public static bool HasCaptionArea(int leadingInsetPixels, int trailingInsetPixels) =>
+        leadingInsetPixels > 0 || trailingInsetPixels > 0;
 }

@@ -10,13 +10,29 @@ or packaging changes, and no new timer, poller or background worker.
 
 ### Fixed
 
+- **Right-to-left title bar still collided with the caption buttons.** The first
+  implementation read `LeftInset` and `RightInset` as physical sides. Launching the
+  Persian build showed they are reported in *flow* order: on a 150% DPI Persian
+  window the shell reported the non-zero inset as `LeftInset` (207 px) with
+  `RightInset` 0, while the caption buttons sat on the physical right
+  (x 796..1003). The safe area therefore landed on the wrong edge and the
+  right-aligned title ran under Minimize/Maximize/Close. `ResolvePadding` now takes
+  the insets in flow order plus the layout direction and returns the padding for the
+  physical left and right, and the call site passes
+  `RootGrid.FlowDirection == FlowDirection.RightToLeft`. The unit test that had
+  encoded the wrong assumption was replaced with the measured 207/0 at 1.5 scale
+  case and a regression guard that the safe area is on the physical right.
+
 - **Window title collided with the caption buttons.** The custom title bar grid had
   no awareness of the caption-button area. `TitleBarCaptionLayout` now resolves the
   padding from the live `AppWindow.TitleBar.LeftInset`/`RightInset` reported by the
   shell, converted from physical pixels to DIPs using the window DPI, and reapplied
   on presenter, size and position changes. Because it follows caption geometry and
   not the title string, English and Persian right-to-left both work in normal and
-  maximized states with no language-specific margin.
+  maximized states with no language-specific margin. The insets arrive in flow
+  order, not as physical left and right, so the layout direction is passed to the
+  helper and decides which physical side each inset belongs to; see the follow-up
+  below.
 - **Closing the widget did not disable it.** The widget window cancelled its own
   close and hid itself directly, bypassing the service, so the enabled flag was
   never persisted and the widget came back on the next start. The native close
@@ -45,8 +61,8 @@ or packaging changes, and no new timer, poller or background worker.
 
 ### Verification
 
-- Focused tests: 95 passed, 0 failed (`TrafficLens.WinUI.Tests`).
-- Full solution suite: 661 passed, 0 failed.
+- Focused tests: 100 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 666 passed, 0 failed.
 - Release x64 build: 0 warnings, 0 errors.
 - Minimum publish check: 815 files, no PDBs, no test assemblies,
   `TrafficLens.WinUI.pri` present and valid, canonical icon unchanged

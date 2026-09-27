@@ -487,6 +487,29 @@ public class WinUiPageMarkupTests
         Assert.Contains("AppTitleBar.Padding = new Thickness(left, 0, right, 0)", code, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void TitleBarTellsTheHelperWhichWayTheWindowLaysOut()
+    {
+        var code = Source("MainWindow.xaml.cs");
+
+        // The insets arrive in flow order, so the direction has to be passed in.
+        // Without it a right-to-left window pads the wrong physical edge and the
+        // title runs under the caption buttons.
+        Assert.Contains("RootGrid.FlowDirection == FlowDirection.RightToLeft", code, StringComparison.Ordinal);
+        Assert.Contains("isRightToLeft", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarReadsInsetsStraightFromTheShell()
+    {
+        var code = Source("MainWindow.xaml.cs");
+
+        // No cached, hardcoded or culture-derived inset.
+        Assert.Contains("AppWindow.TitleBar.LeftInset", code, StringComparison.Ordinal);
+        Assert.Contains("AppWindow.TitleBar.RightInset", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("LeftInset =", code, StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------------- helpers
 
     private static string Page(string file) => Path.Combine("Pages", file);

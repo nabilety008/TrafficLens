@@ -8,11 +8,13 @@ namespace TrafficLens.WinUI.Tests;
 /// </summary>
 public class TitleBarCaptionLayoutTests
 {
+    private const double Base = TitleBarCaptionLayout.BasePaddingDip;
+
     [Fact]
     public void Layout_DoesNotDependOnTheTitleText()
     {
-        // The helper takes only caption geometry and scale. There is no string, and
-        // therefore no language, parameter a per-language offset could hide in.
+        // The helper takes only caption geometry, scale and layout direction. There
+        // is no string, and therefore no language, a per-language offset could hide in.
         var parameters = typeof(TitleBarCaptionLayout)
             .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
             .Where(m => m.Name == nameof(TitleBarCaptionLayout.ResolvePadding))
@@ -20,45 +22,93 @@ public class TitleBarCaptionLayoutTests
             .Select(p => p.ParameterType)
             .ToList();
 
-        Assert.Equal(new[] { typeof(int), typeof(int), typeof(double) }, parameters);
+        Assert.Equal(
+            new[] { typeof(int), typeof(int), typeof(double), typeof(bool) },
+            parameters);
         Assert.DoesNotContain(typeof(string), parameters);
     }
 
     [Fact]
-    public void English_Ltr_ReservesTheRightEdge()
+    public void EnglishLtr_CaptionButtonsOnTheLeadingLeftEdge()
     {
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(0, 138, 1.0);
+        var (left, right) = TitleBarCaptionLayout.ResolvePadding(
+            leadingInsetPixels: 138,
+            trailingInsetPixels: 0,
+            dpiScale: 1.0,
+            isRightToLeft: false);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip, left);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, right);
+        Assert.Equal(Base + 138, left);
+        Assert.Equal(Base, right);
     }
 
     [Fact]
-    public void Persian_Rtl_ReservesTheLeftEdge()
+    public void PersianRtl_CaptionButtonsOnTheLeadingRightEdge()
     {
-        // In a right-to-left window the shell puts the caption buttons on the left,
-        // so that is the edge the title has to keep clear.
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(138, 0, 1.0);
+        // Measured on the real Persian window at 150% DPI: the shell reported the
+        // non-zero inset as the leading one (LeftInset = 207 px) while the caption
+        // buttons were physically on the right at x 796..1003. The safe area has to
+        // follow the buttons onto the physical right, not the physical left.
+        var (left, right) = TitleBarCaptionLayout.ResolvePadding(
+            leadingInsetPixels: 207,
+            trailingInsetPixels: 0,
+            dpiScale: 1.5,
+            isRightToLeft: true);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, left);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip, right);
+        Assert.Equal(Base, left);
+        Assert.Equal(Base + 138, right);
     }
 
     [Fact]
-    public void BothEdgesReserved_IsSupported()
+    public void PersianRtl_KeepsTheTitleClearOfTheCloseButton()
     {
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(138, 138, 1.0);
+        // Regression guard for the measured defect: with the sides flipped wrongly
+        // the padding would land on the left and the right-aligned Persian title
+        // would run under the Close button.
+        var (_, right) = TitleBarCaptionLayout.ResolvePadding(207, 0, 1.5, isRightToLeft: true);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, left);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, right);
+        Assert.True(right > Base + 130, "the caption safe area must be on the physical right");
+    }
+
+    [Fact]
+    public void SameInsets_LandOnOppositeSides_ForTheTwoDirections()
+    {
+        var ltr = TitleBarCaptionLayout.ResolvePadding(138, 0, 1.0, isRightToLeft: false);
+        var rtl = TitleBarCaptionLayout.ResolvePadding(138, 0, 1.0, isRightToLeft: true);
+
+        Assert.Equal(ltr.Left, rtl.Right);
+        Assert.Equal(ltr.Right, rtl.Left);
+    }
+
+    [Fact]
+    public void BothEdgesReserved_IsSupportedInEitherDirection()
+    {
+        var ltr = TitleBarCaptionLayout.ResolvePadding(138, 40, 1.0, isRightToLeft: false);
+        Assert.Equal(Base + 138, ltr.Left);
+        Assert.Equal(Base + 40, ltr.Right);
+
+        var rtl = TitleBarCaptionLayout.ResolvePadding(138, 40, 1.0, isRightToLeft: true);
+        Assert.Equal(Base + 40, rtl.Left);
+        Assert.Equal(Base + 138, rtl.Right);
+    }
+
+    [Fact]
+    public void NoInset_SymmetricBasePadding_EitherDirection()
+    {
+        var ltr = TitleBarCaptionLayout.ResolvePadding(0, 0, 1.0, isRightToLeft: false);
+        var rtl = TitleBarCaptionLayout.ResolvePadding(0, 0, 1.0, isRightToLeft: true);
+
+        Assert.Equal(Base, ltr.Left);
+        Assert.Equal(Base, ltr.Right);
+        Assert.Equal(Base, rtl.Left);
+        Assert.Equal(Base, rtl.Right);
     }
 
     [Fact]
     public void MaximizedState_LargerInset_IsApplied()
     {
-        var (_, right) = TitleBarCaptionLayout.ResolvePadding(0, 160, 1.0);
+        var (left, _) = TitleBarCaptionLayout.ResolvePadding(160, 0, 1.0, isRightToLeft: false);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 160, right);
+        Assert.Equal(Base + 160, left);
     }
 
     [Theory]
@@ -73,8 +123,10 @@ public class TitleBarCaptionLayoutTests
 
         Assert.Equal(expectedScale, scale, 5);
 
-        var (_, right) = TitleBarCaptionLayout.ResolvePadding(0, (int)(100 * expectedScale), scale);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 100, right, 5);
+        var (left, _) = TitleBarCaptionLayout.ResolvePadding(
+            (int)(100 * expectedScale), 0, scale, isRightToLeft: false);
+
+        Assert.Equal(Base + 100, left, 5);
     }
 
     [Fact]
@@ -84,21 +136,21 @@ public class TitleBarCaptionLayoutTests
     }
 
     [Fact]
-    public void NegativeOrZeroScale_IsTreatedAsOne()
+    public void NonPositiveScale_IsTreatedAsOne()
     {
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(138, 138, 0);
+        var (left, right) = TitleBarCaptionLayout.ResolvePadding(138, 138, 0, isRightToLeft: false);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, left);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip + 138, right);
+        Assert.Equal(Base + 138, left);
+        Assert.Equal(Base + 138, right);
     }
 
     [Fact]
     public void NegativeInset_AreIgnored()
     {
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(-10, -20, 1.0);
+        var (left, right) = TitleBarCaptionLayout.ResolvePadding(-10, -20, 1.0, isRightToLeft: false);
 
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip, left);
-        Assert.Equal(TitleBarCaptionLayout.BasePaddingDip, right);
+        Assert.Equal(Base, left);
+        Assert.Equal(Base, right);
     }
 
     [Fact]

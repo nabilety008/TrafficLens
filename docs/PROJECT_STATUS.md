@@ -9,9 +9,9 @@ baseline `99397a4`. Six defects found in human review were fixed, scoped strictl
 to those items — no backend, collector, monitoring or packaging changes, and no new
 timer, poller or background worker.
 
-- **Focused tests: 95 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
-- **Full solution suite: 661 passed, 0 failed** (270 App / 212 Network /
-  84 Infrastructure / 95 WinUI).
+- **Focused tests: 100 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
+- **Full solution suite: 666 passed, 0 failed** (270 App / 212 Network /
+  84 Infrastructure / 100 WinUI).
 - **Release x64 build: 0 warnings, 0 errors.**
 - **Minimum publish check:** 815 files, no PDBs, no test assemblies,
   `TrafficLens.WinUI.pri` present and a valid `mrm_` container, canonical icon
@@ -33,6 +33,15 @@ timer, poller or background worker.
   on start-up; the drag delta mixed DIPs with physical pixels; and
   `AppWindowChangedEventArgs` has no `DidLayoutChange`, so the caption safe area was
   not re-applied on resize.
+- **Right-to-left title-bar defect found by launching the Persian build and fixed.**
+  The caption insets are reported in flow order, not as physical left and right:
+  measured at 150% DPI the shell reported `LeftInset` 207 px with `RightInset` 0
+  while the caption buttons were on the physical right (x 796..1003), so the safe
+  area was applied to the wrong edge and the right-aligned title ran under
+  Minimize/Maximize/Close. `ResolvePadding` now takes the insets in flow order plus
+  the layout direction and returns physical left/right padding, and the call site
+  passes `RootGrid.FlowDirection == FlowDirection.RightToLeft`. The unit test that
+  had encoded the wrong assumption was replaced by the measured case.
 - **Human verification of all six items: PENDING.** Automated checks are not a
   visual PASS; title-bar spacing in Persian, card sizing, collapsed navigation and
   widget dragging all still need a human look.

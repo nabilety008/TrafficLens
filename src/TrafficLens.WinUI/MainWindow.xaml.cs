@@ -113,10 +113,15 @@ public sealed partial class MainWindow : Window
     {
         var hwnd = WindowNative.GetWindowHandle(this);
         var scale = TitleBarCaptionLayout.ScaleFromDpi(GetDpiForWindow(hwnd));
+
+        // The insets arrive in flow order, so the layout direction decides which
+        // physical side each one belongs to. Reading them as literal left/right
+        // puts the safe area on the wrong edge in a right-to-left window.
         var (left, right) = TitleBarCaptionLayout.ResolvePadding(
-            AppWindow.TitleBar.LeftInset,
-            AppWindow.TitleBar.RightInset,
-            scale);
+            leadingInsetPixels: AppWindow.TitleBar.LeftInset,
+            trailingInsetPixels: AppWindow.TitleBar.RightInset,
+            dpiScale: scale,
+            isRightToLeft: RootGrid.FlowDirection == FlowDirection.RightToLeft);
 
         AppTitleBar.Padding = new Thickness(left, 0, right, 0);
     }
