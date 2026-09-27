@@ -39,6 +39,10 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Must precede every top-level window: the shell resolves the taskbar,
+        // Alt+Tab and thumbnail icon from this identity, not from WM_SETICON.
+        WindowIcon.SetAppUserModelId();
+
         _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
             SingleInstanceMutexName,
             SingleInstanceActivationEventName);
