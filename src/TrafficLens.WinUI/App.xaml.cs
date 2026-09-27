@@ -87,6 +87,7 @@ public partial class App : Application
                 localization,
                 settings,
                 _serviceProvider.GetRequiredService<ISystemTrayService>(),
+                _serviceProvider.GetRequiredService<IFloatingWidgetService>(),
                 exitCoordinator);
             MainWindow.Activate();
             if (Environment.GetCommandLineArgs().Any(arg =>

@@ -51,13 +51,13 @@ public class WinUiPageMarkupTests
     }
 
     [Fact]
-    public void AllEightNavigationItemsArePresentAndHaveIcons()
+    public void AllSevenNavigationItemsArePresentAndHaveIcons()
     {
         var items = Doc("MainWindow.xaml").Descendants()
             .Where(e => e.Name.LocalName == "NavigationViewItem")
             .ToList();
 
-        Assert.Equal(8, items.Count);
+        Assert.Equal(7, items.Count);
         Assert.All(items, item =>
         {
             Assert.NotNull(item.Attribute("Tag"));

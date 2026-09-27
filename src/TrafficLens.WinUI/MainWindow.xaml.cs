@@ -17,19 +17,23 @@ public sealed partial class MainWindow : Window
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
     private readonly ISystemTrayService _trayService;
+    private readonly IFloatingWidgetService _widgetService;
     private readonly ApplicationExitCoordinator _exitCoordinator;
     private bool _navigating;
+    private bool _syncingWidgetToggle;
 
     public MainWindow(
         ILocalizationService localization,
         ISettingsService settings,
         ISystemTrayService trayService,
+        IFloatingWidgetService widgetService,
         ApplicationExitCoordinator exitCoordinator)
     {
         InitializeComponent();
         _localization = localization;
         _settings = settings;
         _trayService = trayService;
+        _widgetService = widgetService;
         _exitCoordinator = exitCoordinator;
 
         var appWindow = AppWindow;
@@ -45,7 +49,15 @@ public sealed partial class MainWindow : Window
 
         _trayService.OpenRequested += OnOpenRequested;
         _localization.CultureChanged += OnCultureChanged;
+
+        // The shell control is a view of the one widget-enabled state owned by the
+        // service, so it follows the Settings switches and the widget's own close
+        // button, and it survives a restart because the value is already persisted.
+        _widgetService.EnabledChanged += OnWidgetEnabledChanged;
+        _widgetService.IsVisibleChanged += OnWidgetVisibleChanged;
+
         ApplyLocalization();
+        SyncWidgetQuickToggle();
 
         NavView.SelectedItem = DashboardNavItem;
         ContentFrame.Navigate(typeof(DashboardPage));
@@ -129,6 +141,45 @@ public sealed partial class MainWindow : Window
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hWnd);
 
+    /// <summary>
+    /// A direct show/hide of the widget. The toggle has already flipped, so the new
+    /// value is pushed through the service, which persists the existing setting and
+    /// shows or hides the window. No second flag and no polling is involved.
+    /// </summary>
+    private void WidgetQuickToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_syncingWidgetToggle)
+        {
+            return;
+        }
+
+        _widgetService.SetEnabled(WidgetQuickToggle.IsChecked == true);
+        SyncWidgetQuickToggle();
+    }
+
+    private void OnWidgetEnabledChanged(object? sender, bool enabled) => SyncWidgetQuickToggle();
+
+    private void OnWidgetVisibleChanged(object? sender, EventArgs e) => SyncWidgetQuickToggle();
+
+    /// <summary>
+    /// Shows the single widget-enabled state on the shell control. The guard stops
+    /// the assignment from being read back as a user click.
+    /// </summary>
+    private void SyncWidgetQuickToggle()
+    {
+        _syncingWidgetToggle = true;
+        try
+        {
+            WidgetQuickToggle.IsChecked = WidgetToggleSync.Resolve(
+                _widgetService.IsEnabled,
+                _widgetService.IsVisible);
+        }
+        finally
+        {
+            _syncingWidgetToggle = false;
+        }
+    }
+
     private void OnCultureChanged(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(() =>
@@ -148,9 +199,14 @@ public sealed partial class MainWindow : Window
         SetNavItem(ConnectionsNavItem, _localization["ConnectionsLabel"]);
         SetNavItem(HistoryNavItem, _localization["HistoryLabel"]);
         SetNavItem(AlertsNavItem, _localization["AlertsNavLabel"]);
-        SetNavItem(FloatingWidgetNavItem, _localization["FloatingWidgetLabel"]);
         SetNavItem(SettingsNavItem, _localization["SettingsNavLabel"]);
         SetNavItem(AboutNavItem, _localization["AboutNavLabel"]);
+
+        var widgetLabel = _localization["FloatingWidgetLabel"];
+        WidgetQuickToggleLabel.Text = widgetLabel;
+        ToolTipService.SetToolTip(WidgetQuickToggle, widgetLabel);
+        AutomationProperties.SetName(WidgetQuickToggle, widgetLabel);
+
         ApplyFlowDirection();
         ApplyCaptionSafeArea();
     }
@@ -169,9 +225,21 @@ public sealed partial class MainWindow : Window
 
     private void ApplyFlowDirection()
     {
-        RootGrid.FlowDirection = _localization.IsRightToLeft
+        var rightToLeft = _localization.IsRightToLeft;
+        RootGrid.FlowDirection = rightToLeft
             ? FlowDirection.RightToLeft
             : FlowDirection.LeftToRight;
+
+        // The title bar grid is pinned to left-to-right so the widget control keeps
+        // the physical top-left corner in both directions. The title therefore sets
+        // its own direction and alignment, which keeps it against the navigation
+        // edge in Persian exactly as before the control was added.
+        TitleText.FlowDirection = rightToLeft
+            ? FlowDirection.RightToLeft
+            : FlowDirection.LeftToRight;
+        TitleText.HorizontalAlignment = rightToLeft
+            ? HorizontalAlignment.Right
+            : HorizontalAlignment.Left;
     }
 
     private void PersistLanguage()
@@ -202,7 +270,6 @@ public sealed partial class MainWindow : Window
             "Connections" => typeof(ConnectionsPage),
             "History" => typeof(HistoryPage),
             "Alerts" => typeof(AlertsPage),
-            "FloatingWidget" => typeof(FloatingWidgetPage),
             "Settings" => typeof(SettingsPage),
             "About" => typeof(AboutPage),
             _ => null

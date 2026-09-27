@@ -73,7 +73,7 @@ or packaging changes, and no new timer, poller or background worker.
 this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
 not be treated as final.
 
-## [0.1.4] - Alert threshold and Floating Widget navigation fixes
+## [0.1.4] - Alert threshold editing and Floating Widget quick control
 
 Two human-found functional defects, addressed strictly on their own. No alert
 backend, collector, monitoring or packaging changes, and no new timer, poller or
@@ -94,30 +94,37 @@ background worker.
   limit rules, and the existing parse, validation, range and save mapping are
   untouched, so the alert backend still reads the same persisted values.
 
-- **The Floating Widget had no place in the main navigation.** It could only be
-  reached indirectly, so its two settings were not discoverable. The `NavigationView`
-  now carries a `Floating Widget` item with a native Segoe Fluent Icons glyph
-  between `Alerts` and `Settings`, and the new `FloatingWidgetPage` shows the
-  existing Enable and Always On Top switches. The page is a view onto the existing
-  `IFloatingWidgetService`: both switches write through the service, the service's
-  change events push the result back into the switches, and the page holds no second
-  copy of the flags and starts no polling. Settings, the new page and the widget's
-  own close button therefore cannot disagree, including after a restart. Collapsed
-  navigation stays icon-only, and the item is named, tooltipped and described for
-  assistive technology from the resource string like every other item.
+- **The Floating Widget could only be reached indirectly.** It is now a quick
+  show/hide control in the persistent shell: a compact native `ToggleButton` with a
+  Segoe Fluent Icons glyph and the localized label, in the top-left corner of the
+  title bar, so it is available on every page instead of being buried in Settings.
+  The title bar grid is pinned to left-to-right so the control stays physically
+  top-left in both layout directions, which in Persian is the side opposite the
+  navigation pane, while the title keeps its own direction and alignment so the
+  right-to-left title still sits against the navigation edge and clear of the
+  caption buttons.
+
+  The control is a view onto the existing `IFloatingWidgetService`, not a second
+  state owner: a click calls `SetEnabled`, which persists the existing setting and
+  shows or hides the window, and the service's `EnabledChanged` and
+  `IsVisibleChanged` events push the result back into the control. The Settings
+  switches and the widget's own close button already go through the same service, so
+  the shell control, Settings and the widget cannot disagree, and the persisted
+  value is what the control shows after a restart. There is no second flag, no
+  second service and no polling. Always On Top deliberately stays a detailed option
+  in Settings and is not duplicated in the shell.
 
 ### Changed
 
 - `AlwaysOnTopLabel` now reads "Always On Top" in English and
-  "همیشه روی سایر پنجره‌ها" in Persian, and the widget navigation label is
-  "ویجت شناور" in Persian, matching the wording used on the new page. The shared
-  resource is also used by the WPF surface, so its pinned test expectation was
-  updated to the new casing.
+  "همیشه روی سایر پنجره‌ها" in Persian, and the widget quick-control label is
+  "ویجت شناور" in Persian. The shared resource is also used by the WPF surface, so
+  its pinned test expectation was updated to the new casing.
 
 ### Verification
 
-- Focused tests: 139 passed, 0 failed (`TrafficLens.WinUI.Tests`).
-- Full solution suite: 705 passed, 0 failed.
+- Focused tests: 144 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 710 passed, 0 failed.
 - Release x64 build: 0 warnings, 0 errors.
 
 **Human verification is still pending.** No installer or ZIP has been produced for

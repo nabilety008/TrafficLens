@@ -897,7 +897,7 @@ collector, monitoring or packaging changes; no new timer, poller or background w
 - **Status: automated checks pass, awaiting human verification**
 - Not merged, tagged, pushed or published.
 
-### TL-028 Alert threshold and Floating Widget navigation fixes (v0.1.4) — **AUTOMATED PASS, HUMAN PENDING**
+### TL-028 Alert threshold editing and Floating Widget quick control (v0.1.4) — **AUTOMATED PASS, HUMAN PENDING**
 
 Two human-found functional defects, scoped strictly to those two. No alert backend,
 collector, monitoring or packaging changes; no new timer, poller or background worker.
@@ -910,23 +910,31 @@ collector, monitoring or packaging changes; no new timer, poller or background w
       two-way; LTR digits with right alignment; `KB/s, MB/s, GB/s` for the two speed
       rules and `MB, GB, TB` for the three limit rules; parse, validation, range and
       save mapping untouched, so the backend reads the same persisted values.
-- [x] **Floating Widget in the main navigation** — new `NavigationViewItem` with a
-      native Segoe Fluent Icons glyph between `Alerts` and `Settings`, routed to the
-      new `FloatingWidgetPage` showing the existing Enable and Always On Top switches.
-      The page is a view onto the existing `IFloatingWidgetService`: both switches
-      write through the service, service change events push results back into the
-      switches, no second copy of the flags, no polling. Collapsed navigation stays
-      icon-only; name, tooltip and accessibility come from the resource string.
-- [x] Lifecycle hardening: the page attaches its service/localization handlers in
-      `Loaded` behind a guard instead of only in the constructor, so a cached page
-      that is unloaded and loaded again keeps following the service.
-- [x] Wording aligned with the new page: `AlwaysOnTopLabel` is now "Always On Top" /
-      "همیشه روی سایر پنجره‌ها" and the widget nav label is "ویجت شناور". The resource
+- [x] **Floating Widget quick control in the shell** — a compact native
+      `ToggleButton` (Segoe Fluent Icons glyph + localized label) in the top-left of
+      the title bar, available on every page, NOT a navigation item, NOT a separate
+      page, and not buried in Settings. The title-bar grid is pinned left-to-right so
+      the control stays physically top-left in both directions; the title keeps its
+      own direction/alignment so the Persian title still sits against the navigation
+      edge and clear of the caption buttons.
+- [x] One widget-enabled state: a click calls `SetEnabled` (persists the existing
+      setting, shows/hides the window) and the service's `EnabledChanged` /
+      `IsVisibleChanged` events push the result back. Settings switches and the
+      widget's native X already use the same service, so shell ↔ Settings ↔ widget
+      cannot disagree, and restart shows the persisted value. No second flag, no
+      second service, no polling. Always On Top deliberately stays in Settings only.
+- [x] Human clarification honoured: the `Floating Widget` `NavigationViewItem` and
+      the dedicated `FloatingWidgetPage` created for that mistaken UX were removed,
+      with the page and its now-unused description resource deleted. Navigation is
+      back to Dashboard / Applications / Connections / History / Alerts / Settings /
+      About. The widget window, service and settings were not touched.
+- [x] Wording aligned: `AlwaysOnTopLabel` is now "Always On Top" /
+      "همیشه روی سایر پنجره‌ها" and the quick-control label is "ویجت شناور". The resource
       is shared with the WPF surface, so its pinned test expectation was updated to
       the new casing rather than the value being reverted.
-- [x] Focused tests: 139 passed, 0 failed (`TrafficLens.WinUI.Tests`)
-- [x] Full solution suite: 705 passed, 0 failed (App 270 / Network 212 /
-      Infrastructure 84 / WinUI 139)
+- [x] Focused tests: 144 passed, 0 failed (`TrafficLens.WinUI.Tests`)
+- [x] Full solution suite: 710 passed, 0 failed (App 270 / Network 212 /
+      Infrastructure 84 / WinUI 144)
 - [x] Release x64 build: 0 warnings, 0 errors
 - [ ] **Human verification of the two items — PENDING**
 - [ ] Installer/ZIP regeneration — deferred until human verification passes; no

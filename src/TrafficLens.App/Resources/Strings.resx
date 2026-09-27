@@ -318,9 +318,6 @@
   <data name="AlwaysOnTopLabel" xml:space="preserve">
     <value>Always On Top</value>
   </data>
-  <data name="FloatingWidgetPageDescriptionLabel" xml:space="preserve">
-    <value>A small panel that stays on top of other windows and shows live network traffic.</value>
-  </data>
   <data name="ShowFloatingWidgetLabel" xml:space="preserve">
     <value>Show Floating Widget</value>
   </data>

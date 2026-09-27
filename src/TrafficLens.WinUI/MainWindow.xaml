@@ -22,9 +22,46 @@
             x:Name="AppTitleBar"
             Grid.Row="0"
             Height="48"
-            Padding="16,0,16,0">
+            Padding="16,0,16,0"
+            FlowDirection="LeftToRight">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!--
+                Quick access to the Floating Widget from the persistent shell, so it
+                is available on every page. This grid is pinned to left-to-right on
+                purpose: it keeps the control physically in the top-left corner in
+                both layout directions, which in Persian is the side opposite the
+                navigation pane. The title keeps its own direction, applied in code,
+                so the right-to-left title still sits against the navigation edge.
+            -->
+            <ToggleButton
+                x:Name="WidgetQuickToggle"
+                Grid.Column="0"
+                Height="32"
+                Margin="0,0,12,0"
+                Padding="10,0,12,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                FontSize="12"
+                Click="WidgetQuickToggle_Click">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon
+                        FontFamily="Segoe Fluent Icons"
+                        FontSize="14"
+                        Glyph="&#xE992;" />
+                    <TextBlock
+                        x:Name="WidgetQuickToggleLabel"
+                        VerticalAlignment="Center"
+                        Text="Floating Widget" />
+                </StackPanel>
+            </ToggleButton>
+
             <TextBlock
                 x:Name="TitleText"
+                Grid.Column="1"
                 VerticalAlignment="Center"
                 FontSize="14"
                 FontWeight="SemiBold"
@@ -86,15 +123,6 @@
                     ToolTipService.ToolTip="Alerts">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7BA;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem
-                    x:Name="FloatingWidgetNavItem"
-                    Content="Floating Widget"
-                    Tag="FloatingWidget"
-                    ToolTipService.ToolTip="Floating Widget">
-                    <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE992;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem

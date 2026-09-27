@@ -318,9 +318,6 @@
   <data name="AlwaysOnTopLabel" xml:space="preserve">
     <value>همیشه روی سایر پنجره‌ها</value>
   </data>
-  <data name="FloatingWidgetPageDescriptionLabel" xml:space="preserve">
-    <value>پنل کوچکی که روی سایر پنجره‌ها باقی می‌ماند و ترافیک شبکه را به‌صورت زنده نشان می‌دهد.</value>
-  </data>
   <data name="ShowFloatingWidgetLabel" xml:space="preserve">
     <value>نمایش ابزارک شناور</value>
   </data>

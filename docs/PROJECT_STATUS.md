@@ -197,7 +197,7 @@ Diagnostics block, suite at 410 tests).
 
 ## Active
 
-- TL-028 (Alert threshold + Floating Widget navigation fixes, v0.1.4, on
+- TL-028 (Alert threshold editing + Floating Widget quick control, v0.1.4, on
   `feature/winui3-migration`): two human-found functional defects, scoped strictly to
   those two. No alert backend, collector, monitoring or packaging changes; no new
   timer, poller or background worker.
@@ -208,15 +208,24 @@ Diagnostics block, suite at 410 tests).
     rules ship as disabled. `ThresholdText`/`UnitIndex` still two-way, LTR digits,
     right-aligned, same units, same parse/validation/save mapping, so the backend
     reads the same persisted values.
-  - **Floating Widget in the main navigation**: new `NavigationViewItem` with a native
-    Segoe Fluent Icons glyph between `Alerts` and `Settings`, routed to the new
-    `FloatingWidgetPage` showing the existing Enable and Always On Top switches. The
-    page is a view onto the existing `IFloatingWidgetService` — both switches write
-    through the service, service events push results back, no second copy of the
-    flags, no polling — so Settings, the new page and the widget's own close button
-    cannot disagree. Collapsed navigation stays icon-only.
-  - **Verified**: focused 139/139 (`TrafficLens.WinUI.Tests`), full suite 705/705
-    (App 270 / Network 212 / Infrastructure 84 / WinUI 139), Release x64 build 0
+  - **Floating Widget quick control in the shell**: a compact native `ToggleButton`
+    (Segoe Fluent Icons glyph + localized label) in the top-left of the title bar,
+    available on every page — not a navigation item, not a separate page, not buried
+    in Settings. The title-bar grid is pinned left-to-right so the control stays
+    physically top-left in both directions; the title keeps its own direction and
+    alignment so the Persian title still sits against the navigation edge, clear of
+    the caption buttons.
+  - **One widget-enabled state**: a click calls `SetEnabled` (persists the existing
+    setting, shows/hides the window) and the service's `EnabledChanged` /
+    `IsVisibleChanged` events push the result back, so shell ↔ Settings ↔ widget
+    cannot disagree and restart shows the persisted value. No second flag, no second
+    service, no polling. Always On Top stays in Settings only.
+  - **Human clarification honoured**: the mistaken `Floating Widget` navigation item
+    and its dedicated page were removed (page and its unused description resource
+    deleted); navigation is back to Dashboard / Applications / Connections / History /
+    Alerts / Settings / About. The widget window, service and settings are untouched.
+  - **Verified**: focused 144/144 (`TrafficLens.WinUI.Tests`), full suite 710/710
+    (App 270 / Network 212 / Infrastructure 84 / WinUI 144), Release x64 build 0
     warnings / 0 errors.
   - **Status**: automated checks pass, human verification pending. No artifact
     produced; the v0.1.4 artifacts from `99397a4` remain superseded. Not merged,
