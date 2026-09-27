@@ -12,17 +12,16 @@
         </Grid.RowDefinitions>
 
         <!--
-            The padding on this grid is the caption safe area. It is applied from the
-            insets the shell reports for the real caption buttons (see
-            TitleBarCaptionLayout), on whichever edge those buttons sit on, so the
-            title can never run underneath Minimize / Maximize / Close in either
-            layout direction and no per-language offset is involved.
+            The caption safe area is applied to the title, not to this grid, so the
+            quick action in the first column keeps a fixed physical top-left
+            position no matter which side the shell puts the caption buttons on (see
+            TitleBarCaptionLayout and ApplyCaptionSafeArea).
         -->
         <Grid
             x:Name="AppTitleBar"
             Grid.Row="0"
             Height="48"
-            Padding="16,0,16,0"
+            Padding="0"
             FlowDirection="LeftToRight">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -34,14 +33,17 @@
                 is available on every page. This grid is pinned to left-to-right on
                 purpose: it keeps the control physically in the top-left corner in
                 both layout directions, which in Persian is the side opposite the
-                navigation pane. The title keeps its own direction, applied in code,
-                so the right-to-left title still sits against the navigation edge.
+                navigation pane. The control is anchored by the first column, so its
+                position depends only on the window's own left edge and stays put
+                across resize, maximize, restore, pane collapse and page changes.
+                The title keeps its own direction, applied in code, so the
+                right-to-left title still sits against the navigation edge.
             -->
             <ToggleButton
                 x:Name="WidgetQuickToggle"
                 Grid.Column="0"
                 Height="32"
-                Margin="0,0,12,0"
+                Margin="12,0,12,0"
                 Padding="10,0,12,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"

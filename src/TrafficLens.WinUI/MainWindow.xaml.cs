@@ -116,11 +116,16 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Reserves the caption-button area on the edge the shell actually put it on.
-    /// The insets come from the live window, so this is caption geometry rather than
-    /// a fixed margin, and it holds for both layout directions, for any title
-    /// length and in both the normal and the maximized state.
+    /// Reserves the caption-button area for the title on the edge the shell actually
+    /// put the buttons on. The insets come from the live window, so this is caption
+    /// geometry rather than a fixed margin, and it holds for both layout directions,
+    /// for any title length and in both the normal and the maximized state.
     /// </summary>
+    /// <remarks>
+    /// The reserve is applied to the title rather than as padding on the whole title
+    /// bar grid, so the widget quick action in the first column keeps a fixed
+    /// physical top-left position instead of shifting with the caption side.
+    /// </remarks>
     private void ApplyCaptionSafeArea()
     {
         var hwnd = WindowNative.GetWindowHandle(this);
@@ -135,7 +140,10 @@ public sealed partial class MainWindow : Window
             dpiScale: scale,
             isRightToLeft: RootGrid.FlowDirection == FlowDirection.RightToLeft);
 
-        AppTitleBar.Padding = new Thickness(left, 0, right, 0);
+        AppTitleBar.Padding = new Thickness(0);
+        TitleText.Margin = RootGrid.FlowDirection == FlowDirection.RightToLeft
+            ? new Thickness(0, 0, right, 0)
+            : new Thickness(left, 0, 0, 0);
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]

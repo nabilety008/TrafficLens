@@ -473,7 +473,10 @@ public class WinUiPageMarkupTests
         var xaml = File.ReadAllText(Path.Combine(WinUiRoot(), "MainWindow.xaml"));
         var code = Source("MainWindow.xaml.cs");
 
-        Assert.Contains("Padding=\"16,0,16,0\"", xaml, StringComparison.Ordinal);
+        // The title bar grid carries no horizontal padding of its own: the caption
+        // reserve is applied to the title from the live window geometry, and the
+        // quick action uses a constant margin. Neither is per language.
+        Assert.Contains("Padding=\"0\"", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("IsRightToLeft ?", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("IsRightToLeft ?", code, StringComparison.Ordinal);
     }
@@ -493,8 +496,12 @@ public class WinUiPageMarkupTests
     {
         var code = Source("MainWindow.xaml.cs");
 
-        // The grid padding is replaced, not offset by a language-specific constant.
-        Assert.Contains("AppTitleBar.Padding = new Thickness(left, 0, right, 0)", code, StringComparison.Ordinal);
+        // The reserve is replaced, not offset by a language-specific constant, and it
+        // is applied to the title so the widget quick action keeps a fixed physical
+        // top-left position regardless of which side the caption buttons are on.
+        Assert.Contains("AppTitleBar.Padding = new Thickness(0)", code, StringComparison.Ordinal);
+        Assert.Contains("TitleText.Margin", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("new Thickness(16,", code, StringComparison.Ordinal);
     }
 
     [Fact]

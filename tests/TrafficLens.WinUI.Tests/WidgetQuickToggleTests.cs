@@ -96,6 +96,28 @@ public sealed class WidgetQuickToggleTests
     }
 
     [Fact]
+    public void QuickControlIsNotShiftedByTheCaptionSafeArea()
+    {
+        var titleBar = MainWindow().Descendants()
+            .Single(e => e.Name.LocalName == "Grid" && e.Attribute(XNameAttr)?.Value == "AppTitleBar");
+        var code = File.ReadAllText(MainWindowCodePath());
+
+        // The caption reserve is applied to the title, not as padding on the title bar
+        // grid, so the control's left margin is a constant and cannot be pushed
+        // around by whichever side the caption buttons sit on.
+        Assert.Equal("0", titleBar.Attribute("Padding")?.Value);
+        Assert.Contains("AppTitleBar.Padding = new Thickness(0)", code, StringComparison.Ordinal);
+        Assert.Contains("TitleText.Margin =", code, StringComparison.Ordinal);
+
+        // left 12, top 0, right 12 (gap to the title column), bottom 0
+        var margin = QuickToggle().Attribute("Margin")!.Value.Split(',');
+        Assert.Equal("12", margin[0].Trim());
+        Assert.Equal("0", margin[1].Trim());
+        Assert.Equal("12", margin[2].Trim());
+        Assert.Equal("0", margin[3].Trim());
+    }
+
+    [Fact]
     public void QuickControlIsCompactAndUsesANativeIcon()
     {
         var toggle = QuickToggle();
