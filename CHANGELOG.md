@@ -2,6 +2,66 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.4] — One widget enable control: shell quick action anchored, duplicate Settings control removed (automated checks pass, human verification pending)
+
+A human screenshot review of the Persian Settings page found that the Floating
+Widget could be enabled from two places on the same page. Scoped to that finding and
+to the positioning defect it exposed: no alert, backend, collector, monitoring or
+packaging changes, and no new timer, poller or background worker.
+
+### Fixed
+
+- **Settings showed a duplicate Floating Widget control.** The page carried a quick
+  widget card at the top (heading, label and enable switch) *and* the full widget
+  section lower down (enable plus Always On Top). With the persistent shell quick
+  action in the physical top-left corner, the top card is redundant, so it has been
+  removed outright — not collapsed — along with its own toggle, its `Toggled`
+  handler and the two labels the code-behind filled in. The remaining widget section
+  is unchanged and still carries `فعال‌سازی ویجت شناور` and
+  `همیشه روی سایر پنجره‌ها`; the sections below it moved up and no blank card or gap
+  is left behind. `FloatingWidgetLabel` and `EnableFloatingWidgetLabel` are still
+  used by the shell control, the tray and the WPF views, so no resource was removed.
+
+- **The shell quick action drifted away from the corner it is anchored to.** The
+  caption safe area was applied as padding on the whole title bar grid, so in a
+  right-to-left window — where the shell reports the caption inset on the leading
+  edge, which is physically the right — that reserve landed on the physical left and
+  pushed the control inwards; its position also depended on which side the shell
+  reported the caption buttons on. The reserve is now applied to the title as a
+  margin on the caption side and the title bar grid keeps no horizontal padding, so
+  the control's position depends only on the window's own left edge. Measured at
+  150% DPI: constant 29 physical px from the window edge (12 DIP shell margin) while
+  resizing, maximized, restored, and with the navigation pane collapsed or expanded,
+  and it does not mirror to the right in Persian.
+  `TitleBarCaptionLayout.ResolvePadding` is untouched and the title is still held
+  clear of the caption buttons.
+
+### Changed
+
+- `WidgetToggleSync.Apply`, which existed only to push one value into the *pair* of
+  Settings switches, is gone; the shared helper keeps `Resolve`, which both windows
+  still use. The two remaining switches — the shell quick action and the Settings
+  widget section — are views of the one `FloatingWidgetEnabled` state owned by
+  `WidgetEnabledState` and written only through `IFloatingWidgetService.SetEnabled`.
+
+### Verification
+
+- Focused tests: 145 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 711 passed, 0 failed
+  (App 270 / Network 212 / Infrastructure 84 / WinUI 145).
+- Release x64 build: 0 warnings, 0 errors.
+- Runtime, one launch, `fa-IR`, PID 11208: the Settings page exposes exactly one
+  widget section with both switches and no `SettingsWidgetQuickToggle`; the shell
+  control holds 29 physical px relLeft through resize, maximize, restore and pane
+  collapse. All five state paths checked live — quick action ON/OFF, Settings
+  ON/OFF and the widget's own close button — with the quick action and the Settings
+  switch agreeing every time and the setting persisted each time. Navigation remains
+  at seven pages with no widget destination.
+
+**Human verification is still pending.** No installer or ZIP has been produced for
+this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
+not be treated as final.
+
 ## [0.1.4] — Final human UI polish (automated checks pass, human verification pending)
 
 A polish pass over the approved baseline `99397a4` addressing six defects found by

@@ -223,13 +223,39 @@ Diagnostics block, suite at 410 tests).
   - **Human clarification honoured**: the mistaken `Floating Widget` navigation item
     and its dedicated page were removed (page and its unused description resource
     deleted); navigation is back to Dashboard / Applications / Connections / History /
-    Alerts / Settings / About. The widget window, service and settings are untouched.
-  - **Verified**: focused 144/144 (`TrafficLens.WinUI.Tests`), full suite 710/710
-    (App 270 / Network 212 / Infrastructure 84 / WinUI 144), Release x64 build 0
-    warnings / 0 errors.
+    Alerts / Settings / About. The widget window and service are untouched.
+  - **Quick action anchored in the physical top-left (`ebbf725`)**: the caption
+    reserve moved from title-bar padding to a margin on the title, and the grid keeps
+    no horizontal padding, so the control's offset depends only on the window's own
+    left edge. Measured at 150% DPI: constant 29 physical px (12 DIP) across resize,
+    maximize, restore and navigation collapse, and it does not mirror right in
+    Persian. `ResolvePadding` unchanged.
+  - **Duplicate Settings widget control removed**: human screenshot review of the
+    Persian Settings page found the widget could be enabled from two places. The
+    top quick card — card, `WidgetQuickToggle`, its `Toggled` handler and the two
+    labels the code-behind filled — is deleted, not collapsed. One widget section
+    remains (enable + Always On Top) and the sections below moved up with no blank
+    card or gap. `WidgetToggleSync.Apply` went with the pair of switches it existed
+    to feed; `Resolve` is still shared by both windows. Both remaining switches are
+    views of the one `FloatingWidgetEnabled` state written only through
+    `SetEnabled` — no second setting, service or lifecycle, still no polling. Always
+    On Top stays in Settings only. The localization keys are still used by the shell
+    control, the tray and the WPF views, so none was removed.
+  - **Verified**: focused 145/145 (`TrafficLens.WinUI.Tests`), full suite 711/711
+    (App 270 / Network 212 / Infrastructure 84 / WinUI 145), Release x64 build 0
+    warnings / 0 errors. Runtime, one launch, `fa-IR`, PID 11208: one widget section
+    on Settings, 29 px relLeft held through resize/maximize/restore/pane collapse,
+    and all five live state paths (quick ON, quick OFF, Settings ON, Settings OFF,
+    widget X) agreed in both directions and persisted each time.
   - **Status**: automated checks pass, human verification pending. No artifact
     produced; the v0.1.4 artifacts from `99397a4` remain superseded. Not merged,
     tagged, pushed or published.
+  - **Known, not fixed here**: the Persian title still runs under the caption
+    buttons on this machine because `AppWindow.TitleBar.LeftInset` and `RightInset`
+    both report 0 here, leaving only the 16-DIP base reserve. This is the pre-existing
+    zero-inset case that the separate DPI-aware fallback task covers; that fallback
+    is **not** present at this HEAD and was deliberately not started, so this entry
+    does not claim it fixed.
 
 - TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
   - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.

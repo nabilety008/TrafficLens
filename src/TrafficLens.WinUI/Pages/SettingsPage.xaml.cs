@@ -60,16 +60,17 @@ public sealed partial class SettingsPage : Page
     }
 
     /// <summary>
-    /// The widget can also be disabled from the widget's own close button. That
-    /// arrives here, and both switches follow, so the page never shows a stale state.
+    /// The widget can also be disabled from the widget's own close button or from the
+    /// MainWindow quick action. That arrives here, and the switch follows, so the page
+    /// never shows a stale state.
     /// </summary>
     private void OnWidgetEnabledChanged(object? sender, bool enabled) => SyncWidgetToggles();
 
     private void OnWidgetVisibleChanged(object? sender, EventArgs e) => SyncWidgetToggles();
 
     /// <summary>
-    /// Always On Top can also be changed from the Floating Widget navigation page,
-    /// so this switch follows the service instead of only its own edits.
+    /// Always On Top lives only in this section, and the service is its single owner,
+    /// so the switch follows the service instead of only its own edits.
     /// </summary>
     private void OnAlwaysOnTopChanged(object? sender, bool alwaysOnTop) => SyncAlwaysOnTopToggle();
 
@@ -88,15 +89,10 @@ public sealed partial class SettingsPage : Page
 
     private void SyncWidgetToggles()
     {
-        var value = WidgetToggleSync.Resolve(_widgetService.IsEnabled, _widgetService.IsVisible);
-
         _loading = true;
         try
         {
-            WidgetToggleSync.Apply(
-                isOn => WidgetQuickToggle.IsOn = isOn,
-                isOn => ShowWidgetToggle.IsOn = isOn,
-                value);
+            ShowWidgetToggle.IsOn = WidgetToggleSync.Resolve(_widgetService.IsEnabled, _widgetService.IsVisible);
         }
         finally
         {
@@ -134,8 +130,6 @@ public sealed partial class SettingsPage : Page
         CloseToTrayText.Text = _localization["CloseToTrayLabel"];
         WidgetHeader.Text = _localization["WidgetLabel"];
         ShowWidgetText.Text = _localization["EnableFloatingWidgetLabel"];
-        WidgetQuickHeader.Text = _localization["FloatingWidgetLabel"];
-        WidgetQuickText.Text = _localization["EnableFloatingWidgetLabel"];
         AlwaysOnTopText.Text = _localization["AlwaysOnTopLabel"];
         ResetButton.Content = _localization["ResetToDefaultsLabel"];
 
@@ -244,11 +238,8 @@ public sealed partial class SettingsPage : Page
             CloseToTrayToggle.IsOn = TrayBehavior.GetCloseToTray(_settings);
             AlwaysOnTopToggle.IsOn = _widgetService.IsAlwaysOnTop;
 
-            // Both widget switches show the one value the service owns.
-            WidgetToggleSync.Apply(
-                isOn => WidgetQuickToggle.IsOn = isOn,
-                isOn => ShowWidgetToggle.IsOn = isOn,
-                WidgetToggleSync.Resolve(_widgetService.IsEnabled, _widgetService.IsVisible));
+            // The one widget switch in this section shows the value the service owns.
+            ShowWidgetToggle.IsOn = WidgetToggleSync.Resolve(_widgetService.IsEnabled, _widgetService.IsVisible);
         }
         finally
         {
@@ -337,12 +328,9 @@ public sealed partial class SettingsPage : Page
     private void ShowWidgetToggle_Toggled(object sender, RoutedEventArgs e) =>
         ApplyWidgetToggle(ShowWidgetToggle.IsOn);
 
-    private void WidgetQuickToggle_Toggled(object sender, RoutedEventArgs e) =>
-        ApplyWidgetToggle(WidgetQuickToggle.IsOn);
-
     /// <summary>
-    /// Both switches go through the service, which is the only writer of the widget
-    /// setting, and then both are re-synced so the pair can never disagree.
+    /// The switch goes through the service, which is the only writer of the widget
+    /// setting, and is then re-synced so it can never disagree with the shell.
     /// </summary>
     private void ApplyWidgetToggle(bool enabled)
     {

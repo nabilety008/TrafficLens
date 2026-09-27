@@ -214,7 +214,7 @@ public sealed class WidgetQuickToggleTests
     }
 
     [Fact]
-    public void SettingsTogglesStillFollowTheSameService()
+    public void SettingsSwitchStillFollowsTheSameService()
     {
         var settings = File.ReadAllText(Resolve("src", "TrafficLens.WinUI", "Pages", "SettingsPage.xaml.cs"));
 
@@ -222,6 +222,52 @@ public sealed class WidgetQuickToggleTests
         Assert.Contains("WidgetToggleSync.Resolve", settings, StringComparison.Ordinal);
         Assert.Contains("_widgetService.EnabledChanged += OnWidgetEnabledChanged", settings, StringComparison.Ordinal);
         Assert.Contains("_widgetService.AlwaysOnTopChanged += OnAlwaysOnTopChanged", settings, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheTwoSwitchesWriteThroughTheServiceInBothDirections()
+    {
+        // Quick action ON and Settings OFF have to be the same round trip, so both
+        // windows must write only through SetEnabled and both must read the one
+        // resolved value back out of the service.
+        var shell = File.ReadAllText(MainWindowCodePath());
+        var settings = File.ReadAllText(Resolve("src", "TrafficLens.WinUI", "Pages", "SettingsPage.xaml.cs"));
+
+        foreach (var source in new[] { shell, settings })
+        {
+            Assert.Contains("_widgetService.SetEnabled(", source, StringComparison.Ordinal);
+            Assert.Contains("WidgetToggleSync.Resolve", source, StringComparison.Ordinal);
+            Assert.DoesNotContain(EnabledKey, source, StringComparison.Ordinal);
+        }
+
+        // Each window listens to the service, which is how a change made in the other
+        // window, or by the widget's own close button, reaches it.
+        Assert.Contains("_widgetService.EnabledChanged += OnWidgetEnabledChanged", shell, StringComparison.Ordinal);
+        Assert.Contains("_widgetService.IsVisibleChanged += OnWidgetVisibleChanged", shell, StringComparison.Ordinal);
+        Assert.Contains("_widgetService.EnabledChanged += OnWidgetEnabledChanged", settings, StringComparison.Ordinal);
+        Assert.Contains("_widgetService.IsVisibleChanged += OnWidgetVisibleChanged", settings, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NeitherWindowStartsAPollerForTheOtherSwitch()
+    {
+        // The two switches agree because both read the one service, never because one
+        // window watches the other.
+        var sources = new[]
+        {
+            File.ReadAllText(MainWindowCodePath()),
+            File.ReadAllText(Resolve("src", "TrafficLens.WinUI", "Pages", "SettingsPage.xaml.cs")),
+        };
+
+        foreach (var source in sources)
+        {
+            foreach (var forbidden in new[] { "DispatcherTimer", "System.Timers.Timer", "Task.Delay", "while (true" })
+            {
+                Assert.False(
+                    source.Contains(forbidden, StringComparison.Ordinal),
+                    $"a window must stay event driven, but it contains '{forbidden}'");
+            }
+        }
     }
 
     [Fact]

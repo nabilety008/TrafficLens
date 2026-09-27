@@ -267,8 +267,10 @@ public class WinUiPageMarkupTests
     // ------------------------------------------------------------------ settings
 
     [Fact]
-    public void SettingsHasAQuickWidgetToggleAndTheFullWidgetSection()
+    public void SettingsHasExactlyOneEnableFloatingWidgetControl()
     {
+        // The MainWindow quick action superseded the old quick card at the top of this
+        // page, so the widget section below is the only enable control left in Settings.
         var doc = Doc(Page("SettingsPage.xaml"));
 
         var toggles = doc.Descendants()
@@ -276,42 +278,32 @@ public class WinUiPageMarkupTests
             .Select(e => e.Attribute(XNameAttr)?.Value)
             .ToList();
 
-        Assert.Contains("WidgetQuickToggle", toggles);
         Assert.Contains("ShowWidgetToggle", toggles);
+        Assert.DoesNotContain("WidgetQuickToggle", toggles);
     }
 
     [Fact]
-    public void SettingsQuickWidgetToggleComesBeforeTheWidgetSection()
+    public void SettingsKeepsAlwaysOnTopInTheWidgetSection()
     {
         var ordered = Doc(Page("SettingsPage.xaml")).Descendants().ToList();
 
-        var quick = ordered.IndexOf(Named("WidgetQuickToggle", Page("SettingsPage.xaml"), ordered));
-        var lower = ordered.IndexOf(Named("ShowWidgetToggle", Page("SettingsPage.xaml"), ordered));
+        var enable = ordered.IndexOf(Named("ShowWidgetToggle", Page("SettingsPage.xaml"), ordered));
+        var alwaysOnTop = ordered.IndexOf(Named("AlwaysOnTopToggle", Page("SettingsPage.xaml"), ordered));
 
-        Assert.True(quick > 0 && lower > 0, "both toggles must be found");
-        Assert.True(quick < lower, "the quick control must sit above the full widget section");
+        Assert.True(enable > 0 && alwaysOnTop > 0, "both widget switches must be found");
+        Assert.True(enable < alwaysOnTop, "Always On Top belongs to the same widget section");
     }
 
     [Fact]
-    public void SettingsQuickWidgetToggleIsBeforeTheStartupSection()
-    {
-        var ordered = Doc(Page("SettingsPage.xaml")).Descendants().ToList();
-
-        var quick = ordered.IndexOf(Named("WidgetQuickToggle", Page("SettingsPage.xaml"), ordered));
-        var startup = ordered.IndexOf(Named("StartWithWindowsToggle", Page("SettingsPage.xaml"), ordered));
-
-        Assert.True(quick > 0 && startup > 0);
-        Assert.True(quick < startup, "the quick control must sit at the top of the page");
-    }
-
-    [Fact]
-    public void BothWidgetToggles_AreWiredToTheSameHandler()
+    public void WidgetSectionToggleIsWiredToTheWidgetService()
     {
         var code = Source(Page("SettingsPage.xaml.cs"));
 
-        Assert.Contains("WidgetQuickToggle_Toggled", code, StringComparison.Ordinal);
         Assert.Contains("ShowWidgetToggle_Toggled", code, StringComparison.Ordinal);
         Assert.Contains("ApplyWidgetToggle", code, StringComparison.Ordinal);
+
+        // The removed quick card took its own handler with it.
+        Assert.DoesNotContain("WidgetQuickToggle", code, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -342,15 +334,14 @@ public class WinUiPageMarkupTests
         var code = Source(Page("SettingsPage.xaml.cs"));
         var xaml = File.ReadAllText(Path.Combine(WinUiRoot(), Page("SettingsPage.xaml")));
 
-        // Both quick-control labels come from the shared localization service.
-        Assert.Contains("WidgetQuickHeader.Text = _localization[\"FloatingWidgetLabel\"]", code, StringComparison.Ordinal);
-        Assert.Contains("WidgetQuickText.Text = _localization[\"EnableFloatingWidgetLabel\"]", code, StringComparison.Ordinal);
+        // The widget section labels come from the shared localization service.
         Assert.Contains("ShowWidgetText.Text = _localization[\"EnableFloatingWidgetLabel\"]", code, StringComparison.Ordinal);
+        Assert.Contains("AlwaysOnTopText.Text = _localization[\"AlwaysOnTopLabel\"]", code, StringComparison.Ordinal);
 
-        // The quick card declares no literal text of its own; the code-behind fills it.
-        var quick = Between(xaml, "WidgetQuickHeader", "StartupHeader");
-        Assert.DoesNotContain("Text=\"", quick, StringComparison.Ordinal);
-        Assert.DoesNotContain("Content=\"[A-Za-z]", quick, StringComparison.Ordinal);
+        // The widget section declares no literal text of its own; the code-behind fills it.
+        var section = Between(xaml, "WidgetHeader", "WindowsUpdateHeader");
+        Assert.DoesNotContain("Text=\"", section, StringComparison.Ordinal);
+        Assert.DoesNotContain("Content=\"[A-Za-z]", section, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -363,19 +354,6 @@ public class WinUiPageMarkupTests
     }
 
     // -------------------------------------------------------------------- widget
-
-    [Fact]
-    public void WidgetToggleSync_PushesOneValueIntoBothSwitches()
-    {
-        var quick = new List<bool>();
-        var section = new List<bool>();
-
-        WidgetToggleSync.Apply(quick.Add, section.Add, true);
-        WidgetToggleSync.Apply(quick.Add, section.Add, false);
-
-        Assert.Equal(new[] { true, false }, quick);
-        Assert.Equal(quick, section);
-    }
 
     [Fact]
     public void WidgetToggleSync_ResolvesFromTheSingleSource()

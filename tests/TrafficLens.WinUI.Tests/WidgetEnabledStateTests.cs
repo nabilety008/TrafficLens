@@ -148,22 +148,24 @@ public class WidgetEnabledStateTests
     }
 
     [Fact]
-    public void QuickToggleAndWidgetSection_ShareOneSourceOfTruth()
+    public void ShellQuickActionAndSettingsSwitch_ShareOneSourceOfTruth()
     {
         var settings = new RecordingSettingsService();
         var state = new WidgetEnabledState(settings);
 
-        // Both switches are driven from the one state object and from the same
-        // persisted key, so neither can hold an independent value.
-        var quick = new List<bool>();
-        var section = new List<bool>();
-        state.Changed += (_, enabled) => WidgetToggleSync.Apply(quick.Add, section.Add, enabled);
+        // The two switches live in different windows but are both driven from the one
+        // state object and from the same persisted key, so neither can hold an
+        // independent value.
+        var shell = new List<bool>();
+        var settingsSection = new List<bool>();
+        state.Changed += (_, enabled) => shell.Add(enabled);
+        state.Changed += (_, enabled) => settingsSection.Add(enabled);
 
         state.SetEnabled(true);
         state.SetEnabled(false);
 
-        Assert.Equal(new[] { true, false }, quick);
-        Assert.Equal(quick, section);
+        Assert.Equal(new[] { true, false }, shell);
+        Assert.Equal(shell, settingsSection);
         Assert.Equal(
             bool.FalseString,
             settings.Get(FloatingWidgetSettings.EnabledKey, bool.TrueString));
@@ -171,21 +173,28 @@ public class WidgetEnabledStateTests
     }
 
     [Fact]
-    public void WidgetClose_UpdatesBothSettingsRepresentations()
+    public void WidgetClose_UpdatesBothSwitches()
     {
         var settings = new RecordingSettingsService();
         var state = new WidgetEnabledState(settings);
         state.SetEnabled(true);
 
-        var quick = false;
-        var section = false;
-        void Sync(bool enabled) => WidgetToggleSync.Apply(v => quick = v, v => section = v, enabled);
+        var shell = false;
+        var settingsSection = false;
+        void Sync(bool enabled)
+        {
+            shell = enabled;
+            settingsSection = enabled;
+        }
         state.Changed += (_, enabled) => Sync(enabled);
 
         // The widget's own close button.
         state.SetEnabled(false);
 
-        Assert.False(quick);
-        Assert.False(section);
+        Assert.False(shell);
+        Assert.False(settingsSection);
+        Assert.Equal(
+            bool.FalseString,
+            settings.Get(FloatingWidgetSettings.EnabledKey, bool.TrueString));
     }
 }
