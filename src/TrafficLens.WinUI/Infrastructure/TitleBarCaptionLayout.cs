@@ -57,6 +57,87 @@ public static class TitleBarCaptionLayout
     }
 
     /// <summary>
+    /// Picks the caption safe area to apply, preferring what the shell reports and
+    /// falling back to the controls measured on the window itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A reported inset is not proof of a reserved caption area. The shell has been
+    /// observed reporting no inset at all for a window that still draws the three
+    /// controls, and reporting only the resize frame, which reserves a strip far
+    /// narrower than the controls. Either way the title ends up underneath them, so
+    /// the insets are used only when they actually cover the controls that were found.
+    /// </para>
+    /// <para>
+    /// A measured reserve is larger than the shell's whenever the shell reports the
+    /// frame alone, because the measurement runs from the inner edge of the controls to
+    /// the window edge, so preferring the larger of the two can only ever reserve more,
+    /// never less. The shell path stays in charge whenever it is sufficient, and stays
+    /// in charge outright when nothing could be measured.
+    /// </para>
+    /// </remarks>
+    /// <param name="leadingInsetPixels">Leading shell inset, in flow order.</param>
+    /// <param name="trailingInsetPixels">Trailing shell inset, in flow order.</param>
+    /// <param name="measuredLeftInsetPixels">Measured physical left inset, or null when the controls could not be located.</param>
+    /// <param name="measuredRightInsetPixels">Measured physical right inset, or null when the controls could not be located.</param>
+    /// <param name="dpiScale">Window DPI divided by 96.</param>
+    /// <param name="isRightToLeft">Whether the window lays out right-to-left.</param>
+    /// <returns>
+    /// The physical left/right padding to apply, and whether it came from the measured
+    /// controls. A measured padding is already in physical sides and must be applied as
+    /// it stands; a shell padding is in flow order and still needs the caller to map it
+    /// with the layout direction.
+    /// </returns>
+    public static ((double Left, double Right) Padding, bool UsedMeasuredControls) Resolve(
+        int leadingInsetPixels,
+        int trailingInsetPixels,
+        int? measuredLeftInsetPixels,
+        int? measuredRightInsetPixels,
+        double dpiScale,
+        bool isRightToLeft)
+    {
+        var shell = ResolvePadding(leadingInsetPixels, trailingInsetPixels, dpiScale, isRightToLeft);
+
+        if (measuredLeftInsetPixels is null || measuredRightInsetPixels is null)
+        {
+            return (shell, false);
+        }
+
+        var measured = ResolvePhysicalInsets(measuredLeftInsetPixels.Value, measuredRightInsetPixels.Value, dpiScale);
+
+        // ResolvePadding already returned physical sides, having mapped the flow-order
+        // insets itself, so the two reserves are compared edge for edge.
+        return shell.Left >= measured.Left && shell.Right >= measured.Right
+            ? (shell, false)
+            : (measured, true);
+    }
+
+    /// <summary>
+    /// Resolves the same physical left/right padding from insets that are already
+    /// known to be physical sides rather than flow order.
+    /// </summary>
+    /// <remarks>
+    /// Used for the fallback path, where the caption region is read back from the
+    /// window itself. That measurement is in window coordinates, so it already
+    /// carries the physical side and must not be swapped again for a right-to-left
+    /// window: the value returned for a right side stays on the right.
+    /// </remarks>
+    /// <param name="leftInsetPixels">Reserved area on the physical left, in pixels.</param>
+    /// <param name="rightInsetPixels">Reserved area on the physical right, in pixels.</param>
+    /// <param name="dpiScale">Window DPI divided by 96.</param>
+    public static (double Left, double Right) ResolvePhysicalInsets(
+        int leftInsetPixels,
+        int rightInsetPixels,
+        double dpiScale)
+    {
+        var scale = dpiScale > 0 ? dpiScale : 1.0;
+
+        return (
+            BasePaddingDip + Math.Max(0, leftInsetPixels) / scale,
+            BasePaddingDip + Math.Max(0, rightInsetPixels) / scale);
+    }
+
+    /// <summary>
     /// Reads the current window DPI as a scale factor. Exposed so the title bar
     /// converts insets with the same scale factor the window was sized with.
     /// </summary>

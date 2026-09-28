@@ -36,6 +36,33 @@ packaging changes, and no new timer, poller or background worker.
   `TitleBarCaptionLayout.ResolvePadding` is untouched and the title is still held
   clear of the caption buttons.
 
+- **The title ran under Minimize/Maximize/Close when the shell reported no usable
+  caption inset.** `AppWindow.TitleBar.LeftInset`/`RightInset` are not reliable
+  ground on this host: they have been seen reporting nothing at all for a window
+  that still draws the three controls, and reporting only the resize frame, which
+  reserves a strip far narrower than the controls. Either way the title was left
+  underneath them, overlapping by up to 183 physical px in Persian and 133 px in
+  English at a 640 px width. The caption region is now read back off the live window
+  with a bounded `WM_NCHITTEST` probe — the region Windows itself gives the controls
+  for clicks and drag — and the shell insets are still used wherever they already
+  cover it, so a valid inset keeps the native path. `DWMWA_CAPTION_BUTTON_BOUNDS`
+  was tried first and rejected: it answers `S_OK` with a zero-width rectangle in both
+  the restored and the maximized state. The probe is bounded on both axes: each edge
+  is searched over the resize-frame thickness only and each boundary is then found by
+  halving, costing a few dozen messages and one extra step per doubling of the window
+  width. It reports the physical side the controls are on, so the reserve needs no
+  per-language handling, and nothing is hardcoded — it returned 218 physical px at
+  150% DPI, identically in the restored and the maximized state. Measured at 150% DPI
+  across normal, wider, narrower, maximized and restored: the gap from the title's
+  right edge to the caption group is now positive everywhere (**+35** in Persian,
+  **+227** and **+44** in English, the latter at 640 px), where the previous build
+  measured **-183** and **-133**. The shell quick action still holds 29 physical px
+  from the window edge in every state, and the title bar keeps no horizontal padding.
+  Because the compositor publishes the caption zones one frame after a resize, the
+  measurement is retaken once on the next rendered frame through a handler that
+  removes itself, capped at three attempts: no timer, poller, worker or positioning
+  loop.
+
 ### Changed
 
 - `WidgetToggleSync.Apply`, which existed only to push one value into the *pair* of
@@ -46,17 +73,23 @@ packaging changes, and no new timer, poller or background worker.
 
 ### Verification
 
-- Focused tests: 145 passed, 0 failed (`TrafficLens.WinUI.Tests`).
-- Full solution suite: 711 passed, 0 failed
-  (App 270 / Network 212 / Infrastructure 84 / WinUI 145).
+- Focused tests: 165 passed, 0 failed (`TrafficLens.WinUI.Tests`).
+- Full solution suite: 731 passed, 0 failed
+  (App 270 / Network 212 / Infrastructure 84 / WinUI 165).
 - Release x64 build: 0 warnings, 0 errors.
-- Runtime, one launch, `fa-IR`, PID 11208: the Settings page exposes exactly one
+- Runtime, one launch, `fa-IR`, PID 5772: the Settings page exposes exactly one
   widget section with both switches and no `SettingsWidgetQuickToggle`; the shell
   control holds 29 physical px relLeft through resize, maximize, restore and pane
   collapse. All five state paths checked live — quick action ON/OFF, Settings
   ON/OFF and the widget's own close button — with the quick action and the Settings
   switch agreeing every time and the setting persisted each time. Navigation remains
   at seven pages with no widget destination.
+- Caption geometry re-measured live at 150% DPI in both languages across normal,
+  wider, narrower, maximized and restored, with the three native controls at 207
+  physical px wide: the title's right edge to caption-group gap is **+35** in
+  Persian in every state and **+227** / **+527** / **+44** / **+1745** in English
+  (normal / wider / 640 px / maximized), against **-183** and **-133** before the
+  fix. The quick action held 29 physical px relLeft in every one of those states.
 
 **Human verification is still pending.** No installer or ZIP has been produced for
 this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must

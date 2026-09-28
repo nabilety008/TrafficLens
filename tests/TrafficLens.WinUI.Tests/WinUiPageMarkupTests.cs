@@ -419,6 +419,7 @@ public class WinUiPageMarkupTests
             Path.Combine("Services", "WidgetEnabledState.cs"),
             Path.Combine("Services", "WidgetToggleSync.cs"),
             Path.Combine("Infrastructure", "TitleBarCaptionLayout.cs"),
+            Path.Combine("Infrastructure", "NativeCaptionButtons.cs"),
             "MainWindow.xaml.cs"
         };
 
@@ -443,6 +444,23 @@ public class WinUiPageMarkupTests
         Assert.Contains("ApplyCaptionSafeArea", code, StringComparison.Ordinal);
         Assert.Contains("AppWindow.TitleBar.LeftInset", code, StringComparison.Ordinal);
         Assert.Contains("AppWindow.TitleBar.RightInset", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarReasksTheCaptionAreaAfterTheFrameIsProduced()
+    {
+        var code = Source("MainWindow.xaml.cs");
+
+        // The caption zones are published a frame after a resize, so a call made from
+        // the window-changed notification can still see the previous frame's answer.
+        // The re-check waits for the next rendered frame, is removed again as it runs,
+        // is capped, and resets once it works, so a later resize can ask again instead
+        // of inheriting a spent count.
+        Assert.Contains("CompositionTarget.Rendering += ReapplyCaptionSafeAreaOnNextFrame", code, StringComparison.Ordinal);
+        Assert.Contains("CompositionTarget.Rendering -= ReapplyCaptionSafeAreaOnNextFrame", code, StringComparison.Ordinal);
+        Assert.Contains("_captionSafeAreaAttempts >= MaxCaptionSafeAreaAttempts", code, StringComparison.Ordinal);
+        Assert.Contains("_captionSafeAreaAttempts = 0;", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("while (", code, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -503,6 +521,82 @@ public class WinUiPageMarkupTests
         Assert.Contains("AppWindow.TitleBar.LeftInset", code, StringComparison.Ordinal);
         Assert.Contains("AppWindow.TitleBar.RightInset", code, StringComparison.Ordinal);
         Assert.DoesNotContain("LeftInset =", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarFallsBackToTheLiveControlsWhenTheShellReportsNoInset()
+    {
+        var code = Source("MainWindow.xaml.cs");
+
+        // A window can report both insets as zero and still draw Minimize, Maximize
+        // and Close, and it can also report only the resize frame, which reserves a
+        // strip far narrower than the controls. The controls are therefore measured on
+        // the window and the insets are used only where they already cover them.
+        Assert.Contains("NativeCaptionButtons.TryGetInsets", code, StringComparison.Ordinal);
+        Assert.Contains("TitleBarCaptionLayout.Resolve", code, StringComparison.Ordinal);
+        Assert.Contains("measuredLeftInsetPixels:", code, StringComparison.Ordinal);
+        Assert.Contains("measuredRightInsetPixels:", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarFallbackAppliesTheMeasuredReserveToThePhysicalSides()
+    {
+        var code = Source("MainWindow.xaml.cs");
+
+        // A measured reserve already names the physical edge the controls were found
+        // on, so it must not be routed through the layout-direction switch that maps
+        // flow-order shell insets. The controls sit on the physical right in both
+        // languages on this build, and a left-to-right title that only took the left
+        // margin would have the measured right reserve dropped and run underneath them.
+        Assert.Contains("usedMeasuredControls", code, StringComparison.Ordinal);
+        Assert.Contains("new Thickness(padding.Left, 0, padding.Right, 0)", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarFallbackReadsTheControlsFromTheWindowItself()
+    {
+        var code = Source(Path.Combine("Infrastructure", "NativeCaptionButtons.cs"));
+
+        // With no inset to go on, the region has to be measured, and it is measured
+        // from the window: the window manager's own caption hit testing, placed by
+        // DPI-aware system metrics. The insets it returns are physical sides, which
+        // is why the fallback uses the physical overload rather than the flow-order
+        // aware one that would swap them for a right-to-left window.
+        Assert.Contains("WmNcHitTest", code, StringComparison.Ordinal);
+        Assert.Contains("GetSystemMetricsForDpi", code, StringComparison.Ordinal);
+        Assert.Contains("HtMinButton", code, StringComparison.Ordinal);
+        Assert.Contains("HtMaxButton", code, StringComparison.Ordinal);
+        Assert.Contains("HtClose", code, StringComparison.Ordinal);
+        Assert.Contains("GetWindowRect", code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TitleBarFallbackCarriesNoPixelOrPerLanguageConstant()
+    {
+        var code = Source(Path.Combine("Infrastructure", "NativeCaptionButtons.cs"));
+
+        // The caption width comes from the window and from system metrics asked for at
+        // the window's own DPI. A named pixel width or height would be the fixed margin
+        // this fallback exists to avoid, and anything read from the language would put
+        // a per-language offset back into a title bar that must not have one.
+        Assert.DoesNotContain("fa-IR", code, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Persian", code, StringComparison.OrdinalIgnoreCase);
+
+        foreach (var line in code.Split('\n'))
+        {
+            if (!line.Contains("const", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var name = line.Split('=')[0];
+
+            Assert.False(
+                name.Contains("Width", StringComparison.Ordinal)
+                || name.Contains("Height", StringComparison.Ordinal)
+                || name.Contains("Pixel", StringComparison.Ordinal),
+                $"the fallback must not hardcode caption geometry, found: {line.Trim()}");
+        }
     }
 
     // ------------------------------------------------------------------- helpers

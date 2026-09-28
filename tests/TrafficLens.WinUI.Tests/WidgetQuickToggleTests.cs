@@ -323,8 +323,11 @@ public sealed class WidgetQuickToggleTests
 
         // The insets must still be resolved in flow order against the layout
         // direction; reading them as literal left/right is the bug that was fixed.
-        Assert.Contains("leadingInsetPixels: AppWindow.TitleBar.LeftInset", source, StringComparison.Ordinal);
-        Assert.Contains("isRightToLeft: RootGrid.FlowDirection == FlowDirection.RightToLeft", source, StringComparison.Ordinal);
+        // The measured fallback sits after that path and must not replace it.
+        Assert.Contains("AppWindow.TitleBar.LeftInset", source, StringComparison.Ordinal);
+        Assert.Contains("AppWindow.TitleBar.RightInset", source, StringComparison.Ordinal);
+        Assert.Contains("RootGrid.FlowDirection == FlowDirection.RightToLeft", source, StringComparison.Ordinal);
+        Assert.Contains("isRightToLeft", source, StringComparison.Ordinal);
     }
 
     [Fact]

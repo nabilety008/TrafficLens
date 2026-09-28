@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Windowing;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
@@ -14,6 +15,9 @@ namespace TrafficLens.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    private const int MaxCaptionSafeAreaAttempts = 3;
+
+    private int _captionSafeAreaAttempts;
     private readonly ILocalizationService _localization;
     private readonly ISettingsService _settings;
     private readonly ISystemTrayService _trayService;
@@ -117,9 +121,10 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// Reserves the caption-button area for the title on the edge the shell actually
-    /// put the buttons on. The insets come from the live window, so this is caption
-    /// geometry rather than a fixed margin, and it holds for both layout directions,
-    /// for any title length and in both the normal and the maximized state.
+    /// put the buttons on. The insets come from the live window, or from the window's
+    /// own controls when the shell reports none, so this is caption geometry rather
+    /// than a fixed margin, and it holds for both layout directions, for any title
+    /// length and in both the normal and the maximized state.
     /// </summary>
     /// <remarks>
     /// The reserve is applied to the title rather than as padding on the whole title
@@ -128,22 +133,79 @@ public sealed partial class MainWindow : Window
     /// </remarks>
     private void ApplyCaptionSafeArea()
     {
+        if (TryApplyCaptionSafeArea() || _captionSafeAreaAttempts >= MaxCaptionSafeAreaAttempts)
+        {
+            _captionSafeAreaAttempts = 0;
+            return;
+        }
+
+        _captionSafeAreaAttempts++;
+        CompositionTarget.Rendering += ReapplyCaptionSafeAreaOnNextFrame;
+    }
+
+    /// <summary>
+    /// Asks the caption area again once, on the next frame the compositor produces, and
+    /// stops listening. A queued dispatcher item would run inside the frame that is
+    /// already in flight and see the same stale zones; the next rendered frame is the
+    /// first point at which the compositor has published the new ones. The handler is
+    /// removed as it runs and the attempt count is capped, so this is a bounded wait for
+    /// a single frame and not a per-frame listener, a timer or a poller.
+    /// </summary>
+    private void ReapplyCaptionSafeAreaOnNextFrame(object? sender, object args)
+    {
+        CompositionTarget.Rendering -= ReapplyCaptionSafeAreaOnNextFrame;
+        ApplyCaptionSafeArea();
+    }
+
+    /// <summary>
+    /// Applies the reserve and reports whether the window's caption controls were
+    /// readable. The zones are published a frame after a resize, so a false result means
+    /// the answer is not available yet rather than that there are no controls, and the
+    /// caller asks again behind the frame that has to be produced first. The count is
+    /// capped and resets as soon as an attempt succeeds, so this is a bounded deferral
+    /// and not a loop, a timer or a poller.
+    /// </summary>
+    private bool TryApplyCaptionSafeArea()
+    {
         var hwnd = WindowNative.GetWindowHandle(this);
-        var scale = TitleBarCaptionLayout.ScaleFromDpi(GetDpiForWindow(hwnd));
+        var dpi = GetDpiForWindow(hwnd);
+        var scale = TitleBarCaptionLayout.ScaleFromDpi(dpi);
+        var isRightToLeft = RootGrid.FlowDirection == FlowDirection.RightToLeft;
+        var leadingInset = AppWindow.TitleBar.LeftInset;
+        var trailingInset = AppWindow.TitleBar.RightInset;
+
+        // A reported inset is not proof of a reserved caption area: the shell has been
+        // seen reporting none at all for a window that still draws the three controls,
+        // and reporting only the resize frame, which reserves a strip far narrower than
+        // the controls. The controls are therefore read back from the window itself, on
+        // whichever physical side they really are, and the insets are used only where
+        // they already cover them.
+        var controlsFound = NativeCaptionButtons.TryGetInsets(hwnd, dpi, out var leftInsetPixels, out var rightInsetPixels);
 
         // The insets arrive in flow order, so the layout direction decides which
         // physical side each one belongs to. Reading them as literal left/right
         // puts the safe area on the wrong edge in a right-to-left window.
-        var (left, right) = TitleBarCaptionLayout.ResolvePadding(
-            leadingInsetPixels: AppWindow.TitleBar.LeftInset,
-            trailingInsetPixels: AppWindow.TitleBar.RightInset,
+        var (padding, usedMeasuredControls) = TitleBarCaptionLayout.Resolve(
+            leadingInsetPixels: leadingInset,
+            trailingInsetPixels: trailingInset,
+            measuredLeftInsetPixels: controlsFound ? leftInsetPixels : null,
+            measuredRightInsetPixels: controlsFound ? rightInsetPixels : null,
             dpiScale: scale,
-            isRightToLeft: RootGrid.FlowDirection == FlowDirection.RightToLeft);
+            isRightToLeft: isRightToLeft);
 
         AppTitleBar.Padding = new Thickness(0);
-        TitleText.Margin = RootGrid.FlowDirection == FlowDirection.RightToLeft
-            ? new Thickness(0, 0, right, 0)
-            : new Thickness(left, 0, 0, 0);
+
+        // A measured reserve already names the physical edge the controls were found
+        // on, so it is applied where it was measured and the title stays clear of them
+        // in either language. Shell insets are in flow order instead, and still need
+        // the layout direction to be mapped onto the physical edges.
+        TitleText.Margin = usedMeasuredControls
+            ? new Thickness(padding.Left, 0, padding.Right, 0)
+            : isRightToLeft
+                ? new Thickness(0, 0, padding.Right, 0)
+                : new Thickness(padding.Left, 0, 0, 0);
+
+        return controlsFound;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]

@@ -250,12 +250,27 @@ Diagnostics block, suite at 410 tests).
   - **Status**: automated checks pass, human verification pending. No artifact
     produced; the v0.1.4 artifacts from `99397a4` remain superseded. Not merged,
     tagged, pushed or published.
-  - **Known, not fixed here**: the Persian title still runs under the caption
-    buttons on this machine because `AppWindow.TitleBar.LeftInset` and `RightInset`
-    both report 0 here, leaving only the 16-DIP base reserve. This is the pre-existing
-    zero-inset case that the separate DPI-aware fallback task covers; that fallback
-    is **not** present at this HEAD and was deliberately not started, so this entry
-    does not claim it fixed.
+  - **Zero/insufficient caption inset — fixed after that entry was written.** The
+    Persian title no longer runs under the caption buttons. `AppWindow.TitleBar` is
+    not reliably zero here: it also reports a non-zero value that reserves only the
+    resize frame, which is far narrower than the controls, so a non-zero inset was
+    never proof of a reserved caption area. `NativeCaptionButtons` now reads the real
+    region off the live window with a bounded `WM_NCHITTEST` probe, and
+    `TitleBarCaptionLayout.Resolve` keeps the shell insets only where they already
+    cover the measured controls. `DWMWA_CAPTION_BUTTON_BOUNDS` was tried and
+    rejected: it returns `S_OK` with a zero-width rectangle in both the restored and
+    the maximized state here. The probe returns 218 physical px at 150% DPI, equal in
+    the restored and the maximized state, and nothing about that number is
+    hardcoded. Instrumentation showed the compositor publishes the zones one frame
+    after a resize, so the measurement is retaken once on the next rendered frame
+    through a self-removing `CompositionTarget.Rendering` handler, capped at 3
+    attempts, with no timer, poller, worker or loop. Runtime, 150% DPI, normal /
+    wider / narrower / maximized / restored: gap **+35 (fa-IR)** and **+227** /
+    **+44 (en-US at 640 px)**, against **-183 (fa-IR)** and **-133 (en-US at
+    640 px)** before. The shell quick action still holds 29 physical px relLeft in
+    every state. Suite **731/731 PASS**, Release x64 build **0 warnings / 0 errors**,
+    app left on `fa-IR` Dashboard, normal 1000x700, PID 5772. Human verification
+    still pending; no human PASS is claimed.
 
 - TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
   - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.
