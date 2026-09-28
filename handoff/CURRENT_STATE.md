@@ -1,0 +1,128 @@
+# CURRENT_STATE — TrafficLens v0.1.4
+
+Recorded from actual repository and artifact state at local closeout.
+
+**Version:** `0.1.4`
+**Status:** **FINAL LOCAL RELEASE**
+**Human UI:** **PASS**
+**Tests:** **731/731 PASS** (App 270 / Network 212 / Infrastructure 84 / WinUI 165)
+**Release build:** **0 warnings / 0 errors**
+**Portable smoke:** **PASS**
+**Installer:** generated and statically validated
+**Installer install / upgrade / uninstall:** **NOT TESTED**
+**Signing:** **UNSIGNED / DEFERRED**
+**GitHub:** **DEFERRED / NOT CONFIGURED** (no git remote exists)
+**GitHub updater:** **DEFERRED UNTIL GITHUB PUBLICATION**
+
+## Git state
+
+| | |
+|---|---|
+| Branch | `feature/winui3-migration` |
+| HEAD at closeout | `67c334e06aa0d567f50a75992bb042feec292a41` |
+| HEAD subject | `docs(release): finalize TrafficLens v0.1.4 release metadata` |
+| Final application source | `fd7c1762361d93c8dff5adb44d091c9dd07c3ec9` |
+| Working tree | clean |
+| Remotes | none |
+| Existing tags | `v0.1.0`, `v0.1.1`, `v0.1.2` |
+| `v0.1.4` tag | **not created** (deferred) |
+| `master` | `afb1f6be87da9b4d999f65685d267e41b83a70d6` ("release: TrafficLens 0.1.2") |
+
+The `handoff/` folder is added by a **documentation-only** commit on top of
+`67c334e`. It changes no application code, no tests, no packaging, and no
+artifacts. The released application source remains `fd7c176`.
+
+### Merge status (not performed)
+
+`master` is a direct ancestor of the release branch, so the pending release work
+merges as a **fast-forward** with no conflicts (58 commits ahead, 0 behind;
+`git merge-tree` exits 0). No merge, no tag, no push was performed — all
+intentionally deferred.
+
+## Final artifacts
+
+Both files exist under `artifacts/`, which is gitignored (`.gitignore:10`) and is
+therefore **not** preserved by git. Copy them somewhere durable before this
+directory is cleaned.
+
+### Installer
+
+```
+artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe
+artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe.sha256
+```
+
+- Size: **89,953,854 bytes** (85.79 MB)
+- SHA-256: `A982E268E13AB03DD36BBEA335947CC886FF50170E255391D1D935F00E52D70E`
+- Sidecar hash matches the recomputed file hash
+- `Get-AuthenticodeSignature` → **`NotSigned`**
+- AppId `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}`, entry point `TrafficLens.WinUI.exe`
+
+### Portable
+
+```
+artifacts\portable\TrafficLens-Portable-0.1.4-win-x64.zip
+artifacts\portable\TrafficLens-Portable-0.1.4-win-x64.zip.sha256
+```
+
+- Size: **129,618,364 bytes** (123.61 MB)
+- SHA-256: `03A41E32F5A76837C8E58A1AC6D1EC557E4471A9D0F979669C511AC2BFA61D24`
+- Sidecar hash matches the recomputed file hash
+- 815 entries, all forward-slash entry names
+
+### Publish payload
+
+```
+artifacts\publish\win-x64\
+```
+
+- 815 files
+- `TrafficLens.WinUI.exe` 297,984 bytes, `TrafficLens.WinUI.dll` 499,200 bytes
+- `TrafficLens.WinUI.pri` 2,231,888 bytes, header `mrm_pri2`
+  (`6d 72 6d 5f 70 72 69 32`), SHA-256
+  `5F286940DDC6AE04C8904DB78597A0664164B344CB8AF9308728EBCDC95756C6`
+- 0 PDBs, 0 test assemblies, no `.cs`/`.xaml` sources, no `obj`/`bin` leftovers
+- No superseded WPF `TrafficLens.exe` payload
+- `fa-IR\TrafficLens.WinUI.resources.dll` present; English is the embedded
+  neutral/default culture
+- Branding assets byte-identical to `assets\branding\`
+
+## Version metadata
+
+| Field | Value |
+|---|---|
+| `Version` (Directory.Build.props) | `0.1.4` |
+| `InformationalVersion` / `ProductVersion` | `0.1.4` |
+| `AssemblyVersion` / `FileVersion` | `0.1.4.0` |
+| About page | reads the version from assembly metadata (no hard-coded string) |
+
+## Verification performed at closeout
+
+- Full solution suite: 731/731 pass, Release x64, 0 warnings / 0 errors
+- Artifact existence and SHA-256 recomputation — both match sidecars
+- PRI size, `mrm_pri2` header, and hash verified
+- Portable ZIP structure: 815 entries, forward-slash names, no forbidden content
+- Installer configuration verified statically in `packaging\TrafficLens.iss`
+- **Runtime smoke test against the extracted final portable ZIP** (not a
+  `bin\Release` build), `fa-IR`, one launch:
+  - window opened, `WinUI MainWindow activated` — proving the PRI loaded and
+    `InitializeComponent()` succeeded
+  - culture `fa-IR`, NavigationView rendered all 7 items
+  - shell widget quick action held 29 physical px relLeft at 150% DPI
+  - title-to-caption-button gap **+35 px** (clear of the native controls)
+  - Floating Widget opened 510x210 at its persisted position, values verifiably
+    live (11.14 KB/s, then 2.82 KB/s ten seconds later), then disabled cleanly
+  - 3 pages navigated, process alive at the end, `settings.json` unchanged
+  - application log: 0 Error; only the documented non-elevated ETW warning
+- Human visual verification of the widget title bar, window/widget icon state and
+  Persian RTL layout: **PASS** (2026-09-28)
+
+## What was deliberately NOT done
+
+- No GitHub repository, remote, push, GitHub Release, or publication
+- No code signing, no certificate, no Windows security change
+- No merge to `master`, no `v0.1.4` tag
+- No updater implementation
+- No rebuild or modification of the artifacts above
+
+See `handoff/NEXT_TASKS.md` for what is queued and in what order.
