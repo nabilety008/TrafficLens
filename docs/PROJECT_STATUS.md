@@ -1,17 +1,21 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-27
+Updated: 2026-09-28
 
 ## Current Milestone
 
-**v0.1.4 final human UI polish** on `feature/winui3-migration`, from the approved
-baseline `99397a4`. Six defects found in human review were fixed, scoped strictly
+**v0.1.4 final release** on `feature/winui3-migration`, at `fd7c176`. Built on the
+approved baseline `99397a4` with the six human-review defects fixed (scoped strictly
 to those items — no backend, collector, monitoring or packaging changes, and no new
-timer, poller or background worker.
+timer, poller or background worker), then the two follow-ups the fixes themselves
+exposed: the duplicate Floating Widget control was removed from Settings, and the
+caption-button region is now read back off the live window with a bounded
+`WM_NCHITTEST` probe because the shell's `LeftInset`/`RightInset` proved unreliable.
+Human verification has **passed**; the UI is now locked.
 
-- **Focused tests: 100 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
-- **Full solution suite: 666 passed, 0 failed** (270 App / 212 Network /
-  84 Infrastructure / 100 WinUI).
+- **Focused tests: 165 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
+- **Full solution suite: 731 passed, 0 failed** (270 App / 212 Network /
+  84 Infrastructure / 165 WinUI).
 - **Release x64 build: 0 warnings, 0 errors.**
 - **Minimum publish check:** 815 files, no PDBs, no test assemblies,
   `TrafficLens.WinUI.pri` present and a valid `mrm_` container, canonical icon
@@ -42,13 +46,42 @@ timer, poller or background worker.
   the layout direction and returns physical left/right padding, and the call site
   passes `RootGrid.FlowDirection == FlowDirection.RightToLeft`. The unit test that
   had encoded the wrong assumption was replaced by the measured case.
-- **Human verification of all six items: PENDING.** Automated checks are not a
-  visual PASS; title-bar spacing in Persian, card sizing, collapsed navigation and
-  widget dragging all still need a human look.
-- **No installer or ZIP has been produced for this change.** The v0.1.4 artifacts
-  generated from `99397a4` are **superseded and are not final**; they must be
-  regenerated only after human verification passes. No merge, tag, push or publish
-  was performed.
+- **Human verification: PASS** (2026-09-28). A person inspected the widget title bar,
+  the final window/widget icon state and the Persian RTL layout on this build and
+  approved it. Any later change must be limited to a proven release, version or
+  packaging defect.
+- **Final artifacts produced from `fd7c176`** by `scripts\build-release.ps1`
+  (WinUI project, `Platform=x64`, self-contained Windows App SDK 2.5.1, loose layout,
+  `PublishSingleFile=false`), superseding the `99397a4` pair:
+  - `artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe` — 89,953,854 bytes,
+    SHA-256 `A982E268E13AB03DD36BBEA335947CC886FF50170E255391D1D935F00E52D70E`.
+  - `artifacts\portable\TrafficLens-Portable-0.1.4-win-x64.zip` — 129,618,364 bytes,
+    815 entries, SHA-256
+    `03A41E32F5A76837C8E58A1AC6D1EC557E4471A9D0F979669C511AC2BFA61D24`.
+  - Both hashes recomputed from the final files and matching their `.sha256` sidecars
+    exactly. `TrafficLens.WinUI.pri` 2,231,888 bytes, `mrm_pri2`, SHA-256
+    `5F286940DDC6AE04C8904DB78597A0664164B344CB8AF9308728EBCDC95756C6`.
+  - 815 files, all ZIP entries forward-slash; no PDBs, test assemblies, `.cs`/`.xaml`
+    sources, `obj`/`bin` leftovers or superseded WPF `TrafficLens.exe` payload; the
+    `fa-IR` satellite and both branding assets byte-identical to their sources.
+  - Installer AppId `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}` and entry point
+    `TrafficLens.WinUI.exe` unchanged; version metadata `ProductVersion 0.1.4`,
+    `FileVersion 0.1.4.0`, `AssemblyVersion 0.1.4.0`.
+- **Runtime verified against the extracted final portable ZIP** (not `bin\Release`),
+  one launch, `fa-IR`: window appeared, `MainWindow activated`, culture `fa-IR`,
+  seven nav items, shell quick action at 29 physical px relLeft at 150% DPI,
+  title-to-caption gap **+35** px, Floating Widget opened 510x210 with live values
+  and disabled cleanly, process alive at the end, `settings.json` unchanged. Log: 0
+  Error, only the documented non-elevated ETW per-process warning.
+- **Installer runtime test not performed:** an earlier installation occupies this
+  release's AppId uninstall registration at `%LOCALAPPDATA%\Programs\TrafficLens`, so
+  a silent install would overwrite it rather than test in isolation. Verified
+  statically and by successful compilation instead.
+- **Unsigned:** no code-signing certificate is available, so the installer and
+  `TrafficLens.WinUI.exe` both report `NotSigned` and the published checksums
+  describe the unsigned build. This is the only remaining reason public distribution
+  is withheld. No merge, tag, push or publish was performed, and no git remote is
+  configured.
 
 **Prior: v0.1.4 WinUI 3 release candidate** on `feature/winui3-migration` (WPF
 rollback `f9017f0`). WUI-001 through WUI-008 implemented; **WUI-009 extended
@@ -247,8 +280,10 @@ Diagnostics block, suite at 410 tests).
     on Settings, 29 px relLeft held through resize/maximize/restore/pane collapse,
     and all five live state paths (quick ON, quick OFF, Settings ON, Settings OFF,
     widget X) agreed in both directions and persisted each time.
-  - **Status**: automated checks pass, human verification pending. No artifact
-    produced; the v0.1.4 artifacts from `99397a4` remain superseded. Not merged,
+  - **Status at that stage**: automated checks passed, human verification was still
+    pending and no artifact had been produced. **Superseded** — human verification
+    has since passed and the final artifacts are recorded in *Current Milestone*
+    above. The v0.1.4 artifacts from `99397a4` remain superseded. Nothing was merged,
     tagged, pushed or published.
   - **Zero/insufficient caption inset — fixed after that entry was written.** The
     Persian title no longer runs under the caption buttons. `AppWindow.TitleBar` is
@@ -269,8 +304,8 @@ Diagnostics block, suite at 410 tests).
     **+44 (en-US at 640 px)**, against **-183 (fa-IR)** and **-133 (en-US at
     640 px)** before. The shell quick action still holds 29 physical px relLeft in
     every state. Suite **731/731 PASS**, Release x64 build **0 warnings / 0 errors**,
-    app left on `fa-IR` Dashboard, normal 1000x700, PID 5772. Human verification
-    still pending; no human PASS is claimed.
+    app left on `fa-IR` Dashboard, normal 1000x700, PID 5772. Human verification was
+    still pending at that stage; it has since passed — see *Current Milestone* above.
 
 - TL-025 (Release Candidate 0.1.2, on `release/0.1.2`):
   - **Version bump**: 0.1.1 → 0.1.2 in `Directory.Build.props` (centralized source), `TrafficLens.iss` defaults, lifecycle validation assertions.

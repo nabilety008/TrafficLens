@@ -2,7 +2,7 @@
   
 All notable changes are documented here in reverse chronological order.
 
-## [0.1.4] — One widget enable control: shell quick action anchored, duplicate Settings control removed (automated checks pass, human verification pending)
+## [0.1.4] — Final release: one widget enable control, caption-safe title bar, shell quick action anchored (human verification passed; final artifacts built from `fd7c176`)
 
 A human screenshot review of the Persian Settings page found that the Floating
 Widget could be enabled from two places on the same page. Scoped to that finding and
@@ -91,11 +91,61 @@ packaging changes, and no new timer, poller or background worker.
   (normal / wider / 640 px / maximized), against **-183** and **-133** before the
   fix. The quick action held 29 physical px relLeft in every one of those states.
 
-**Human verification is still pending.** No installer or ZIP has been produced for
-this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
-not be treated as final.
+### Release status
 
-## [0.1.4] — Final human UI polish (automated checks pass, human verification pending)
+**Human verification passed.** This section is the release entry for v0.1.4; the
+three `0.1.4` sections below it record earlier drafts of the same version and are
+superseded. The v0.1.4 artifacts generated from `99397a4` are superseded too and must
+not be treated as final — the final pair is the one below, built from `fd7c176`.
+
+Final source commit: `fd7c1762361d93c8dff5adb44d091c9dd07c3ec9`.
+
+- `artifacts/installer/TrafficLens-Setup-0.1.4-win-x64.exe` — 89,953,854 bytes,
+  SHA-256 `A982E268E13AB03DD36BBEA335947CC886FF50170E255391D1D935F00E52D70E`.
+- `artifacts/portable/TrafficLens-Portable-0.1.4-win-x64.zip` — 129,618,364 bytes,
+  SHA-256 `03A41E32F5A76837C8E58A1AC6D1EC557E4471A9D0F979669C511AC2BFA61D24`.
+- Both hashes were recomputed from the final files and match their `.sha256`
+  sidecars exactly.
+- `TrafficLens.WinUI.pri` 2,231,888 bytes, `mrm_pri2`, SHA-256
+  `5F286940DDC6AE04C8904DB78597A0664164B344CB8AF9308728EBCDC95756C6`.
+- Publish and ZIP both contain 815 files: no PDBs, no test assemblies, no `.cs`/`.xaml`
+  sources, no `obj`/`bin` leftovers, and no superseded WPF `TrafficLens.exe` payload.
+  All 815 ZIP entries use forward slashes. The `fa-IR` satellite, the canonical icon
+  (`9F8DD468D671D648367E345109118EEF6C3B2E78A6F4B07054D292B12F8C60BE`) and the
+  `Assets\TrafficLens-256.png` logo are byte-identical to their repository sources.
+- Installer configuration unchanged: AppId
+  `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}`, entry point `TrafficLens.WinUI.exe`, and
+  `VersionInfoProductVersion`/`VersionInfoVersion` both `0.1.4`. The line that deletes
+  `{app}\TrafficLens.exe` is the intended upgrade-time removal of the superseded WPF
+  build, not a shipped payload.
+
+**Runtime smoke test, run against the extracted final portable ZIP** (not a
+`bin\Release` build), `fa-IR`, one launch: the window appeared, culture resolved to
+`fa-IR` (`PageTitleText` = `داشبورد`), the NavigationView rendered all seven items,
+and the shell quick action measured 29 physical px relLeft / 13 relTop at 150% DPI.
+The title-to-caption gap measured **+35** px, clear of the three native controls. The
+Floating Widget opened as a 510x210 window at the persisted (24, 281) and its values
+were live — total 11.14 KB/s on the first sample, 2.82 KB/s ten seconds later — then
+it disabled cleanly, its window closing and the toggle returning to `Off`. Three
+pages were navigated without failure and the process was still alive at the end. The
+run's own log block is clean: shell start, `MainWindow activated` (so the PRI loaded
+and `InitializeComponent` succeeded), all services started, SQLite schema v2 ready; the
+whole day logs at 95 Information / 5 Warning / 0 Error, the warnings being the
+documented non-elevated ETW per-process collector. `settings.json` was byte-identical
+to its pre-test backup afterwards.
+
+**Installer runtime test was not performed.** An earlier TrafficLens installation is
+present at `%LOCALAPPDATA%\Programs\TrafficLens` and already holds this release's
+AppId uninstall registration, so a silent install of the final installer would
+overwrite that directory and rewrite the same registration rather than test in
+isolation. The installer was verified statically and by compilation instead.
+
+**Unsigned.** Both the installer and the published `TrafficLens.WinUI.exe` report
+`NotSigned`; no code-signing certificate is available. The published checksums
+describe this unsigned build and must be recomputed after any signing. Not merged,
+tagged or published — no git remote is configured.
+
+## [0.1.4] — Final human UI polish (superseded draft; human verification since passed — see the topmost 0.1.4 section)
 
 A polish pass over the approved baseline `99397a4` addressing six defects found by
 human review. Scoped strictly to those six items: no backend, collector, monitoring
@@ -162,9 +212,9 @@ or packaging changes, and no new timer, poller or background worker.
   (`9F8DD468D671D648367E345109118EEF6C3B2E78A6F4B07054D292B12F8C60BE`),
   `fa-IR` satellite present.
 
-**Human verification is still pending.** No installer or ZIP has been produced for
-this change; the v0.1.4 artifacts generated from `99397a4` are superseded and must
-not be treated as final.
+**Superseded draft of v0.1.4.** Human verification has since passed and the final
+artifacts are recorded in the topmost `0.1.4` section. Nothing should be built from
+this intermediate state.
 
 ## [0.1.4] - Alert threshold editing and Floating Widget quick control
 
@@ -220,8 +270,9 @@ background worker.
 - Full solution suite: 710 passed, 0 failed.
 - Release x64 build: 0 warnings, 0 errors.
 
-**Human verification is still pending.** No installer or ZIP has been produced for
-this change and none should be until human verification passes.
+**Superseded draft of v0.1.4.** Human verification has since passed and the final
+artifacts are recorded in the topmost `0.1.4` section. Nothing should be built from
+this intermediate state.
 
 ## [0.1.4] — WinUI 3 Release Candidate
 

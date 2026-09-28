@@ -344,31 +344,67 @@ Get-Content artifacts\installer\TrafficLens-Setup-0.1.4-win-x64.exe.sha256
 
 ## v0.1.4 release artifacts (verified)
 
-> The first v0.1.4 RC below was **invalid** (missing PRI) and is kept only as
-> history. The authoritative RC is the second table.
+> Two earlier v0.1.4 RCs are listed first and are kept only as history: the first was
+> **invalid** (missing PRI, unlaunchable), the second predates human verification.
+> The authoritative final pair is the third table, built from `fd7c176` after the
+> human UI PASS.
 
 | Superseded artifact (broken) | Size | SHA-256 |
 |---|---|---|
 | `TrafficLens-Setup-0.1.4-win-x64.exe` | 85.50 MB | `3E9DEA0EB6594DE7055C6FAF73746467AA40D9256C672FF9685A77FD7269146A` |
 | `TrafficLens-Portable-0.1.4-win-x64.zip` | 123.09 MB | `660E1D4C9F502F179CB249E7A36AAF9F4A0943583E37C4A66E8A7973E96AF7FE` |
 
-| **Current artifact (valid)** | Size | SHA-256 |
+| Superseded artifact (pre-human-verification RC) | Size | SHA-256 |
 |---|---|---|
 | `artifacts/installer/TrafficLens-Setup-0.1.4-win-x64.exe` | 85.78 MB | `E03C4B00B7A724F702D294D38EC82F415622988FAFEBC5000C44C7DA08F7CBAF` |
 | `artifacts/portable/TrafficLens-Portable-0.1.4-win-x64.zip` | 123.61 MB | `0539049C57B4214632592382648524E8D7BA40E2F5571CFBE4A6210A6E1289F6` |
 
-- Installer: `ProductVersion 0.1.4`, `TrafficLens` / `TrafficLens Contributors`
-  / `TrafficLens Network Monitor Setup`, `NotSigned`.
-- ZIP: 815 entries, 0 PDB entries, no WPF `TrafficLens.exe`, forward-slash entry
-  names, and it **contains `TrafficLens.WinUI.pri`** plus the `fa-IR` satellite.
-  Verified by extracting to a temp directory: 815 files, `TrafficLens.WinUI.exe`
-  `ProductVersion 0.1.4` / `FileVersion 0.1.4.0`, Windows App SDK payload,
-  `fa-IR` satellite and branding assets present.
-- Publish tree: 815 files, `TrafficLens.WinUI.exe` 0.28 MB valid x64 PE,
-  Windows App SDK runtime present, no PDB/test assemblies.
-- Project PRI: 2,230,712 bytes, `mrm_pri2` container, SHA-256
-  `64DE369DAABE580E496ECAEFD118F60FD5922ADC164FE6BEFBBAEFE15AA7E886`.
-- Both hashes describe the **unsigned** build and must be recomputed for a
+| **Final artifact (authoritative, from `fd7c176`)** | Size | SHA-256 |
+|---|---|---|
+| `artifacts/installer/TrafficLens-Setup-0.1.4-win-x64.exe` | 89,953,854 bytes (85.79 MB) | `A982E268E13AB03DD36BBEA335947CC886FF50170E255391D1D935F00E52D70E` |
+| `artifacts/portable/TrafficLens-Portable-0.1.4-win-x64.zip` | 129,618,364 bytes (123.61 MB) | `03A41E32F5A76837C8E58A1AC6D1EC557E4471A9D0F979669C511AC2BFA61D24` |
+
+- Both final hashes were **recomputed from the final files** and match their
+  `.sha256` sidecars exactly. The sidecar files are generated last in the pipeline,
+  after the artifacts.
+- Installer: `ProductVersion 0.1.4`, `FileVersion 0.1.4`, `TrafficLens` /
+  `TrafficLens Contributors` / `TrafficLens Network Monitor Setup`, `NotSigned`.
+  AppId `{8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D}` and entry point
+  `TrafficLens.WinUI.exe` are unchanged in `packaging\TrafficLens.iss`; the
+  `[InstallDelete]` line that removes `{app}\TrafficLens.exe` is the intended
+  upgrade-time removal of the superseded WPF build, not a shipped payload.
+- ZIP: 815 entries, **all forward-slash**, 0 PDB entries, 0 test assemblies,
+  0 `.cs`/`.xaml` sources, 0 `obj`/`bin` leftovers, no WPF `TrafficLens.exe`, and it
+  **contains `TrafficLens.WinUI.pri`** plus the `fa-IR` satellite. Verified by
+  extracting to a temp directory: 815 files, `TrafficLens.WinUI.exe`
+  `ProductVersion 0.1.4` / `FileVersion 0.1.4.0`, `AssemblyVersion 0.1.4.0`,
+  Windows App SDK payload, `fa-IR` satellite and branding assets present.
+- Publish tree: 815 files, `TrafficLens.WinUI.exe` 297,984 bytes valid x64 PE,
+  `TrafficLens.WinUI.dll` 499,200 bytes, Windows App SDK runtime present
+  (`CoreMessagingXP.dll` and `Microsoft.WindowsAppRuntime.Bootstrap.dll` are the
+  current filenames; the older `CoreMessaging.dll` / `WinAppRuntimeBootstrap.dll`
+  names do not apply to this toolchain), no PDB/test assemblies.
+- Branding: `assets\branding\TrafficLens.ico`
+  (`9F8DD468D671D648367E345109118EEF6C3B2E78A6F4B07054D292B12F8C60BE`) and
+  `TrafficLens-256.png` (`41686F13…`) are byte-identical between the repository
+  sources and the packaged payload; the EXE embeds the icon resource.
+- Project PRI: 2,231,888 bytes, `mrm_pri2` container, SHA-256
+  `5F286940DDC6AE04C8904DB78597A0664164B344CB8AF9308728EBCDC95756C6`, present in
+  both the publish tree and the ZIP.
+- **Runtime smoke-tested against the extracted final portable ZIP** (not a
+  `bin\Release` build): window opened, `MainWindow activated`, culture `fa-IR`, seven
+  nav items, shell quick action at 29 physical px relLeft / 13 relTop at 150% DPI,
+  title-to-caption gap **+35** px, Floating Widget opened 510x210 with live values
+  and disabled cleanly, three pages navigated, process still alive at the end, and
+  `settings.json` byte-identical to its pre-test backup. The run's log block is clean
+  — 0 Error; the only warnings are the documented non-elevated ETW per-process
+  collector.
+- **Installer runtime test not performed:** an earlier TrafficLens installation
+  occupies this release's AppId uninstall registration at
+  `%LOCALAPPDATA%\Programs\TrafficLens`, so a silent install of the final installer
+  would overwrite that directory and rewrite the same registration rather than test
+  in isolation. Verified statically and by successful compilation instead.
+- Both final hashes describe the **unsigned** build and must be recomputed for a
   signed release.
 - The v0.1.3 artifacts were preserved unchanged next to these outputs
   (installer SHA-256 `55EBCCD8A30CE6BEED0BCF67A77DD77E517FB10D97F315B5A25F251ED2C3D252`).
@@ -417,7 +453,7 @@ that needs a signed build or a human eye is deliberately left unticked.
 
 - [x] Release configuration is `AnyCPU`-free; x64 is required end to end.
 - [x] `dotnet build` Release: 0 warnings, 0 errors.
-- [x] Full automated test suite: 571/571 pass.
+- [x] Full automated test suite: 731/731 pass (App 270 / Network 212 / Infrastructure 84 / WinUI 165).
 - [x] Publish is WinUI 3 self-contained `win-x64`, loose layout, no single-file, no PDBs.
 - [x] Publish output contains no PDBs, no test assemblies, no WPF executable.
 - [x] Entry point is `TrafficLens.WinUI.exe`.
@@ -438,35 +474,49 @@ that needs a signed build or a human eye is deliberately left unticked.
 
 ### Runtime — automated observations (v0.1.4)
 
-Performed with one launch (PID 12484) of the fixed publish output. Smart App
-Control did **not** block it; no Code Integrity event was written.
+Performed against the **extracted final portable ZIP** (not a `bin\Release` build),
+one launch, PID 11924. Smart App Control did **not** block it; no Code Integrity
+event was written.
 
-- [x] Published app starts, stays responsive, and opens a real window.
-- [x] `WinUI MainWindow activated` and culture `fa-IR` in the app log.
+- [x] App starts from the final portable payload, stays responsive, and opens a real window.
+- [x] `WinUI MainWindow activated` and culture `fa-IR` in the app log (`PageTitleText` = داشبورد).
 - [x] All 7 nav items present; داشبورد (Dashboard) selected.
-- [x] Live data flowing from the collectors (دانلود / آپلود / مجموع populated).
+- [x] Live data flowing from the collectors (دانلود / آپلود / مجموع populated, and
+      verifiably live: مجموع read 11.14 KB/s and 2.82 KB/s ten seconds apart).
 - [x] Network, connection and history services started; SQLite schema v2 ready.
-- [x] Floating Widget visible at 340x140 with `Always On Top` active.
-- [x] No new Code Integrity events during the launch.
+- [x] PRI loaded and `InitializeComponent` succeeded — proven by `MainWindow activated`
+      on a payload whose compiled XBF lives only in the PRI.
+- [x] Shell widget quick action present at 29 physical px relLeft / 13 relTop at 150% DPI.
+- [x] Title-to-caption gap +35 px in Persian (clear; the pre-fix build measured -183).
+- [x] Floating Widget opens (510x210) at the persisted position and disables cleanly
+      again: window closed and the toggle returned to `Off`.
+- [x] `settings.json` byte-identical to its pre-test backup afterwards.
+- [x] No new Code Integrity events during the launch; whole-day log 0 Error.
 - Note: the ETW process collector reports `permission denied` without elevation;
   it needs an Administrator process. This is expected and non-fatal.
 
-### Human visual verification (PENDING — a person must look at the screen)
+### Human visual verification (PASS — 2026-09-28)
 
-Machine-checkable state is green, but these require human eyes and are **not**
-claimed as passing. The app was left running for inspection.
+A person looked at the screen and approved the build. Machine checks are recorded
+above as corroboration, not as a substitute.
 
-- [ ] App window icon renders correctly.
-- [ ] Taskbar icon correct.
-- [ ] Alt+Tab entry shows the correct icon and name.
-- [ ] Thumbnail preview (DWM) correct.
-- [ ] Floating Widget appearance confirmed visually.
-- [ ] Persian (`fa-IR`) layout verified: no clipping, correct RTL flow, numerals.
-- [ ] Persian widget controls render correctly.
+- [x] App window icon renders correctly.
+- [x] Taskbar icon correct.
+- [x] Alt+Tab entry shows the correct icon and name.
+- [x] Thumbnail preview (DWM) correct.
+- [x] Floating Widget appearance confirmed visually.
+- [x] Persian (`fa-IR`) layout verified: no clipping, correct RTL flow, numerals.
+- [x] Persian widget controls render correctly.
+
+The UI is now **locked**; any later change must be limited to a proven release,
+version or packaging defect.
 
 ### Human / signed-build-gated
 
-- [ ] Installer launches and completes a clean install.
+- [ ] Installer launches and completes a clean install. **Not performed:** an earlier
+      installation occupies this release's AppId uninstall registration at
+      `%LOCALAPPDATA%\Programs\TrafficLens`, so a silent install would overwrite it
+      rather than test in isolation. Verified statically and by compilation instead.
 - [ ] Upgrade from the previous installed version preserves settings and history.
 - [ ] Uninstall removes program files and (per policy) retains user data.
 - [ ] Long-duration stability/soak run completed (WUI-009).
@@ -477,8 +527,9 @@ claimed as passing. The app was left running for inspection.
 
 - [ ] Certificate obtained and identity validation completed.
 - [ ] Signed release candidate built with `-Sign` and re-verified.
-- [ ] All human visual items above completed.
+- [x] All human visual items above completed.
 - [ ] Tag and publish approved by a human.
 
-Not approved for public release while the human visual and signing sections
-remain unticked.
+Not approved for public release: the build is **unsigned**, and that is now the only
+outstanding blocker. Human visual verification has passed. No merge, tag, push or
+publish has been performed, and no git remote is configured.
