@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
-using TrafficLens.Infrastructure.Services;
+using TrafficLens.WinUI.Infrastructure;
 using TrafficLens.WinUI.ViewModels;
 
 namespace TrafficLens.WinUI.Pages;
@@ -24,8 +24,7 @@ public sealed partial class ConnectionsPage : Page
             _localization,
             services.GetRequiredService<ISettingsService>(),
             services.GetRequiredService<Microsoft.UI.Dispatching.DispatcherQueue>(),
-            services.GetRequiredService<Infrastructure.ProcessIconCache>(),
-            services.GetRequiredService<DnsResolverService>());
+            services.GetRequiredService<ProcessIconCache>());
 
         Bindings.Update();
         ApplyFlowDirection();

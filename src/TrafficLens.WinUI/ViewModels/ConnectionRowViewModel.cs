@@ -18,7 +18,6 @@ public sealed class ConnectionRowViewModel : INotifyPropertyChanged
     private string _stateText = string.Empty;
     private string _localText = string.Empty;
     private string _remoteText = string.Empty;
-    private string _resolvedHostname = string.Empty;
     private ImageSource? _icon;
     private bool _initialized;
     private string? _processName;
@@ -81,12 +80,6 @@ public sealed class ConnectionRowViewModel : INotifyPropertyChanged
         private set => SetProperty(ref _remoteText, value);
     }
 
-    public string ResolvedHostname
-    {
-        get => _resolvedHostname;
-        private set => SetProperty(ref _resolvedHostname, value);
-    }
-
     public ImageSource? Icon
     {
         get => _icon;
@@ -108,8 +101,6 @@ public sealed class ConnectionRowViewModel : INotifyPropertyChanged
     }
 
     public void CopyProcessName() => CopyText(Name);
-
-    internal void SetResolvedHostname(string hostname) => ResolvedHostname = hostname;
 
     public void Update(
         ConnectionInfo connection,

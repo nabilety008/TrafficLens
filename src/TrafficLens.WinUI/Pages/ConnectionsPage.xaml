@@ -87,8 +87,7 @@
                         MinWidth="130"
                         DisplayMemberPath="Label"
                         ItemsSource="{x:Bind ViewModel.FilterOptions, Mode=OneWay}"
-                        SelectedValue="{x:Bind ViewModel.Filter, Mode=TwoWay}"
-                        SelectedValuePath="Key" />
+                        SelectedIndex="{x:Bind ViewModel.FilterIndex, Mode=TwoWay}" />
 
                     <TextBlock
                         x:Name="AddressFamilyLabel"
@@ -105,8 +104,7 @@
                         MinWidth="100"
                         DisplayMemberPath="Label"
                         ItemsSource="{x:Bind ViewModel.FamilyFilterOptions, Mode=OneWay}"
-                        SelectedValue="{x:Bind ViewModel.FamilyFilter, Mode=TwoWay}"
-                        SelectedValuePath="Key" />
+                        SelectedIndex="{x:Bind ViewModel.FamilyFilterIndex, Mode=TwoWay}" />
 
                     <TextBlock
                         x:Name="SortByLabel"
@@ -124,8 +122,7 @@
                         HorizontalAlignment="Left"
                         DisplayMemberPath="Label"
                         ItemsSource="{x:Bind ViewModel.SortOptions, Mode=OneWay}"
-                        SelectedValue="{x:Bind ViewModel.SortKey, Mode=TwoWay}"
-                        SelectedValuePath="Key" />
+                        SelectedIndex="{x:Bind ViewModel.SortIndex, Mode=TwoWay}" />
 
                     <CheckBox
                         x:Name="HideListenersCheckBox"
@@ -136,15 +133,6 @@
                         AutomationProperties.Name="ConnectionsHideListeners"
                         Content="{x:Bind ViewModel.HideListenersLabel, Mode=OneWay}"
                         IsChecked="{x:Bind ViewModel.HideListeners, Mode=TwoWay}" />
-                    <CheckBox
-                        x:Name="EnableReverseDnsCheckBox"
-                        Grid.Row="1"
-                        Grid.Column="3"
-                        Grid.ColumnSpan="3"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="ConnectionsEnableReverseDns"
-                        Content="{x:Bind ViewModel.EnableReverseDnsLabel, Mode=OneWay}"
-                        IsChecked="{x:Bind ViewModel.EnableReverseDns, Mode=TwoWay}" />
                 </Grid>
 
                 <TextBox
@@ -331,13 +319,6 @@
                                             FontSize="12"
                                             FlowDirection="LeftToRight"
                                             Text="{x:Bind RemoteText, Mode=OneWay}"
-                                            TextTrimming="CharacterEllipsis" />
-                                        <TextBlock
-                                            MinHeight="0"
-                                            FontSize="10"
-                                            FlowDirection="LeftToRight"
-                                            Opacity="0.55"
-                                            Text="{x:Bind ResolvedHostname, Mode=OneWay}"
                                             TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                 </Grid>

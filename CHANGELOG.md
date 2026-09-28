@@ -2,6 +2,62 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — Post-v0.1.4 polish batch 1: Connections defaults, de-duplicated Show filter, reverse DNS removed, CSV export made diagnosable (human verification pending)
+
+Post-release polish scoped to four user-visible items on the Connections page and
+the History CSV export. No collector, polling, alert, packaging or artifact
+changes, and no new timer, poller or background worker.
+
+### Fixed
+
+- **Connections filter/sort ComboBoxes could show a blank selection after a
+  runtime culture switch.** The option collections are cleared and repopulated on
+  every language change, which drops a `SelectedValue` ComboBox selection to null,
+  and the re-announced enum value cannot re-resolve while the list it refers into
+  is being replaced. The three ComboBoxes now bind `SelectedIndex` over
+  fixed-order key lists owned by the view model (`FilterIndex`,
+  `FamilyFilterIndex`, `SortIndex`), which survives the rebuild because the list
+  order is fixed; defaults remain Show = All, Address Family = All, Sort =
+  Default, and the enum state stays the single source of truth in both
+  directions. No filter or sort architecture changed.
+
+- **"Hide listeners" appeared twice on the Connections page** — once as an entry
+  in the Show ComboBox and once as the dedicated persisted checkbox. The Show
+  entry is removed (the list is exactly All / Established / Listening / TCP / UDP
+  now); the dedicated checkbox is kept with its behavior, `ConnectionsHideListeners`
+  persistence and filtering. The Core `ConnectionFilter.HideListeners` member and
+  its filter logic are unchanged and still serve the checkbox path.
+
+- **The optional reverse-DNS feature is removed from the shipped WinUI
+  Connections page.** The checkbox, the resolved-hostname secondary line in each
+  row, the `EnableReverseDns` state and label, the `ConnectionsEnableReverseDns`
+  settings handling, the DNS refresh/clear path, the `DnsResolverService`
+  constructor dependency and its WinUI DI registration are all gone from the
+  shipped surface; a stale value in settings.json is simply ignored. Legacy WPF
+  code and `DnsResolverService` remain (still compile-referenced, never
+  published) and their localization keys stay in both resx files.
+
+- **History CSV export failures were undiagnosable.** The whole picker/write
+  sequence was wrapped in a bare catch that discarded the exception, so the
+  generic "check file permissions" banner was the only signal. The write step is
+  now separately instrumented and the outer catch logs exception type and HRESULT
+  through the existing structured file logger (no sensitive data) before showing
+  the localized failure state; cancel is confirmed non-error. Runtime evidence
+  collected during verification: the file picker does open and a completed export
+  writes a correct UTF-8 file with invariant timestamps and raw byte values; a
+  successful export produces no Error entries.
+
+### Verification
+
+- Full solution suite **745 passed, 0 failed** (270 App / 212 Network /
+  84 Infrastructure / 179 WinUI); Release x64 build **0 warnings, 0 errors**.
+- Runtime UIA-driven verification on the real Release build: fa-IR → en-US →
+  fa-IR round trip keeps all three ComboBox selections valid and localized; Show
+  list = 5 items; dedicated checkbox present; reverse-DNS control absent. CSV:
+  Today and Last-7-days exports to Documents verified on disk (correct header,
+  raw byte values, ASCII digits — no fa-IR locale corruption); picker cancel
+  leaves no error status; whole-run log 0 Error.
+
 ## [0.1.4] — Final release: one widget enable control, caption-safe title bar, shell quick action anchored (human verification passed; final artifacts built from `fd7c176`)
 
 A human screenshot review of the Persian Settings page found that the Floating

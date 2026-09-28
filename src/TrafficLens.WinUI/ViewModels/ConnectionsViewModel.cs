@@ -1,14 +1,12 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
-using System.Net;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Dispatching;
 using TrafficLens.Core.Abstractions;
 using TrafficLens.Core.Localization;
 using TrafficLens.Core.Models;
 using TrafficLens.Core.Selection;
-using TrafficLens.Infrastructure.Services;
 using TrafficLens.WinUI.Infrastructure;
 
 namespace TrafficLens.WinUI.ViewModels;
@@ -20,7 +18,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
     private readonly ISettingsService _settings;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ProcessIconCache _iconCache;
-    private readonly DnsResolverService _dnsResolver;
     private readonly Dictionary<ConnectionKey, ConnectionRowViewModel> _rows = new();
     private readonly List<ConnectionKey> _displayedKeys = new();
 
@@ -34,9 +31,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
     private bool _hideListeners;
 
     public const string HideListenersKey = "ConnectionsHideListeners";
-    public const string EnableReverseDnsKey = "ConnectionsEnableReverseDns";
-
-    private bool _enableReverseDns;
 
     private string _connectionsLabel = string.Empty;
     private string _protocolLabel = string.Empty;
@@ -59,7 +53,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
     private string _copyRemoteEndpointLabel = string.Empty;
     private string _copyRemoteIpLabel = string.Empty;
     private string _copyProcessNameLabel = string.Empty;
-    private string _enableReverseDnsLabel = string.Empty;
     private string _unknownProcessText = string.Empty;
     private string _tcpText = string.Empty;
     private string _udpText = string.Empty;
@@ -76,19 +69,16 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         ILocalizationService localization,
         ISettingsService settings,
         DispatcherQueue dispatcherQueue,
-        ProcessIconCache iconCache,
-        DnsResolverService dnsResolver)
+        ProcessIconCache iconCache)
     {
         _provider = provider;
         _localization = localization;
         _settings = settings;
         _dispatcherQueue = dispatcherQueue;
         _iconCache = iconCache;
-        _dnsResolver = dnsResolver;
         _culture = localization.CurrentCulture;
 
         _hideListeners = GetBool(_settings, HideListenersKey, defaultValue: false);
-        _enableReverseDns = GetBool(_settings, EnableReverseDnsKey, defaultValue: false);
 
         _provider.ConnectionsChanged += OnConnectionsChanged;
         _localization.CultureChanged += OnCultureChanged;
@@ -145,9 +135,22 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         {
             if (SetProperty(ref _filter, value))
             {
+                OnPropertyChanged(nameof(FilterIndex));
                 RebuildDisplayList(force: true);
             }
         }
+    }
+
+    /// <summary>
+    /// ComboBox selection as a position in the fixed Show list. SelectedValue
+    /// with a rebuilt item collection drops the visual selection, because the
+    /// re-announced enum value cannot resolve while the list is being replaced;
+    /// an index survives the same rebuild because the list order is fixed.
+    /// </summary>
+    public int FilterIndex
+    {
+        get => IndexOf(FilterOptionKeys, _filter);
+        set => Filter = FilterOptionKeys[value];
     }
 
     public ConnectionFilter FamilyFilter
@@ -157,9 +160,17 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         {
             if (SetProperty(ref _familyFilter, value))
             {
+                OnPropertyChanged(nameof(FamilyFilterIndex));
                 RebuildDisplayList(force: true);
             }
         }
+    }
+
+    /// <summary>ComboBox selection as a position in the fixed Address Family list.</summary>
+    public int FamilyFilterIndex
+    {
+        get => IndexOf(FamilyOptionKeys, _familyFilter);
+        set => FamilyFilter = FamilyOptionKeys[value];
     }
 
     public ConnectionSortKey SortKey
@@ -169,10 +180,58 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         {
             if (SetProperty(ref _sortKey, value))
             {
+                OnPropertyChanged(nameof(SortIndex));
                 RebuildDisplayList(force: true);
             }
         }
     }
+
+    /// <summary>ComboBox selection as a position in the fixed Sort by list.</summary>
+    public int SortIndex
+    {
+        get => IndexOf(SortOptionKeys, _sortKey);
+        set => SortKey = SortOptionKeys[value];
+    }
+
+    private static int IndexOf<T>(IReadOnlyList<T> list, T value)
+    {
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (EqualityComparer<T>.Default.Equals(list[i], value))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private static readonly IReadOnlyList<ConnectionFilter> FilterOptionKeys = new[]
+    {
+        ConnectionFilter.All,
+        ConnectionFilter.Established,
+        ConnectionFilter.Listening,
+        ConnectionFilter.Tcp,
+        ConnectionFilter.Udp
+    };
+
+    private static readonly IReadOnlyList<ConnectionFilter> FamilyOptionKeys = new[]
+    {
+        ConnectionFilter.All,
+        ConnectionFilter.Ipv4,
+        ConnectionFilter.Ipv6
+    };
+
+    private static readonly IReadOnlyList<ConnectionSortKey> SortOptionKeys = new[]
+    {
+        ConnectionSortKey.Default,
+        ConnectionSortKey.Process,
+        ConnectionSortKey.ProcessId,
+        ConnectionSortKey.Protocol,
+        ConnectionSortKey.State,
+        ConnectionSortKey.Local,
+        ConnectionSortKey.Remote
+    };
 
     public bool HasError
     {
@@ -190,27 +249,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
                 _settings.Set(HideListenersKey, value.ToString());
                 _settings.Save();
                 RebuildDisplayList(force: true);
-            }
-        }
-    }
-
-    public bool EnableReverseDns
-    {
-        get => _enableReverseDns;
-        set
-        {
-            if (SetProperty(ref _enableReverseDns, value))
-            {
-                _settings.Set(EnableReverseDnsKey, value.ToString());
-                _settings.Save();
-                if (value)
-                {
-                    RefreshDnsForVisibleRows();
-                }
-                else
-                {
-                    ClearResolvedHostnames();
-                }
             }
         }
     }
@@ -291,12 +329,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _copyProcessNameLabel;
         private set => SetProperty(ref _copyProcessNameLabel, value);
-    }
-
-    public string EnableReverseDnsLabel
-    {
-        get => _enableReverseDnsLabel;
-        private set => SetProperty(ref _enableReverseDnsLabel, value);
     }
 
     public string ShowLabel
@@ -481,7 +513,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         _tcpText = _localization["TcpLabel"];
         _udpText = _localization["UdpLabel"];
         HideListenersLabel = _localization["HideListenersLabel"];
-        EnableReverseDnsLabel = _localization["EnableReverseDnsLabel"];
 
         _stateTexts[ConnectionState.Closed] = _localization["StateClosedLabel"];
         _stateTexts[ConnectionState.Listen] = _localization["StateListenLabel"];
@@ -508,7 +539,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Listening, _localization["ListeningLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Tcp, _localization["TcpLabel"]));
         FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.Udp, _localization["UdpLabel"]));
-        FilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.HideListeners, _localization["HideListenersLabel"]));
 
         FamilyFilterOptions.Clear();
         FamilyFilterOptions.Add(new ConnectionFilterOption(ConnectionFilter.All, _localization["AllLabel"]));
@@ -523,6 +553,15 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         SortOptions.Add(new ConnectionSortOption(ConnectionSortKey.State, _localization["SortStateLabel"]));
         SortOptions.Add(new ConnectionSortOption(ConnectionSortKey.Local, _localization["SortLocalLabel"]));
         SortOptions.Add(new ConnectionSortOption(ConnectionSortKey.Remote, _localization["SortRemoteLabel"]));
+
+        // The option collections were just cleared and repopulated, which drops the
+        // ComboBox selection to null even though the view-model value never changed.
+        // Re-raising the change notifications makes the bindings re-resolve
+        // SelectedValue against the new lists, so the visual selection survives a
+        // culture switch.
+        OnPropertyChanged(nameof(Filter));
+        OnPropertyChanged(nameof(FamilyFilter));
+        OnPropertyChanged(nameof(SortKey));
     }
 
     private void UpdateErrorState()
@@ -569,11 +608,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
         }
 
         RebuildDisplayList(force: false);
-
-        if (_enableReverseDns)
-        {
-            RefreshDnsForVisibleRows();
-        }
     }
 
     private void RebuildDisplayList(bool force)
@@ -702,45 +736,6 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged, IDisposable
     {
         var value = settings.Get(key, string.Empty);
         return string.IsNullOrEmpty(value) ? defaultValue : bool.TryParse(value, out var parsed) && parsed;
-    }
-
-    private void RefreshDnsForVisibleRows()
-    {
-        if (!_enableReverseDns || _dnsResolver is null)
-        {
-            return;
-        }
-
-        foreach (var connection in _connections)
-        {
-            if (connection.RemoteAddress is not null &&
-                !connection.RemoteAddress.Equals(IPAddress.Any) &&
-                !connection.RemoteAddress.Equals(IPAddress.IPv6Any))
-            {
-                var key = ConnectionKey.From(connection);
-                if (_rows.TryGetValue(key, out var row))
-                {
-                    _dnsResolver.GetOrResolve(connection.RemoteAddress, hostname =>
-                    {
-                        RunOnUi(() =>
-                        {
-                            if (_rows.TryGetValue(key, out var currentRow))
-                            {
-                                currentRow.SetResolvedHostname(hostname ?? string.Empty);
-                            }
-                        });
-                    });
-                }
-            }
-        }
-    }
-
-    private void ClearResolvedHostnames()
-    {
-        foreach (var row in _rows.Values)
-        {
-            row.SetResolvedHostname(string.Empty);
-        }
     }
 
     private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

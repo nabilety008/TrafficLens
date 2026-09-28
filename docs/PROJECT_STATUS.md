@@ -4,14 +4,19 @@ Updated: 2026-09-28
 
 ## Current Milestone
 
-**v0.1.4 final release** on `feature/winui3-migration`, at `fd7c176`. Built on the
-approved baseline `99397a4` with the six human-review defects fixed (scoped strictly
-to those items — no backend, collector, monitoring or packaging changes, and no new
-timer, poller or background worker), then the two follow-ups the fixes themselves
-exposed: the duplicate Floating Widget control was removed from Settings, and the
-caption-button region is now read back off the live window with a bounded
-`WM_NCHITTEST` probe because the shell's `LeftInset`/`RightInset` proved unreliable.
-Human verification has **passed**; the UI is now locked.
+**Post-v0.1.4 polish batch 1** on `feature/winui3-migration` (WUI-011, after the
+v0.1.4 final release at `fd7c176`): Connections default-selection root cause
+(SelectedIndex bindings over fixed-order key lists), duplicate Hide Listeners
+entry removed from the Show filter, reverse DNS removed from the shipped WinUI
+Connections surface, and History CSV export failures made diagnosable via the
+structured logger. Agent runtime verification passed (fa-IR ↔ en-US round trip,
+UIA-verified selections, real CSV exports to Documents verified on disk, cancel
+non-error, 0 Error log entries); **human verification is pending** — see the
+WUI-011 entry in `TASKS.md`. No artifacts regenerated, no release/version change.
+
+The v0.1.4 release record below is unchanged and still accurate for the shipped
+artifacts. Human verification of v0.1.4 **passed**; the UI remains locked and any
+change still requires a new human visual pass.
 
 - **Focused tests: 165 passed, 0 failed** (`TrafficLens.WinUI.Tests`).
 - **Full solution suite: 731 passed, 0 failed** (270 App / 212 Network /
