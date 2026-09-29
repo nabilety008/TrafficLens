@@ -317,6 +317,7 @@
                             x:Name="HistoryChart"
                             Height="200"
                             Points="{x:Bind ViewModel.Series, Mode=OneWay}"
+                            TotalLabel="{x:Bind ViewModel.TotalLabel, Mode=OneWay}"
                             YAxisMax="{x:Bind ViewModel.ScaleMax, Mode=OneWay}" />
                         <TextBlock
                             x:Name="ChartEmptyText"

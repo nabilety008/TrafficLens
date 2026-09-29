@@ -1,18 +1,45 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-28
+Updated: 2026-09-29
 
 ## Current Milestone
 
-**Post-v0.1.4 polish batch 1** on `feature/winui3-migration` (WUI-011, after the
-v0.1.4 final release at `fd7c176`): Connections default-selection root cause
-(SelectedIndex bindings over fixed-order key lists), duplicate Hide Listeners
-entry removed from the Show filter, reverse DNS removed from the shipped WinUI
-Connections surface, and History CSV export failures made diagnosable via the
-structured logger. Agent runtime verification passed (fa-IR ↔ en-US round trip,
-UIA-verified selections, real CSV exports to Documents verified on disk, cancel
-non-error, 0 Error log entries); **human verification is pending** — see the
-WUI-011 entry in `TASKS.md`. No artifacts regenerated, no release/version change.
+**Post-v0.1.4 polish batch 2** on `feature/winui3-migration` (WUI-012, after
+batch 1 / WUI-011): Y-axis measurement scale on the live traffic graph
+(`GraphScaleLabels` + `DataRateAxisFormatter`, reusing the existing
+`AdaptiveGraphScale` unchanged), hover callouts on the live graph
+(`GraphHoverResolver`: time/download/upload + dashed indicator) and on the
+history bar chart (`HistoryBarHoverResolver`: period/download/upload/total with
+`HH:00–HH:00` hourly and `yyyy-MM-dd` daily labels), and a forced LTR flow
+direction on both graph controls so the RTL page never mirrors the plot or
+numerals. Agent runtime verification covered the scale, RTL behaviour and the
+fa-IR ↔ en-US round trip (0 Error log entries); **hover callouts and the overall
+visual pass are pending human verification** — the agent harness could not
+deliver real pointer-move events to the XAML input pipeline on this machine.
+See the WUI-012 entry in `TASKS.md`. No artifacts regenerated, no
+release/version change.
+
+**Post-v0.1.4 polish batch 1** (WUI-011): Connections default-selection root
+cause (SelectedIndex bindings over fixed-order key lists), duplicate Hide
+Listeners entry removed from the Show filter, reverse DNS removed from the
+shipped WinUI Connections surface, and History CSV export failures made
+diagnosable via the structured logger. Agent runtime verification passed
+(fa-IR ↔ en-US round trip, UIA-verified selections, real CSV exports to
+Documents verified on disk, cancel non-error, 0 Error log entries); **human
+verification is pending** — see the WUI-011 entry in `TASKS.md`.
+
+Batch 2 gates:
+
+- **Focused tests: 26 passed, 0 failed** (25 Network `GraphScaleAndHoverTests`
+  + 1 WinUI `Series_PopulatesFullPeriodLabels_ForHover`).
+- **Full solution suite: 771 passed, 0 failed** (270 App / 237 Network /
+  84 Infrastructure / 180 WinUI).
+- **Release x64 build: 0 warnings, 0 errors.**
+- **Runtime (fa-IR dark + en-US):** scale labels correct in both cultures with
+  LTR numerals and the culture decimal separator, tracking the adaptive scale
+  live (4,88 KB/s at low traffic, 1,91 MB/s after a spike); guide lines subtle;
+  timeline chronological in the RTL page; history bars render; whole-run log
+  0 Error. Hover callouts: pending human verification (harness limitation).
 
 The v0.1.4 release record below is unchanged and still accurate for the shipped
 artifacts. Human verification of v0.1.4 **passed**; the UI remains locked and any

@@ -2,6 +2,54 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — Post-v0.1.4 polish batch 2: live graph measurement scale and hover details (human verification pending)
+
+Post-release polish scoped to the live traffic graph and the history bar chart.
+No collector, polling, alert, packaging or artifact changes, and no new timer,
+poller or background worker. The adaptive scale algorithm is reused unchanged.
+
+### Added
+
+- **Y-axis measurement scale on the live traffic graph.** Three reference levels
+  (0, half and full scale) are labelled on the left of the plot in compact rate
+  units (B/s → KB/s → MB/s → GB/s, binary 1024) with subtle guide lines at the
+  middle and top levels. Labels are derived from the same `ScaleMax` the graph
+  already draws with, so they always agree with the plot and follow range
+  changes (30s/1m/5m) and the adaptive scale's hysteresis automatically.
+
+- **Hover values on the live graph.** Moving the pointer over the plot shows the
+  nearest measured sample (never an interpolation): local time (HH:mm:ss),
+  download and upload, in a callout that flips sides near the right edge, with a
+  dashed vertical indicator at the sample's time position. Leaving the plot
+  clears it; hovering never touches storage.
+
+- **Hover values on the history bar chart.** Moving the pointer over a bar slot
+  shows the period (hourly `HH:00–HH:00`, daily `yyyy-MM-dd`), download, upload
+  and total for the nearest bar, with a subtle highlight over the slot. Hover
+  uses the already-loaded series only — no database queries on pointer move.
+
+### Fixed
+
+- **Graph controls mirrored in the Persian (RTL) layout.** Both graph controls
+  now force a left-to-right flow direction, so the timeline stays chronological
+  (00:00 on the left), the scale labels sit on the left of the plot and the
+  numerals stay in technical LTR notation; only the decimal separator follows
+  the active culture.
+
+### Verification
+
+- Focused tests: 25 new Network tests (`GraphScaleAndHoverTests`) and 1 new
+  WinUI test (`Series_PopulatesFullPeriodLabels_ForHover`).
+- Full solution suite **771 passed, 0 failed** (270 App / 237 Network /
+  84 Infrastructure / 180 WinUI); Release x64 build **0 warnings, 0 errors**.
+- Runtime verified on the real Release build in fa-IR (dark) and en-US: scale
+  labels render correctly in both cultures with LTR numerals and the culture
+  decimal separator, track the adaptive scale live (4,88 KB/s at low traffic,
+  1,91 MB/s after a spike), the timeline stays chronological in the RTL page,
+  and the history page renders hourly bars; whole-run log 0 Error. Hover
+  callouts are pending human verification: the agent harness could not deliver
+  real pointer-move events to the XAML input pipeline on this machine.
+
 ## [Unreleased] — Post-v0.1.4 polish batch 1: Connections defaults, de-duplicated Show filter, reverse DNS removed, CSV export made diagnosable (human verification pending)
 
 Post-release polish scoped to four user-visible items on the Connections page and

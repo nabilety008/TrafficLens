@@ -592,7 +592,8 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
             .Select(p => new HistoryChartPoint(
                 p.Date.ToString("MM-dd", culture),
                 p.DownloadBytes,
-                p.UploadBytes))
+                p.UploadBytes,
+                p.Date.ToString("yyyy-MM-dd", culture)))
             .ToArray();
 
     private static IReadOnlyList<HistoryChartPoint> MapHourly(
@@ -602,7 +603,8 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
             .Select(p => new HistoryChartPoint(
                 p.LocalHour.ToString("D2", culture) + ":00",
                 p.DownloadBytes,
-                p.UploadBytes))
+                p.UploadBytes,
+                $"{p.LocalHour.ToString("D2", culture)}:00–{(p.LocalHour + 1) % 24:D2}:00"))
             .ToArray();
 
     private void OnPropertyChanged(string propertyName) =>

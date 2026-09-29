@@ -1,7 +1,14 @@
 <UserControl
     x:Class="TrafficLens.WinUI.Controls.TrafficGraphView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    FlowDirection="LeftToRight">
 
-    <Canvas x:Name="PlotCanvas" />
+    <!-- Transparent background keeps the whole plot area hit-testable for hover. -->
+    <Grid Background="Transparent">
+        <Canvas x:Name="PlotCanvas" />
+        <Canvas
+            x:Name="HoverCanvas"
+            IsHitTestVisible="False" />
+    </Grid>
 </UserControl>

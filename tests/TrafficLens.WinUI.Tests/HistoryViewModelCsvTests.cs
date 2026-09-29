@@ -55,6 +55,30 @@ public sealed class HistoryViewModelCsvTests
         }
     }
 
+    [Fact]
+    public void Series_PopulatesFullPeriodLabels_ForHover()
+    {
+        var vm = new HistoryViewModel(new FakeHistoryService(CreateSnapshot()), new FakeLocalization(), null!);
+
+        // Daily (Last 7 Days): full label must be the invariant yyyy-MM-dd date.
+        vm.SelectRange(HistoryRange.Last7Days);
+        var daily = vm.Series;
+        Assert.NotEmpty(daily);
+        Assert.All(daily, p =>
+        {
+            Assert.False(string.IsNullOrEmpty(p.FullPeriodLabel));
+            Assert.Equal(10, p.FullPeriodLabel.Length);
+            Assert.Contains('-', p.FullPeriodLabel);
+        });
+
+        // Hourly (Today): full label must be the hour range like "07:00–08:00".
+        vm.SelectRange(HistoryRange.Today);
+        var hourly = vm.Series;
+        Assert.All(hourly, p => Assert.Matches(@"^\d{2}:00–\d{2}:00$", p.FullPeriodLabel));
+
+        vm.Dispose();
+    }
+
     private static HistorySnapshot CreateSnapshot()
     {
         return HistorySnapshot.Unavailable(null) with
@@ -69,6 +93,11 @@ public sealed class HistoryViewModelCsvTests
                 new DailyUsagePoint(DateOnly.FromDateTime(DateTime.Today.AddDays(-2)), 300, 400),
                 new DailyUsagePoint(DateOnly.FromDateTime(DateTime.Today.AddDays(-1)), 500, 600),
                 new DailyUsagePoint(DateOnly.FromDateTime(DateTime.Today), 1000, 2000),
+            },
+            TodayHourly = new[]
+            {
+                new HourlyUsagePoint(DateTime.Today.AddHours(7), DateTime.Today.AddHours(8), 7, 100, 50),
+                new HourlyUsagePoint(DateTime.Today.AddHours(8), DateTime.Today.AddHours(9), 8, 200, 100),
             },
         };
     }
