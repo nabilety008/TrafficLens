@@ -14,16 +14,23 @@ Alerts page's cooldown/validation/saved/Save area is one compact action bar
 instead of a tall mostly-empty card. Alert behavior, rules, thresholds,
 persistence and title-bar geometry are unchanged. Agent runtime verification
 covered Alerts at normal/narrow/maximized in fa-IR and en-US, Save persisting
-through the existing settings path, and 0 Error log entries; **human
+through the existing settings path, and 0 Error log entries. The first human
+visual review **failed for the Alerts layout** (Save still read as belonging
+to the cooldown subsection and the rule cards floated ungrouped), so the page
+was regrouped: one main "Alerts configuration" container owning the five rule
+sections, the cooldown subsection (no Save of its own) and a full-width global
+footer with validation feedback and the single global Save action, plus a
+separate informational "Triggered alerts" container below. **Human
 verification is pending** (caption glyphs in light theme and hover/pressed,
-and the Alerts layout) — see the WUI-013 entry in `TASKS.md`. No artifacts
-regenerated, no release/version change.
+and the regrouped Alerts layout) — see the WUI-013 entry in `TASKS.md`. No
+artifacts regenerated, no release/version change.
 
 Batch 3 gates:
 
-- **Focused tests: 8 passed** (6 `CaptionButtonPaletteTests` + 2 Alerts markup
-  guards); full solution suite **779 passed, 0 failed** (270 App / 237 Network
-  / 84 Infrastructure / 188 WinUI).
+- **Focused tests: passed** (6 `CaptionButtonPaletteTests` + Alerts markup
+  guards updated for the regrouped layout + 1 new container guard); full
+  solution suite **780 passed, 0 failed** (270 App / 237 Network / 84
+  Infrastructure / 189 WinUI).
 - **Release x64 build: 0 warnings, 0 errors.**
 
 **Post-v0.1.4 polish batch 2** (WUI-012): Y-axis measurement scale on the live

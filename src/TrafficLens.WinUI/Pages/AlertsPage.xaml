@@ -29,31 +29,51 @@
                     Opacity="0.6"
                     Text="{x:Bind ViewModel.AlertsTitleLabel, Mode=OneWay}" />
 
-                <TextBlock
-                    x:Name="ConfiguredSectionHeader"
-                    Margin="0,0,0,6"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Opacity="0.6"
-                    Text="{x:Bind ViewModel.ConfiguredRulesLabel, Mode=OneWay}" />
-
-                <TextBlock
-                    x:Name="NoConfiguredRulesText"
-                    Margin="0,4,0,12"
-                    FontSize="11"
-                    HorizontalAlignment="Center"
-                    Opacity="0.55"
-                    Text="{x:Bind ViewModel.NoConfiguredRulesText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.HasNoConfiguredRules, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-
                 <!--
-                    One card per alert rule in a native wrapping grid. Every card uses
-                    the same item size, so the cards are equal height, equal width and
-                    evenly spaced, and the grid reflows to fewer or more columns as the
-                    window is resized instead of scrolling horizontally. The rule
-                    order and the data behind each card are unchanged.
+                    The whole editable Alerts configuration lives in ONE parent
+                    container: the five rule sections, the cooldown subsection and
+                    a full-width footer that owns validation feedback and the single
+                    global Save action. Save applies to ALL alert settings, so it
+                    must read as belonging to the whole configuration, not to the
+                    cooldown subsection. Behaviour, bindings and persistence are
+                    unchanged; only the grouping changed.
                 -->
-                <ItemsControl ItemsSource="{x:Bind ViewModel.Rules, Mode=OneWay}">
+                <Border
+                    x:Name="AlertsConfigCard"
+                    Margin="0,0,0,12"
+                    Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <StackPanel Spacing="0">
+
+                        <TextBlock
+                            x:Name="ConfiguredSectionHeader"
+                            Margin="0,0,0,6"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Opacity="0.6"
+                            Text="{x:Bind ViewModel.ConfiguredRulesLabel, Mode=OneWay}" />
+
+                        <TextBlock
+                            x:Name="NoConfiguredRulesText"
+                            Margin="0,4,0,12"
+                            FontSize="11"
+                            HorizontalAlignment="Center"
+                            Opacity="0.55"
+                            Text="{x:Bind ViewModel.NoConfiguredRulesText, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasNoConfiguredRules, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+
+                        <!--
+                            One internal section per alert rule in a native wrapping
+                            grid. Every section uses the same item size, so the
+                            sections are equal height, equal width and evenly spaced,
+                            and the grid reflows to fewer or more columns as the
+                            window is resized instead of scrolling horizontally. The
+                            rule order and the data behind each section are unchanged.
+                        -->
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Rules, Mode=OneWay}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <ItemsWrapGrid
@@ -68,10 +88,10 @@
                             <Border
                                 Margin="0,0,8,8"
                                 Padding="12,10"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+                                CornerRadius="4">
                                 <Grid RowSpacing="4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
@@ -150,130 +170,155 @@
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                        </ItemsControl>
+
+                        <!-- Divider between the rule sections and the cooldown subsection. -->
+                        <Border
+                            x:Name="RulesCooldownDivider"
+                            Height="1"
+                            Margin="0,10"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                        <!--
+                            Cooldown is one setting among the overall Alerts settings:
+                            a subsection inside the main container. It deliberately
+                            does NOT contain the Save button or the save feedback.
+                        -->
+                        <Border
+                            x:Name="CooldownCard"
+                            Padding="12,10"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="11"
+                                        Text="{x:Bind ViewModel.CooldownLabel, Mode=OneWay}" />
+
+                                    <TextBox
+                                        Width="72"
+                                        FlowDirection="LeftToRight"
+                                        FontSize="11"
+                                        Text="{x:Bind ViewModel.CooldownText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        TextAlignment="Right" />
+
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="11"
+                                        Opacity="0.7"
+                                        Text="{x:Bind ViewModel.MinutesLabel, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <TextBlock
+                                    x:Name="CooldownRangeText"
+                                    FontSize="10"
+                                    Opacity="0.55"
+                                    Text="{x:Bind ViewModel.CooldownRangeLabel, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Divider between the cooldown subsection and the global action footer. -->
+                        <Border
+                            x:Name="CooldownFooterDivider"
+                            Height="1"
+                            Margin="0,10"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                        <!--
+                            Full-width global footer of the main configuration
+                            container: validation/saved feedback on the flow side and
+                            the ONE global Save action on the opposite edge. In RTL
+                            (fa-IR) the layout mirrors automatically via the inherited
+                            FlowDirection, so Save sits naturally on the left.
+                        -->
+                        <Grid
+                            x:Name="AlertsConfigFooter"
+                            ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel
+                                Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Spacing="2">
+                                <TextBlock
+                                    x:Name="ValidationErrorText"
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                    Text="{x:Bind ViewModel.ValidationError, Mode=OneWay}"
+                                    TextWrapping="Wrap"
+                                    Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock
+                                    x:Name="SavedNoticeText"
+                                    FontSize="11"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                    Text="{x:Bind ViewModel.SavedNotice, Mode=OneWay}"
+                                    TextWrapping="Wrap"
+                                    Visibility="{x:Bind ViewModel.HasSavedNotice, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+
+                            <Button
+                                x:Name="SaveRulesButton"
+                                Grid.Column="1"
+                                MinWidth="110"
+                                Padding="20,6"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right"
+                                Click="Save_Click"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
                 <!--
-                    Cooldown, validation, saved feedback and Save form one compact
-                    settings/action bar, so Save visibly belongs to the alert
-                    settings instead of floating in a large empty card. Values,
-                    validation and persistence are unchanged; on narrow windows
-                    the bar wraps into stacked rows instead of clipping.
+                    Active (triggered) alerts are informational, NOT part of the
+                    editable configuration or the Save action, so they get their own
+                    container below the main configuration container.
                 -->
                 <Border
-                    x:Name="CooldownCard"
-                    Margin="0,0,0,12"
-                    Padding="12,10"
+                    x:Name="ActiveAlertsCard"
+                    Padding="12"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <Grid ColumnSpacing="12" RowSpacing="6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                    <StackPanel Spacing="0">
 
                         <TextBlock
-                            Grid.Column="0"
-                            VerticalAlignment="Center"
-                            FontSize="11"
-                            Text="{x:Bind ViewModel.CooldownLabel, Mode=OneWay}" />
-
-                        <TextBox
-                            Grid.Column="1"
-                            Width="72"
-                            FlowDirection="LeftToRight"
-                            FontSize="11"
-                            Text="{x:Bind ViewModel.CooldownText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                            TextAlignment="Right" />
+                            x:Name="TriggeredSectionHeader"
+                            Margin="0,0,0,6"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Opacity="0.6"
+                            Text="{x:Bind ViewModel.TriggeredSectionLabel, Mode=OneWay}" />
 
                         <TextBlock
-                            Grid.Column="2"
-                            VerticalAlignment="Center"
+                            x:Name="AlertCountText"
+                            Margin="0,0,0,8"
                             FontSize="11"
-                            Opacity="0.7"
-                            Text="{x:Bind ViewModel.MinutesLabel, Mode=OneWay}" />
+                            Opacity="0.55"
+                            Text="{x:Bind ViewModel.AlertCountText, Mode=OneWay}" />
 
-                        <!--
-                            Status column: validation error first, then the allowed
-                            range, then the saved notice — whichever applies. It
-                            shares the row with the Save button so feedback appears
-                            beside the action that caused it.
-                        -->
-                        <StackPanel
-                            Grid.Column="3"
-                            VerticalAlignment="Center"
-                            Spacing="2">
-                            <TextBlock
-                                x:Name="ValidationErrorText"
-                                FontSize="11"
-                                FontWeight="SemiBold"
-                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                Text="{x:Bind ViewModel.ValidationError, Mode=OneWay}"
-                                TextWrapping="Wrap"
-                                Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-                            <TextBlock
-                                x:Name="CooldownRangeText"
-                                FontSize="10"
-                                Opacity="0.55"
-                                Text="{x:Bind ViewModel.CooldownRangeLabel, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource InverseBoolToVis}}" />
-                            <TextBlock
-                                x:Name="SavedNoticeText"
-                                FontSize="11"
-                                FontWeight="SemiBold"
-                                Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                Text="{x:Bind ViewModel.SavedNotice, Mode=OneWay}"
-                                TextWrapping="Wrap"
-                                Visibility="{x:Bind ViewModel.HasSavedNotice, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-                        </StackPanel>
+                        <TextBlock
+                            x:Name="NoAlertsText"
+                            Margin="0,4,0,8"
+                            FontSize="11"
+                            HorizontalAlignment="Center"
+                            Opacity="0.55"
+                            Text="{x:Bind ViewModel.NoAlertsText, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasNoAlerts, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
 
-                        <Button
-                            x:Name="SaveRulesButton"
-                            Grid.Column="4"
-                            MinWidth="110"
-                            Padding="20,6"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Right"
-                            Click="Save_Click"
-                            Style="{StaticResource AccentButtonStyle}"
-                            Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}" />
-                    </Grid>
-                </Border>
-
-                <TextBlock
-                    x:Name="TriggeredSectionHeader"
-                    Margin="0,0,0,6"
-                    FontSize="12"
-                    FontWeight="SemiBold"
-                    Opacity="0.6"
-                    Text="{x:Bind ViewModel.TriggeredSectionLabel, Mode=OneWay}" />
-
-                <TextBlock
-                    x:Name="AlertCountText"
-                    Margin="0,0,0,8"
-                    FontSize="11"
-                    Opacity="0.55"
-                    Text="{x:Bind ViewModel.AlertCountText, Mode=OneWay}" />
-
-                <TextBlock
-                    x:Name="NoAlertsText"
-                    Margin="0,4,0,8"
-                    FontSize="11"
-                    HorizontalAlignment="Center"
-                    Opacity="0.55"
-                    Text="{x:Bind ViewModel.NoAlertsText, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.HasNoAlerts, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
-
-                <ItemsControl ItemsSource="{x:Bind ViewModel.RecentAlerts, Mode=OneWay}">
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.RecentAlerts, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:AlertRecentRowViewModel">
                             <Border
@@ -317,6 +362,8 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -228,15 +228,25 @@ public class WinUiPageMarkupTests
     }
 
     [Fact]
-    public void CooldownIsItsOwnSectionWithValueUnitValidationAndRange()
+    public void CooldownIsItsOwnSectionWithValueUnitAndRange()
     {
-        var bound = BoundPaths(Named("CooldownCard", Page("AlertsPage.xaml")));
+        var cooldown = Named("CooldownCard", Page("AlertsPage.xaml"));
+        var bound = BoundPaths(cooldown);
 
         Assert.Contains(bound, p => p.Contains("CooldownText", StringComparison.Ordinal));
         Assert.Contains(bound, p => p.Contains("CooldownLabel", StringComparison.Ordinal));
         Assert.Contains(bound, p => p.Contains("MinutesLabel", StringComparison.Ordinal));
         Assert.Contains(bound, p => p.Contains("CooldownRangeLabel", StringComparison.Ordinal));
-        Assert.Contains(bound, p => p.Contains("ValidationError", StringComparison.Ordinal));
+
+        // Validation moved to the global footer of the main configuration
+        // container, so it must NOT be owned by the cooldown subsection anymore.
+        Assert.DoesNotContain(bound, p => p.Contains("ValidationError", StringComparison.Ordinal));
+
+        // The cooldown subsection itself must not own the Save action.
+        var names = cooldown.DescendantsAndSelf()
+            .Select(e => e.Attribute(XNameAttr)?.Value)
+            .ToList();
+        Assert.DoesNotContain("SaveRulesButton", names);
     }
 
     [Fact]
@@ -253,32 +263,70 @@ public class WinUiPageMarkupTests
     }
 
     [Fact]
-    public void AlertSaveButtonLivesInTheCooldownActionBar()
+    public void AlertSaveButtonLivesInTheGlobalConfigFooter()
     {
-        // Save must stay inside the cooldown/settings card (the action bar), not
-        // float in a detached area: the bar is the Border named CooldownCard and
-        // the Save button is a descendant of it.
+        // The human review requires ONE main Alerts configuration container that
+        // owns rules, cooldown and a full-width footer with the single global Save
+        // action. Save must therefore be a descendant of the main container footer
+        // (AlertsConfigFooter inside AlertsConfigCard) and must NOT sit inside the
+        // cooldown subsection anymore.
         var doc = Doc(Page("AlertsPage.xaml")).Root!;
-        var bar = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
+        var configCard = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "AlertsConfigCard");
+        var footer = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "AlertsConfigFooter");
+        var cooldown = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
         var button = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "SaveRulesButton");
 
         Assert.True(
-            bar.DescendantsAndSelf().Contains(button),
-            "SaveRulesButton must be a descendant of the CooldownCard action bar");
+            footer.DescendantsAndSelf().Contains(button),
+            "SaveRulesButton must live in the global AlertsConfigFooter");
+        Assert.True(
+            configCard.DescendantsAndSelf().Contains(button),
+            "SaveRulesButton must be a descendant of the main AlertsConfigCard container");
+        Assert.False(
+            cooldown.DescendantsAndSelf().Contains(button),
+            "SaveRulesButton must NOT be inside the CooldownCard subsection");
     }
 
     [Fact]
     public void AlertCooldownActionBarKeepsValidationAndSavedFeedback()
     {
+        // Validation, saved feedback and the Save button form the global footer of
+        // the main configuration container; the cooldown range hint stays inside
+        // the cooldown subsection.
         var doc = Doc(Page("AlertsPage.xaml")).Root!;
-        var bar = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
-        var names = bar.Descendants()
+        var footer = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "AlertsConfigFooter");
+        var cooldown = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
+        var footerNames = footer.Descendants()
+            .Select(e => e.Attribute(XNameAttr)?.Value)
+            .ToList();
+        var cooldownNames = cooldown.Descendants()
             .Select(e => e.Attribute(XNameAttr)?.Value)
             .ToList();
 
-        Assert.Contains("ValidationErrorText", names);
-        Assert.Contains("SavedNoticeText", names);
-        Assert.Contains("CooldownRangeText", names);
+        Assert.Contains("ValidationErrorText", footerNames);
+        Assert.Contains("SavedNoticeText", footerNames);
+        Assert.Contains("SaveRulesButton", footerNames);
+        Assert.Contains("CooldownRangeText", cooldownNames);
+    }
+
+    [Fact]
+    public void AlertActiveAlertsLiveInTheirOwnContainer()
+    {
+        // Active (triggered) alerts are informational and must sit in their own
+        // container below the main configuration container, outside of it.
+        var doc = Doc(Page("AlertsPage.xaml")).Root!;
+        var configCard = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "AlertsConfigCard");
+        var activeCard = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "ActiveAlertsCard");
+
+        Assert.False(
+            configCard.DescendantsAndSelf().Contains(activeCard),
+            "ActiveAlertsCard must be outside the main AlertsConfigCard container");
+        Assert.Contains(
+            "TriggeredSectionHeader",
+            activeCard.Descendants().Select(e => e.Attribute(XNameAttr)?.Value));
+        Assert.Contains(
+            "NoAlertsText",
+            activeCard.Descendants().Select(e => e.Attribute(XNameAttr)?.Value));
     }
 
     [Fact]

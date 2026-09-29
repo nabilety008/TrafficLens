@@ -32,12 +32,26 @@ untouched.
   stacked rows. No alert rule, threshold, toggle, validation rule, persistence
   path or localization key changed — this is a XAML re-layout.
 
+- **Alerts settings regrouped into one configuration container after the human
+  visual review failed.** The intermediate bar still let Save read as belonging
+  to the cooldown subsection and left the five rule cards floating ungrouped.
+  The page now has two clear containers: one main "Alerts configuration" card
+  that owns the five rule sections (as smaller internal sub-cards), a divider,
+  the cooldown subsection as one setting among many with no Save control of
+  its own, another divider, and a full-width footer holding the validation
+  error, the saved notice and the single global Save action at the page-flow
+  edge (mirrors naturally in fa-IR RTL); and a separate informational
+  "Triggered alerts" container below with its own empty state. Pure XAML
+  re-layout — behavior, bindings and persistence unchanged.
+
 ### Verification
 
 - Focused tests: 6 new `CaptionButtonPaletteTests` (dark/light × active/
-  inactive) and 2 new Alerts markup guards; full solution suite **779 passed,
-  0 failed** (270 App / 237 Network / 84 Infrastructure / 188 WinUI); Release
-  x64 build **0 warnings, 0 errors**.
+  inactive), updated Alerts markup guards pinning the regrouped layout (Save
+  inside the global footer of the main configuration card, not the cooldown
+  subsection; triggered alerts in their own container), and 1 new container
+  guard; full solution suite **780 passed, 0 failed** (270 App / 237 Network /
+  84 Infrastructure / 189 WinUI); Release x64 build **0 warnings, 0 errors**.
 - Runtime on the real Release build (dark theme): Alerts verified at normal,
   narrow and maximized widths in fa-IR and en-US with all five rules; Save
   through the new bar persists through the existing settings path; caption
