@@ -4,10 +4,31 @@ Updated: 2026-09-29
 
 ## Current Milestone
 
-**Post-v0.1.4 polish batch 2** on `feature/winui3-migration` (WUI-012, after
-batch 1 / WUI-011): Y-axis measurement scale on the live traffic graph
-(`GraphScaleLabels` + `DataRateAxisFormatter`, reusing the existing
-`AdaptiveGraphScale` unchanged), hover callouts on the live graph
+**Post-v0.1.4 polish batch 3** on `feature/winui3-migration` (WUI-013, after
+batches 1–2): the real Windows caption buttons are recolored for the custom
+title bar via a single theme-aware palette (`CaptionButtonPalette` →
+`AppWindow.TitleBar` per-state colors; transparent backgrounds, theme-correct
+resting glyphs, dimmed inactive glyphs, stronger hover/pressed plates, native
+close treatment; re-applied on theme change and activation only), and the
+Alerts page's cooldown/validation/saved/Save area is one compact action bar
+instead of a tall mostly-empty card. Alert behavior, rules, thresholds,
+persistence and title-bar geometry are unchanged. Agent runtime verification
+covered Alerts at normal/narrow/maximized in fa-IR and en-US, Save persisting
+through the existing settings path, and 0 Error log entries; **human
+verification is pending** (caption glyphs in light theme and hover/pressed,
+and the Alerts layout) — see the WUI-013 entry in `TASKS.md`. No artifacts
+regenerated, no release/version change.
+
+Batch 3 gates:
+
+- **Focused tests: 8 passed** (6 `CaptionButtonPaletteTests` + 2 Alerts markup
+  guards); full solution suite **779 passed, 0 failed** (270 App / 237 Network
+  / 84 Infrastructure / 188 WinUI).
+- **Release x64 build: 0 warnings, 0 errors.**
+
+**Post-v0.1.4 polish batch 2** (WUI-012): Y-axis measurement scale on the live
+traffic graph (`GraphScaleLabels` + `DataRateAxisFormatter`, reusing the
+existing `AdaptiveGraphScale` unchanged), hover callouts on the live graph
 (`GraphHoverResolver`: time/download/upload + dashed indicator) and on the
 history bar chart (`HistoryBarHoverResolver`: period/download/upload/total with
 `HH:00–HH:00` hourly and `yyyy-MM-dd` daily labels), and a forced LTR flow
@@ -16,8 +37,7 @@ numerals. Agent runtime verification covered the scale, RTL behaviour and the
 fa-IR ↔ en-US round trip (0 Error log entries); **hover callouts and the overall
 visual pass are pending human verification** — the agent harness could not
 deliver real pointer-move events to the XAML input pipeline on this machine.
-See the WUI-012 entry in `TASKS.md`. No artifacts regenerated, no
-release/version change.
+See the WUI-012 entry in `TASKS.md`.
 
 **Post-v0.1.4 polish batch 1** (WUI-011): Connections default-selection root
 cause (SelectedIndex bindings over fixed-order key lists), duplicate Hide

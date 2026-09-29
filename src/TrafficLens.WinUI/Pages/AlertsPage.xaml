@@ -7,6 +7,7 @@
 
     <Page.Resources>
         <infra:BoolToVisibilityConverter x:Key="BoolToVis" />
+        <infra:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
     </Page.Resources>
 
     <Grid x:Name="AlertsRoot">
@@ -152,82 +153,100 @@
                 </ItemsControl>
 
                 <!--
-                    Cooldown is its own compact section, kept out of the rule cards.
-                    Its value, unit, validation and allowed range are unchanged.
+                    Cooldown, validation, saved feedback and Save form one compact
+                    settings/action bar, so Save visibly belongs to the alert
+                    settings instead of floating in a large empty card. Values,
+                    validation and persistence are unchanged; on narrow windows
+                    the bar wraps into stacked rows instead of clipping.
                 -->
                 <Border
                     x:Name="CooldownCard"
                     Margin="0,0,0,12"
                     Padding="12,10"
-                    MaxWidth="640"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                    <StackPanel Spacing="6">
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="72" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock
-                                Grid.Column="0"
-                                VerticalAlignment="Center"
-                                FontSize="11"
-                                Text="{x:Bind ViewModel.CooldownLabel, Mode=OneWay}" />
-
-                            <TextBox
-                                Grid.Column="1"
-                                Width="72"
-                                FlowDirection="LeftToRight"
-                                FontSize="11"
-                                HorizontalAlignment="Right"
-                                Text="{x:Bind ViewModel.CooldownText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                TextAlignment="Right" />
-
-                            <TextBlock
-                                Grid.Column="2"
-                                Margin="6,0,0,0"
-                                VerticalAlignment="Center"
-                                FontSize="11"
-                                Opacity="0.7"
-                                Text="{x:Bind ViewModel.MinutesLabel, Mode=OneWay}" />
-                        </Grid>
+                    <Grid ColumnSpacing="12" RowSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
                         <TextBlock
-                            x:Name="CooldownRangeText"
-                            FontSize="10"
-                            Opacity="0.55"
-                            Text="{x:Bind ViewModel.CooldownRangeLabel, Mode=OneWay}" />
-
-                        <TextBlock
-                            x:Name="ValidationErrorText"
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
                             FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="{x:Bind ViewModel.ValidationError, Mode=OneWay}"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            Text="{x:Bind ViewModel.CooldownLabel, Mode=OneWay}" />
+
+                        <TextBox
+                            Grid.Column="1"
+                            Width="72"
+                            FlowDirection="LeftToRight"
+                            FontSize="11"
+                            Text="{x:Bind ViewModel.CooldownText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            TextAlignment="Right" />
 
                         <TextBlock
-                            x:Name="SavedNoticeText"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
                             FontSize="11"
-                            FontWeight="SemiBold"
-                            Text="{x:Bind ViewModel.SavedNotice, Mode=OneWay}"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.HasSavedNotice, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            Opacity="0.7"
+                            Text="{x:Bind ViewModel.MinutesLabel, Mode=OneWay}" />
+
+                        <!--
+                            Status column: validation error first, then the allowed
+                            range, then the saved notice — whichever applies. It
+                            shares the row with the Save button so feedback appears
+                            beside the action that caused it.
+                        -->
+                        <StackPanel
+                            Grid.Column="3"
+                            VerticalAlignment="Center"
+                            Spacing="2">
+                            <TextBlock
+                                x:Name="ValidationErrorText"
+                                FontSize="11"
+                                FontWeight="SemiBold"
+                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                Text="{x:Bind ViewModel.ValidationError, Mode=OneWay}"
+                                TextWrapping="Wrap"
+                                Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock
+                                x:Name="CooldownRangeText"
+                                FontSize="10"
+                                Opacity="0.55"
+                                Text="{x:Bind ViewModel.CooldownRangeLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind ViewModel.HasValidationError, Mode=OneWay, Converter={StaticResource InverseBoolToVis}}" />
+                            <TextBlock
+                                x:Name="SavedNoticeText"
+                                FontSize="11"
+                                FontWeight="SemiBold"
+                                Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                Text="{x:Bind ViewModel.SavedNotice, Mode=OneWay}"
+                                TextWrapping="Wrap"
+                                Visibility="{x:Bind ViewModel.HasSavedNotice, Mode=OneWay, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
 
                         <Button
                             x:Name="SaveRulesButton"
-                            Margin="0,4,0,0"
-                            Padding="20,8"
-                            HorizontalAlignment="Left"
+                            Grid.Column="4"
+                            MinWidth="110"
+                            Padding="20,6"
                             VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
                             Click="Save_Click"
                             Style="{StaticResource AccentButtonStyle}"
                             Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}" />
-                    </StackPanel>
+                    </Grid>
                 </Border>
 
                 <TextBlock

@@ -245,11 +245,40 @@ public class WinUiPageMarkupTests
         var button = Named("SaveRulesButton", Page("AlertsPage.xaml"));
 
         Assert.Equal("{StaticResource AccentButtonStyle}", button.Attribute("Style")?.Value);
-        Assert.Equal("20,8", button.Attribute("Padding")?.Value);
+        Assert.Equal("20,6", button.Attribute("Padding")?.Value);
         Assert.Contains(
             "SaveLabel",
             button.Attribute("Content")?.Value ?? string.Empty,
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AlertSaveButtonLivesInTheCooldownActionBar()
+    {
+        // Save must stay inside the cooldown/settings card (the action bar), not
+        // float in a detached area: the bar is the Border named CooldownCard and
+        // the Save button is a descendant of it.
+        var doc = Doc(Page("AlertsPage.xaml")).Root!;
+        var bar = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
+        var button = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "SaveRulesButton");
+
+        Assert.True(
+            bar.DescendantsAndSelf().Contains(button),
+            "SaveRulesButton must be a descendant of the CooldownCard action bar");
+    }
+
+    [Fact]
+    public void AlertCooldownActionBarKeepsValidationAndSavedFeedback()
+    {
+        var doc = Doc(Page("AlertsPage.xaml")).Root!;
+        var bar = doc.Descendants().Single(e => e.Attribute(XNameAttr)?.Value == "CooldownCard");
+        var names = bar.Descendants()
+            .Select(e => e.Attribute(XNameAttr)?.Value)
+            .ToList();
+
+        Assert.Contains("ValidationErrorText", names);
+        Assert.Contains("SavedNoticeText", names);
+        Assert.Contains("CooldownRangeText", names);
     }
 
     [Fact]

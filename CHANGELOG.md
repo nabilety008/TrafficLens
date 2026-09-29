@@ -2,6 +2,49 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — Post-v0.1.4 polish batch 3: native caption-button colors and Alerts layout (human verification pending)
+
+Post-release polish scoped to the real Windows caption buttons and the Alerts
+page layout. No collector, polling, alert-behavior, packaging or artifact
+changes, and no new timer, poller or background worker. Title-bar geometry is
+untouched.
+
+### Fixed
+
+- **The native Minimize / Maximize / Close glyphs could be unreadable over the
+  custom title bar.** The window draws its own background behind the real
+  caption buttons (extends-content-into-title-bar), so the system default
+  button colors no longer match — in a dark window the glyphs could render
+  black on the dark title bar. The buttons are still the native ones; their
+  per-state colors are now resolved from one theme-aware palette: transparent
+  backgrounds, resting glyphs matching the title text (white in dark,
+  near-black in light), dimmed glyphs on an inactive window, and hover/pressed
+  as non-opaque overlay plates that step stronger. Close keeps Windows' own
+  treatment. The palette re-applies when the theme or the activation state
+  changes (event-driven only).
+
+- **The Alerts page's cooldown and Save area felt detached.** The cooldown
+  fields, validation, saved feedback and Save button sat in a tall, mostly
+  empty card of their own, so Save appeared to float. They now form one
+  compact settings/action bar: cooldown field and unit beside a status column
+  that shows the validation error, the allowed range or the saved notice, and
+  the Save button at the end of the same row. Narrow windows wrap the bar into
+  stacked rows. No alert rule, threshold, toggle, validation rule, persistence
+  path or localization key changed — this is a XAML re-layout.
+
+### Verification
+
+- Focused tests: 6 new `CaptionButtonPaletteTests` (dark/light × active/
+  inactive) and 2 new Alerts markup guards; full solution suite **779 passed,
+  0 failed** (270 App / 237 Network / 84 Infrastructure / 188 WinUI); Release
+  x64 build **0 warnings, 0 errors**.
+- Runtime on the real Release build (dark theme): Alerts verified at normal,
+  narrow and maximized widths in fa-IR and en-US with all five rules; Save
+  through the new bar persists through the existing settings path; caption
+  buttons show the recolored states with no title overlap and no geometry
+  regression; whole-run log 0 Error. Caption glyph readability in light theme
+  and on hover/pressed is pending human visual review.
+
 ## [Unreleased] — Post-v0.1.4 polish batch 2: live graph measurement scale and hover details (human verification pending)
 
 Post-release polish scoped to the live traffic graph and the history bar chart.

@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     private readonly ApplicationExitCoordinator _exitCoordinator;
     private bool _navigating;
     private bool _syncingWidgetToggle;
+    private bool _isActiveWindow = true;
 
     public MainWindow(
         ILocalizationService localization,
@@ -43,6 +44,7 @@ public sealed partial class MainWindow : Window
         var appWindow = AppWindow;
         appWindow.Resize(new SizeInt32(900, 560));
         WindowIcon.Apply(this);
+        ApplyCaptionColors(appWindow);
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -53,6 +55,8 @@ public sealed partial class MainWindow : Window
 
         _trayService.OpenRequested += OnOpenRequested;
         _localization.CultureChanged += OnCultureChanged;
+        RootGrid.ActualThemeChanged += OnActualThemeChanged;
+        Activated += OnWindowActivated;
 
         // The shell control is a view of the one widget-enabled state owned by the
         // service, so it follows the Settings switches and the widget's own close
@@ -258,6 +262,47 @@ public sealed partial class MainWindow : Window
             ApplyFlowDirection();
             PersistLanguage();
         });
+    }
+
+    /// <summary>
+    /// Applies the theme-correct colors to the real Windows caption buttons.
+    /// The window draws its own background behind them (extends-content-into-
+    /// title-bar), so the system defaults stop matching and the glyphs can turn
+    /// black on a dark title bar. The palette is the single decision point and
+    /// the window re-applies it when the theme or the activation state changes;
+    /// no polling is involved.
+    /// </summary>
+    private void ApplyCaptionColors(Microsoft.UI.Windowing.AppWindow appWindow)
+    {
+        var isDark = RootGrid.ActualTheme == ElementTheme.Dark;
+        var isActive = _isActiveWindow;
+        var colors = CaptionButtonPalette.Resolve(isDark, isActive);
+        var titleBar = appWindow.TitleBar;
+
+        titleBar.ButtonForegroundColor = colors.Foreground;
+        titleBar.ButtonBackgroundColor = colors.Background;
+        titleBar.ButtonHoverForegroundColor = colors.HoverForeground;
+        titleBar.ButtonHoverBackgroundColor = colors.HoverBackground;
+        titleBar.ButtonPressedForegroundColor = colors.PressedForeground;
+        titleBar.ButtonPressedBackgroundColor = colors.PressedBackground;
+        titleBar.ButtonInactiveForegroundColor = colors.InactiveForeground;
+        titleBar.ButtonInactiveBackgroundColor = colors.InactiveBackground;
+    }
+
+    private void OnActualThemeChanged(FrameworkElement sender, object args)
+    {
+        // The system theme flipped under a theme-following window; recolor with
+        // the new effective theme. Pure property writes, no layout involvement.
+        ApplyCaptionColors(AppWindow);
+    }
+
+    private void OnWindowActivated(object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs args)
+    {
+        // The inactive/resting glyph tone differs from the active one, so the
+        // palette is re-applied on focus gain and loss. Only fires on real
+        // activation transitions, not per frame.
+        _isActiveWindow = args.WindowActivationState != Microsoft.UI.Xaml.WindowActivationState.Deactivated;
+        ApplyCaptionColors(AppWindow);
     }
 
     private void ApplyLocalization()
