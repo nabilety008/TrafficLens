@@ -149,12 +149,10 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
 
         foreach (var command in commands)
         {
-            DiagnosticLog($"apply-begin file={command.FileName} args={command.Arguments}");
             var run = _runElevated(command);
             if (run is null)
             {
                 // User canceled the elevation prompt — no partial writes from us.
-                DiagnosticLog("apply-aborted uac-canceled");
                 return WindowsUpdateOperationResult.Canceled;
             }
 
@@ -162,33 +160,23 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
             {
                 // The elevated operation itself failed. Verify-and-rollback below
                 // restores the exact pre-apply state; never report success.
-                DiagnosticLog($"apply-nonzero-exit exit={run}");
+                DiagnosticLog($"apply: '{command.FileName} {command.Arguments}' exited {run}");
                 break;
             }
-
-            // Per-command read-back: proves whether THIS command wrote its value.
-            var name = command.Arguments.Contains("TargetReleaseVersion ")
-                ? WindowsUpdateHoldPlanner.TargetReleaseVersionName
-                : command.Arguments.Contains("TargetReleaseVersionInfo")
-                    ? WindowsUpdateHoldPlanner.TargetReleaseVersionInfoName
-                    : WindowsUpdateHoldPlanner.ProductVersionName;
-            var readBack = _reader.GetValue(name);
-            DiagnosticLog($"apply-readback name={name} present={readBack is not null} kind={readBack?.Kind} value={readBack?.Text ?? readBack?.Dword?.ToString() ?? "null"}");
         }
 
         // Verify the post-write state; roll back what we can if incomplete.
         var after = ReadSnapshot();
         var afterMatches = !after.ReadError && WindowsUpdateHoldPlanner.MatchesDesired(after, detection.Info);
-        DiagnosticLog($"apply-verify matches={afterMatches} readError={after.ReadError} product={after.ProductVersionValue is not null} flag={after.TargetReleaseVersionValue is not null} info={after.TargetReleaseVersionInfoValue is not null} record={(after.OwnedRecord is not null ? "present" : "absent")}");
         if (afterMatches)
         {
             return WindowsUpdateOperationResult.Success;
         }
 
+        DiagnosticLog($"apply: post-write verification failed (readError={after.ReadError}); rolling back owned values");
+
         // Partial failure: attempt best-effort rollback of exactly what we own.
-        DiagnosticLog("apply-rollback-begin");
         RollbackOwnedValues(merged);
-        DiagnosticLog("apply-rollback-done");
 
         // If the rollback provably restored the pre-apply state, drop the
         // ownership record so the machine is not left in a half-owned state.
@@ -272,16 +260,17 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
                 command = WindowsUpdateHoldCommandBuilder.BuildRestore(owned)!.Value.command;
             }
 
-            DiagnosticLog($"rollback-begin file={command.FileName} args={command.Arguments}");
             var run = _runElevated(command);
             if (run is null)
             {
-                DiagnosticLog($"rollback-uac-canceled name={owned.Name}");
+                DiagnosticLog($"rollback: elevation canceled while removing '{owned.Name}'");
                 continue;
             }
 
-            var stillThere = _reader.GetValue(owned.Name);
-            DiagnosticLog($"rollback-readback name={owned.Name} exit={run} present={stillThere is not null}");
+            if (run != 0)
+            {
+                DiagnosticLog($"rollback: '{command.FileName} {command.Arguments}' exited {run}");
+            }
         }
     }
 
@@ -437,36 +426,33 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
                 WindowStyle = ProcessWindowStyle.Hidden
             };
 
-            var startedAt = DateTime.UtcNow;
             using var process = Process.Start(startInfo);
             if (process is null)
             {
-                DiagnosticLog($"start-returned-null file={command.FileName}");
+                DiagnosticLog("elevated: process start returned null");
                 return -1;
             }
 
             process.WaitForExit();
-            var exit = process.ExitCode;
-            DiagnosticLog($"exit={exit} pid={process.Id} file={command.FileName} args={command.Arguments} waitedMs={(int)(DateTime.UtcNow - startedAt).TotalMilliseconds}");
-            return exit;
+            return process.ExitCode;
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            DiagnosticLog($"uac-canceled file={command.FileName} args={command.Arguments}");
             return null;
         }
         catch (Exception ex)
         {
-            DiagnosticLog($"exception type={ex.GetType().Name} msg={ex.Message} file={command.FileName} args={command.Arguments}");
+            DiagnosticLog($"elevated: {ex.GetType().Name} launching '{command.FileName}': {ex.Message}");
             return -1;
         }
     }
 
     /// <summary>
-    /// WUI-014 live-failure diagnostics: one line per elevated operation,
-    /// appended to a dedicated file next to the app logs. Records the exact
-    /// executable, argument shape, child PID and exit code so the real
-    /// execution can be reconstructed. Contains no secrets.
+    /// Failure-only diagnostics for the elevated Windows Update operations,
+    /// appended to windowsupdate-diag.log next to the app logs. Success writes
+    /// nothing — the file only ever records failures (non-zero exit codes,
+    /// canceled verifications, launch exceptions), keeping support evidence
+    /// without per-command noise. Contains no secrets.
     /// </summary>
     internal static void DiagnosticLog(string message)
     {
