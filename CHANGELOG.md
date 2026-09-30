@@ -2,6 +2,72 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [0.1.5] — 2026-09-30
+
+First post-v0.1.4 release. UI polish across Connections, History, the live
+traffic graph and Alerts, plus a complete redesign of the Windows Update
+control around a **feature-update hold** that never disables security or
+quality updates.
+
+### Windows Update: feature-update hold (redesigned)
+
+- **TrafficLens does NOT disable Windows Update.** The old `NoAutoUpdate=1`
+  kill switch is gone. The option now applies only Microsoft's supported
+  **Target Release Version** policy (`ProductVersion`, `TargetReleaseVersion`,
+  `TargetReleaseVersionInfo`), holding the machine on its current Windows
+  feature version while security updates, quality updates, Defender updates and
+  all Windows Update servicing continue. Services, BITS, Defender and
+  safeguard holds are never touched, and external/organization-managed policy
+  is never overwritten.
+- **User-triggered and elevated.** Applying or releasing the hold is one
+  explicit action with a UAC prompt; reads never require elevation.
+- **Ownership, snapshot and rollback.** A schema-versioned record snapshots
+  every previous value before any write; release restores the exact owned
+  previous state (deleting values that were absent before) and preserves a
+  pre-existing policy key. Legacy `NoAutoUpdate` records from the old behavior
+  are migrated with proven ownership.
+- **Root-cause fixes proven by live human round-trip:** each elevated `reg.exe`
+  operation now runs as a single command with its exit code checked and the
+  final state read back (a shell-chained argument list previously failed
+  silently), and previously-absent owned values are deleted through the
+  elevated runner instead of a silent in-process write. **A real Hold →
+  Release round-trip passed human verification with exact baseline
+  restoration** (policy key back to 0 values / 0 subkeys, AU absent, record
+  removed).
+
+### Fixed
+
+- Connections: default selections survive culture switches (SelectedIndex
+  bindings over fixed-order key lists), duplicate Hide Listeners entry removed
+  from the Show filter, reverse DNS removed from the shipped WinUI surface.
+- History CSV export failures are now diagnosed in the structured log
+  (exception type + HRESULT) instead of a silent catch; verified successful
+  exports end to end.
+- Native Minimize / Maximize / Close caption glyphs are recolored for the
+  custom title bar (theme-aware palette; native close treatment preserved).
+
+### Added
+
+- Live traffic graph: adaptive Y-axis measurement scale (B/s → GB/s labels
+  tracking the adaptive scale) and real-mouse hover callouts (time, download,
+  upload) with nearest-point and edge behavior.
+- History bar chart hover callouts: period, download, upload, total and a
+  nearest-slot highlight.
+- Alerts page regrouped into one configuration container (five rule sections,
+  cooldown subsection, one global Save footer) plus a separate triggered-alerts
+  container.
+
+### Verification
+
+- Full suite: **837 passed, 0 failed** (270 App / 237 Network / 141
+  Infrastructure / 189 WinUI); Release x64 build **0 warnings, 0 errors**.
+- Human visual/interaction PASS recorded for: Windows Update live Hold →
+  Release round-trip, Alerts regrouped layout, live graph real-mouse hover,
+  history real-mouse hover.
+- Still pending independent human confirmation: caption-button glyphs in
+  light theme, Connections and CSV-export hands-on pass (agent-verified
+  previously).
+
 ## [Unreleased] — Post-v0.1.4 batch 4: Windows feature update hold without disabling security updates
 
 The Windows Update control is redefined. The old behavior could broadly disable

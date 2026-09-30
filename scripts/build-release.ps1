@@ -11,7 +11,7 @@
 
     Usage:
       .\scripts\build-release.ps1                    # default version from Directory.Build.props
-      .\scripts\build-release.ps1 -Version 0.1.4     # explicit release version
+      .\scripts\build-release.ps1 -Version 0.1.5     # explicit release version
 
     Repackaging without a rebuild:
 
@@ -208,7 +208,7 @@ if ($Version -notmatch "^\d+\.\d+\.\d+(\.\d+)?$") {
     Fail "Invalid version '$Version'. Use e.g. 0.1.0"
 }
 # Assembly/File version follow the existing project convention of a 4-part
-# numeric version (0.1.4 -> 0.1.4.0); Product/Informational stay 3-part.
+# numeric version (0.1.5 -> 0.1.5.0); Product/Informational stay 3-part.
 if (($Version -split '\.').Count -eq 3) { $numericVersion = "$Version.0" } else { $numericVersion = $Version }
 
 # ---------------------------------------------------------------------------

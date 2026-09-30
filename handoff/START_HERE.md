@@ -39,15 +39,31 @@ payloads.
 
 | | |
 |---|---|
-| Version | **v0.1.4** |
+| Version | **v0.1.5 (release candidate)** — shipped v0.1.4 record below |
 | Branch | `feature/winui3-migration` |
+| Status | **RC PREPARED** — artifacts built, pending final tag authorization |
+| Tests | **837/837 pass** (App 270 / Network 237 / Infrastructure 141 / WinUI 189) |
+| Release build | 0 warnings, 0 errors |
+| Signing | **UNSIGNED** (deferred) |
+| GitHub | **NOT CONFIGURED** (deferred) — no remote exists |
+
+The v0.1.5 candidate contains the four post-v0.1.4 batches and the WUI-014
+Windows feature-update hold whose live Hold → Release round-trip **passed
+human verification** with exact baseline restoration. Detail in
+`handoff/CURRENT_STATE.md`, `CHANGELOG.md` ([0.1.5] section) and
+`docs/PROJECT_STATUS.md`.
+
+---
+
+### Historical v0.1.4 record
+
+| | |
+|---|---|
+| Version | **v0.1.4** |
 | Release/docs HEAD | `67c334e06aa0d567f50a75992bb042feec292a41` |
 | Final app source | `fd7c1762361d93c8dff5adb44d091c9dd07c3ec9` |
 | Status | **FINAL LOCAL RELEASE** — human UI verification PASSED |
 | Tests | **731/731 pass** (App 270 / Network 212 / Infrastructure 84 / WinUI 165) |
-| Release build | 0 warnings, 0 errors |
-| Signing | **UNSIGNED** (deferred) |
-| GitHub | **NOT CONFIGURED** (deferred) — no remote exists |
 
 Full detail, including artifact paths and SHA-256 values, is in
 `handoff/CURRENT_STATE.md`.

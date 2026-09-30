@@ -4,6 +4,22 @@ Updated: 2026-09-29
 
 ## Current Milestone
 
+**v0.1.5 release candidate** on `feature/winui3-migration`: ships the four
+post-v0.1.4 batches (Connections polish, graph scale + hover callouts, caption
+palette + Alerts regroup) and the WUI-014 Windows feature-update hold with its
+two live-verified elevation fixes (`23284fe` single-op elevated commands with
+exit-code verification; `f958c42` owned-value deletion through the elevated
+runner). The live Hold → Release round-trip **passed human verification** with
+exact baseline restoration (policy key 0 values / 0 subkeys, AU absent,
+ownership record removed; services unchanged). Human PASS also recorded for
+the Alerts regrouped layout, live-graph real-mouse hover and history real-mouse
+hover. Temporary per-command diagnostic logging introduced during WUI-014
+debugging was reduced to failure-only entries (`windowsupdate-diag.log` now
+grows only on failures). Version bumped 0.1.4 → 0.1.5 in
+`Directory.Build.props` and `packaging/TrafficLens.iss`. Remaining deferred:
+GitHub publication, code signing, updater, and independent human passes for
+caption glyphs in light theme and the Connections/CSV hands-on check.
+
 **Post-v0.1.4 batch 4** on `feature/winui3-migration` (WUI-014): the Windows
 Update control is redefined as a **feature-update hold**. TrafficLens no longer
 disables updates broadly; it applies only Microsoft's supported Target Feature

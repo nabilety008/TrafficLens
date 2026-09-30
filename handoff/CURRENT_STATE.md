@@ -152,3 +152,64 @@ artifacts\publish\win-x64\
 - No rebuild or modification of the artifacts above
 
 See `handoff/NEXT_TASKS.md` for what is queued and in what order.
+
+---
+
+# ADDENDUM 2 — v0.1.5 release candidate (2026-09-30)
+
+Recorded from actual repository and artifact state at v0.1.5 RC closeout.
+
+**Version:** `0.1.5` (Directory.Build.props + TrafficLens.iss)
+**Status:** **RELEASE CANDIDATE PREPARED** — final tag not yet created
+**Tests:** **837/837 PASS** (App 270 / Network 237 / Infrastructure 141 / WinUI 189)
+**Release build:** **0 warnings / 0 errors**
+**Signing:** **UNSIGNED / DEFERRED**
+**GitHub:** **DEFERRED / NOT CONFIGURED** (no git remote exists)
+
+## What v0.1.5 contains (vs v0.1.4 at fd7c176)
+
+1. Batch 1 (4703881): Connections defaults/filter polish, Hide Listeners
+   cleanup, reverse-DNS removal, History CSV diagnosability.
+2. Batch 2 (79bcb43): live-graph Y-axis scale labels + live/history hover
+   callouts with forced-LTR graph rendering.
+3. Batch 3 (65a5185, 319722b): caption-button palette for the custom title
+   bar; Alerts page regrouped into one configuration container + separate
+   triggered-alerts container.
+4. Batch 4 (513568a, 23284fe, f958c42, 9c7a291): Windows Update redesigned as
+   a feature-update hold (Target Release Version policy only; never disables
+   security/quality updates, services, BITS or Defender; external policy never
+   overwritten; ownership record with exact rollback and legacy migration).
+   Live-debug fixes proven on the real machine: single-op elevated reg.exe
+   commands with exit-code verification, and previously-absent owned values
+   deleted through the elevated runner.
+
+## Human verification recorded (2026-09-30)
+
+- Windows Update LIVE Hold → Release round-trip: **HUMAN PASS** — hold wrote
+  exactly the three target-release values; release restored the exact original
+  baseline (0 values / 0 subkeys, AU absent, ownership record removed,
+  services unchanged).
+- Alerts final regrouped layout: **HUMAN PASS**.
+- Live graph real-mouse hover callouts: **HUMAN PASS**.
+- History real-mouse hover callouts: **HUMAN PASS**.
+- v0.1.4 human PASS (2026-09-28) covers the earlier locked surfaces.
+
+## Still pending (accurate, not invented)
+
+- Caption-button glyphs in LIGHT theme and hover/pressed states: not yet
+  independently human-confirmed (dark theme verified).
+- Connections page + CSV export hands-on human pass: agent-verified only.
+- Code signing (blocks public distribution, not the local build).
+- GitHub publication and updater (no remote configured).
+- v0.1.5 tag: awaiting explicit authorization.
+
+## Temporary diagnostics decision
+
+The WUI-014 per-command diagnostic file logging was REDUCED to failure-only
+entries during release preparation: `windowsupdate-diag.log` now grows only
+when an elevated operation fails (non-zero exit, canceled verification, launch
+exception). Success writes nothing. Rollback verification and safety behavior
+are unchanged.
+
+See `CHANGELOG.md` ([0.1.5]) for the full change list and
+`docs/PROJECT_STATUS.md` for the current milestone.
