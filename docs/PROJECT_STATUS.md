@@ -4,6 +4,32 @@ Updated: 2026-09-29
 
 ## Current Milestone
 
+**Post-v0.1.4 batch 4** on `feature/winui3-migration` (WUI-014): the Windows
+Update control is redefined as a **feature-update hold**. TrafficLens no longer
+disables updates broadly; it applies only Microsoft's supported Target Feature
+Update policy (`ProductVersion` + `TargetReleaseVersion` +
+`TargetReleaseVersionInfo` under the WindowsUpdate policy key), holding the
+machine on its currently installed Windows feature version while security
+updates, quality updates, Defender updates and all Windows Update servicing
+continue. The target release is detected live (build >= 22000 = Windows 11;
+`DisplayVersion`/`ReleaseId`, strictly normalized — refuses incomplete
+detection), every change is snapshotted into an owned schema-versioned record
+with full rollback, external/organization-managed policy values are never
+overwritten, and legacy `NoAutoUpdate` records from the old behavior are
+migrated with proven ownership. Agent runtime verification was non-mutating
+(Settings state rendering and detection verified on the Release build); the
+live elevated hold/release round-trip was **not performed** because elevation
+approval was not granted — **human verification is pending** for that
+round-trip. See the WUI-014 entry in `TASKS.md` and ADR-026 in
+`docs/DECISIONS.md`. No artifacts regenerated, no release/version change.
+
+Batch 4 gates:
+
+- **Full solution suite: 832 passed, 0 failed** (270 App / 237 Network /
+  136 Infrastructure / 189 WinUI), including 52 new Infrastructure tests over
+  registry fakes (no real HKLM access in tests).
+- **Release x64 build: 0 warnings, 0 errors.**
+
 **Post-v0.1.4 polish batch 3** on `feature/winui3-migration` (WUI-013, after
 batches 1–2): the real Windows caption buttons are recolored for the custom
 title bar via a single theme-aware palette (`CaptionButtonPalette` →

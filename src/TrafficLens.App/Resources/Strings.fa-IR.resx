@@ -661,19 +661,19 @@
     <value>غیرفعال</value>
   </data>
   <data name="WindowsUpdateLabel" xml:space="preserve">
-    <value>به‌روزرسانی ویندوز</value>
+    <value>ارتقای نسخه ویندوز</value>
   </data>
   <data name="WindowsUpdateStatusEnabled" xml:space="preserve">
-    <value>فعال</value>
+    <value>نگه داشته شده توسط ترافیک‌لنز</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByTrafficLens" xml:space="preserve">
-    <value>غیرفعال شده توسط ترافیک‌لنز</value>
+    <value>آزاد شده توسط ترافیک‌لنز</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByPolicy" xml:space="preserve">
-    <value>غیرفعال شده بر اساس سیاست سیستم</value>
+    <value>مدیریت‌شده توسط سیاست سیستم</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByService" xml:space="preserve">
-    <value>غیرفعال شده (سرویس به‌روزرسانی خاموش است)</value>
+    <value>مدیریت‌شده توسط سیاست سیستم</value>
   </data>
   <data name="WindowsUpdateStatusManaged" xml:space="preserve">
     <value>مدیریت‌شده توسط سیاست سازمان</value>
@@ -682,31 +682,31 @@
     <value>نامشخص</value>
   </data>
   <data name="WindowsUpdateDisableLabel" xml:space="preserve">
-    <value>غیرفعال کردن به‌روزرسانی ویندوز</value>
+    <value>جلوگیری از ارتقای نسخه ویندوز</value>
   </data>
   <data name="WindowsUpdateEnableLabel" xml:space="preserve">
-    <value>فعال کردن به‌روزرسانی ویندوز</value>
+    <value>اجازه دادن به ارتقای نسخه ویندوز</value>
   </data>
   <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
-    <value>تغییر این تنظیم در دسترس نیست</value>
+    <value>تغییر این تنظیم در این نسخه از ویندوز در دسترس نیست</value>
   </data>
   <data name="WindowsUpdateWarningLabel" xml:space="preserve">
     <value>این تغییر نیاز به تأیید مدیر (UAC) دارد.</value>
   </data>
   <data name="WindowsUpdateManagedExplanation" xml:space="preserve">
-    <value>به‌روزرسانی ویندوز توسط سیاست سازمان شما مدیریت می‌شود.</value>
+    <value>سیاست ارتقای نسخه‌ای خارج از ترافیک‌لنز وجود دارد؛ ترافیک‌لنز آن را تغییر نمی‌دهد.</value>
   </data>
   <data name="WindowsUpdateServiceExplanation" xml:space="preserve">
-    <value>سرویس به‌روزرسانی ویندوز خاموش است.</value>
+    <value>به‌روزرسانی‌های ویندوز توسط یک سیاست خارجی مدیریت می‌شوند.</value>
   </data>
   <data name="WindowsUpdateUnknownExplanation" xml:space="preserve">
-    <value>وضعیت به‌روزرسانی ویندوز قابل خواندن نیست.</value>
+    <value>وضعیت سیاست ارتقای نسخه قابل خواندن نیست.</value>
   </data>
   <data name="WindowsUpdateConfirmDisableText" xml:space="preserve">
-    <value>به‌روزرسانی‌های ویندوز غیرفعال شود؟ سیاست به‌روزرسانی ویندوز روی غیرفعال تنظیم می‌شود. هر زمان می‌توانید این تغییر را بازگردانید.</value>
+    <value>ویندوز روی نسخه فعلی خود نگه داشته شود؟ به‌روزرسانی‌های امنیتی و کیفی همچنان نصب می‌شوند و فقط ارتقای نسخه متوقف می‌ماند. هر زمان می‌توانید این تغییر را بازگردانید.</value>
   </data>
   <data name="WindowsUpdateConfirmEnableText" xml:space="preserve">
-    <value>به‌روزرسانی‌های ویندوز فعال شود؟ سیاست قبلی به‌روزرسانی ویندوز بازیابی می‌شود.</value>
+    <value>نگه‌داشتن ارتقای نسخه ویندوز برداشته شود؟ ویندوز به رفتار عادی به‌روزرسانی خود برمی‌گردد.</value>
   </data>
   <data name="WindowsUpdateConfirmLabel" xml:space="preserve">
     <value>تأیید</value>
@@ -716,5 +716,14 @@
   </data>
   <data name="WindowsUpdateCanceledLabel" xml:space="preserve">
     <value>تغییر لغو شد.</value>
+  </data>
+  <data name="WindowsUpdateDetectedTargetLabel" xml:space="preserve">
+    <value>نسخه فعلی: {0}</value>
+  </data>
+  <data name="WindowsUpdateHoldExplanationLabel" xml:space="preserve">
+    <value>روی نسخه فعلی ویندوز بمانید؛ به‌روزرسانی‌های امنیتی و کیفی همچنان دریافت می‌شوند.</value>
+  </data>
+  <data name="WindowsUpdateLegacyPolicyLabel" xml:space="preserve">
+    <value>سیاست قدیمی ترافیک‌لنز برای به‌روزرسانی ویندوز یافت شد و هنگام اعمال نگه‌داشتن نسخه، بازیابی می‌شود.</value>
   </data>
 </root>

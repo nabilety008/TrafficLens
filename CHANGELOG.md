@@ -2,6 +2,62 @@
   
 All notable changes are documented here in reverse chronological order.
 
+## [Unreleased] — Post-v0.1.4 batch 4: Windows feature update hold without disabling security updates
+
+The Windows Update control is redefined. The old behavior could broadly disable
+automatic Windows updates (`NoAutoUpdate=1`), silently holding back security and
+quality fixes. TrafficLens now uses only Microsoft's supported **Target Feature
+Update** policy: the machine is held on its current Windows feature version
+while security updates, quality updates, Defender updates and all Windows
+Update servicing continue uninterrupted.
+
+### Changed
+
+- **Feature-update hold replaces the update kill switch.** Applying the option
+  writes exactly `ProductVersion`, `TargetReleaseVersion` (DWORD 1) and
+  `TargetReleaseVersionInfo` (the detected current release) under
+  `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate` via one elevated
+  `reg.exe` invocation (UAC). Windows Update services, BITS, Defender,
+  quality-update pause/deferral and safeguard holds are never touched, and
+  `NoAutoUpdate` is never written (asserted in tests).
+- **The target release is detected from the live machine, never hardcoded.**
+  Product comes from the build number (>= 22000 is Windows 11, ignoring stale
+  `ProductName` strings); the release comes from `DisplayVersion` with a
+  `ReleaseId` fallback, strictly normalized. Incomplete or unreadable detection
+  refuses to apply anything.
+- **Ownership, snapshot and rollback.** A schema-versioned record
+  (`%LOCALAPPDATA%\TrafficLens\windowsupdate-state.json`) snapshots every
+  previous value before any write; releasing restores exactly those owned
+  previous states and removes the TrafficLens-created policy key when it is
+  empty. A partial apply failure rolls back owned values; a UAC cancel is a
+  clean no-op.
+- **External policy is respected.** Any pre-existing target-release value
+  TrafficLens does not own — including an external `NoAutoUpdate` — is reported
+  as organization-managed and never overwritten. Legacy records from the old
+  behavior are migrated: releasing removes TrafficLens's old `NoAutoUpdate`
+  value by restoring its snapshotted previous state.
+- **Reads no longer require elevation** (read-only registry handles); only the
+  apply/release mutations prompt via UAC.
+- **UI (Settings, EN + fa-IR).** New strings: "Hold feature updates" / "Release
+  feature updates", "Held by TrafficLens" / "Released by TrafficLens",
+  "Current version: Windows 11 — 25H2"; Persian: "جلوگیری از ارتقای نسخه
+  ویندوز" / "اجازه دادن به ارتقای نسخه ویندوز", "نگه داشته شده توسط
+  ترافیک‌لنز" / "آزاد شده توسط ترافیک‌لنز", "نسخه فعلی: …". A note states that
+  security and quality updates continue while the version is held.
+
+### Verification
+
+- 52 new Infrastructure tests over registry fakes (detector, pure hold planner,
+  command builder, and an end-to-end service suite that executes the generated
+  `reg.exe` command strings against a fake registry); full solution suite
+  **832 passed, 0 failed** (270 App / 237 Network / 136 Infrastructure /
+  189 WinUI); Release x64 build **0 warnings, 0 errors**.
+- Runtime verified non-mutating on the Release build: the Settings page shows
+  the detected target ("Windows 11 — 25H2" on build 26200 despite a stale
+  "Windows 10 Pro" `ProductName`), correct fa-IR state strings and the hold
+  action. The live elevated hold/release round-trip was **not performed**
+  (elevation approval was not granted); the machine's registry is untouched.
+
 ## [Unreleased] — Post-v0.1.4 polish batch 3: native caption-button colors and Alerts layout (human verification pending)
 
 Post-release polish scoped to the real Windows caption buttons and the Alerts

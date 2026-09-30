@@ -661,19 +661,19 @@
     <value>Disabled</value>
   </data>
   <data name="WindowsUpdateLabel" xml:space="preserve">
-    <value>Windows Update</value>
+    <value>Windows feature updates</value>
   </data>
   <data name="WindowsUpdateStatusEnabled" xml:space="preserve">
-    <value>Enabled</value>
+    <value>Held by TrafficLens</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByTrafficLens" xml:space="preserve">
-    <value>Disabled by TrafficLens</value>
+    <value>Released by TrafficLens</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByPolicy" xml:space="preserve">
-    <value>Disabled by system policy</value>
+    <value>Managed by system policy</value>
   </data>
   <data name="WindowsUpdateStatusDisabledByService" xml:space="preserve">
-    <value>Disabled (update service turned off)</value>
+    <value>Managed by system policy</value>
   </data>
   <data name="WindowsUpdateStatusManaged" xml:space="preserve">
     <value>Managed by organization policy</value>
@@ -682,31 +682,31 @@
     <value>Unknown</value>
   </data>
   <data name="WindowsUpdateDisableLabel" xml:space="preserve">
-    <value>Disable Windows Update</value>
+    <value>Hold feature updates</value>
   </data>
   <data name="WindowsUpdateEnableLabel" xml:space="preserve">
-    <value>Enable Windows Update</value>
+    <value>Release feature updates</value>
   </data>
   <data name="WindowsUpdateUnavailableLabel" xml:space="preserve">
-    <value>Changing this setting is not available</value>
+    <value>Changing this setting is not available on this version of Windows</value>
   </data>
   <data name="WindowsUpdateWarningLabel" xml:space="preserve">
     <value>This change requires administrator approval (UAC).</value>
   </data>
   <data name="WindowsUpdateManagedExplanation" xml:space="preserve">
-    <value>Windows Update is managed by your organization's policy.</value>
+    <value>A feature-update policy not owned by TrafficLens is present. TrafficLens will not change it.</value>
   </data>
   <data name="WindowsUpdateServiceExplanation" xml:space="preserve">
-    <value>The Windows Update service is turned off.</value>
+    <value>Windows updates are managed by an external policy.</value>
   </data>
   <data name="WindowsUpdateUnknownExplanation" xml:space="preserve">
-    <value>The Windows Update state could not be read.</value>
+    <value>The feature-update policy state could not be read.</value>
   </data>
   <data name="WindowsUpdateConfirmDisableText" xml:space="preserve">
-    <value>Disable Windows Updates? This will set the Windows Update policy to disabled. You can revert this change at any time.</value>
+    <value>Hold Windows on its current feature version? Security and quality updates continue to be installed; only version upgrades are held. You can revert this at any time.</value>
   </data>
   <data name="WindowsUpdateConfirmEnableText" xml:space="preserve">
-    <value>Enable Windows Updates? This will restore the previous Windows Update policy.</value>
+    <value>Release the feature-update hold? Windows returns to its normal update behavior.</value>
   </data>
   <data name="WindowsUpdateConfirmLabel" xml:space="preserve">
     <value>Confirm</value>
@@ -716,5 +716,14 @@
   </data>
   <data name="WindowsUpdateCanceledLabel" xml:space="preserve">
     <value>The change was canceled.</value>
+  </data>
+  <data name="WindowsUpdateDetectedTargetLabel" xml:space="preserve">
+    <value>Current version: {0}</value>
+  </data>
+  <data name="WindowsUpdateHoldExplanationLabel" xml:space="preserve">
+    <value>Stay on the current Windows feature version while continuing to receive security and quality updates.</value>
+  </data>
+  <data name="WindowsUpdateLegacyPolicyLabel" xml:space="preserve">
+    <value>A previous TrafficLens Windows Update policy was found and will be restored when the hold is applied.</value>
   </data>
 </root>

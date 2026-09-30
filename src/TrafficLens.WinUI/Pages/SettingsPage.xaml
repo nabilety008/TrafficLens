@@ -301,6 +301,14 @@
                         </Grid>
 
                         <TextBlock
+                            x:Name="WindowsUpdateTargetText"
+                            AutomationProperties.Name="WindowsUpdateTarget"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed" />
+
+                        <TextBlock
                             x:Name="WindowsUpdateNoteText"
                             AutomationProperties.Name="WindowsUpdateNote"
                             FontSize="11"

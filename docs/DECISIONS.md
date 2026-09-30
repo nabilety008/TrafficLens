@@ -887,3 +887,49 @@ candidate only edits `Directory.Build.props`.
   documented follow-ups for the real release, not this task.
 
 
+
+## ADR-026 — Windows feature updates are held, never disabled (Batch 4)
+
+**Status:** Accepted (post-v0.1.4 Batch 4)
+
+The previous Windows Update behavior could write `NoAutoUpdate=1` under
+`HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU`, which disables
+automatic updates broadly — including security and quality fixes. That was
+**wrong** for TrafficLens and is replaced.
+
+### Decision
+
+**TrafficLens never disables Windows Update.** The feature-update option applies
+only Microsoft's supported **Target Feature Update** policy:
+
+- `ProductVersion`, `TargetReleaseVersion` (DWORD 1) and
+  `TargetReleaseVersionInfo` (the currently installed release, e.g. `25H2`)
+  under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`.
+- This pins the machine to its current Windows feature version while security
+  updates, quality updates, Defender definition updates and all Windows Update
+  servicing continue untouched.
+- Windows Update services, BITS, Defender, quality-update pause/deferral and
+  safeguard holds are never modified. `NoAutoUpdate` is never written by
+  TrafficLens (asserted in tests).
+
+**Detect, never guess.** The target release is read from the live machine
+(build >= 22000 means Windows 11 regardless of the stale `ProductName` string;
+release from `DisplayVersion`, falling back to `ReleaseId`, normalized to strict
+`YYH1/H2`). An incomplete or unreadable detection **refuses** to apply the
+policy rather than pinning a wrong version.**Ownership, snapshot, rollback.** A schema-versioned change record
+(`%LOCALAPPDATA%\TrafficLens\windowsupdate-state.json`) snapshots every value
+before it is written. Only TrafficLens-owned values are restored on release;
+an externally created policy key (any pre-existing value TrafficLens does not
+own, including an external `NoAutoUpdate`) is detected as organization-managed
+and **never overwritten**. A partial apply failure rolls back owned values and
+deletes the record only when provably clean. Legacy records from the old
+`NoAutoUpdate` behavior are migrated: the legacy `NoAutoUpdate` value is
+restored/removed on release using its snapshotted previous state.
+
+### Consequences
+
+- Security posture is never weakened by the option; the Windows Update agent
+  keeps servicing the machine.
+- The hold is reversible and auditable via the change record.
+- Machine-wide effect still requires one elevated `reg.exe` invocation (UAC);
+  reads never require elevation (read-only registry handles).

@@ -156,17 +156,26 @@ public sealed partial class SettingsPage : Page
         WindowsUpdateStatusValueText.Text = _windowsUpdateState.Status switch
         {
             WindowsUpdateStatus.Enabled => _localization["WindowsUpdateStatusEnabled"],
-            WindowsUpdateStatus.Disabled when _windowsUpdateState.Reason == WindowsUpdateDisableReason.TrafficLens =>
-                _localization["WindowsUpdateStatusDisabledByTrafficLens"],
-            WindowsUpdateStatus.Disabled when _windowsUpdateState.Reason == WindowsUpdateDisableReason.Service =>
-                _localization["WindowsUpdateStatusDisabledByService"],
-            WindowsUpdateStatus.Disabled => _localization["WindowsUpdateStatusDisabledByPolicy"],
-            WindowsUpdateStatus.ManagedByPolicy => _localization["WindowsUpdateStatusManaged"],
+            WindowsUpdateStatus.Disabled when _windowsUpdateState.Reason == WindowsUpdateDisableReason.Unsupported =>
+                _localization["WindowsUpdateUnavailableLabel"],
+            WindowsUpdateStatus.Disabled => _localization["WindowsUpdateStatusDisabledByTrafficLens"],
+            WindowsUpdateStatus.ManagedByPolicy => _windowsUpdateState.OrganizationPolicyPresent
+                ? _localization["WindowsUpdateStatusManaged"]
+                : _localization["WindowsUpdateStatusDisabledByPolicy"],
             _ => _localization["WindowsUpdateStatusUnknown"]
         };
 
         WindowsUpdateNoteText.Text = GetWindowsUpdateNote();
         WindowsUpdateNoteText.Visibility = string.IsNullOrEmpty(WindowsUpdateNoteText.Text)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        // The detected target (e.g. "Windows 11 — 24H2") is shown only when the
+        // detector actually resolved it — never a guessed value.
+        WindowsUpdateTargetText.Text = _windowsUpdateState.DetectedTarget is { } target
+            ? string.Format(_localization["WindowsUpdateDetectedTargetLabel"], target)
+            : string.Empty;
+        WindowsUpdateTargetText.Visibility = string.IsNullOrEmpty(WindowsUpdateTargetText.Text)
             ? Visibility.Collapsed
             : Visibility.Visible;
 
@@ -201,25 +210,22 @@ public sealed partial class SettingsPage : Page
     {
         if (_windowsUpdateState.Status == WindowsUpdateStatus.Unknown)
         {
-            return _localization["WindowsUpdateUnknownExplanation"];
+            return _windowsUpdateState.Error ?? _localization["WindowsUpdateUnknownExplanation"];
+        }
+
+        if (_windowsUpdateState.Status == WindowsUpdateStatus.ManagedByPolicy)
+        {
+            return _windowsUpdateState.Reason == WindowsUpdateDisableReason.TrafficLens
+                ? _localization["WindowsUpdateLegacyPolicyLabel"]
+                : _localization["WindowsUpdateManagedExplanation"];
         }
 
         if (_windowsUpdateState.Status == WindowsUpdateStatus.Disabled &&
-            _windowsUpdateState.Reason == WindowsUpdateDisableReason.Service)
+            _windowsUpdateState.Reason == WindowsUpdateDisableReason.None)
         {
-            return _localization["WindowsUpdateServiceExplanation"];
-        }
-
-        if (_windowsUpdateState.Status == WindowsUpdateStatus.ManagedByPolicy ||
-            (_windowsUpdateState.Status == WindowsUpdateStatus.Disabled &&
-             _windowsUpdateState.Reason == WindowsUpdateDisableReason.Policy))
-        {
-            return _localization["WindowsUpdateManagedExplanation"];
-        }
-
-        if (!_windowsUpdateState.CanDisable && !_windowsUpdateState.CanEnable)
-        {
-            return _localization["WindowsUpdateUnavailableLabel"];
+            // The core promise of the feature: security/quality updates keep
+            // flowing; only the feature-version upgrade is held.
+            return _localization["WindowsUpdateHoldExplanationLabel"];
         }
 
         return string.Empty;
