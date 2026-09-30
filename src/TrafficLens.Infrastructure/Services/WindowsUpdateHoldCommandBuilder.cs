@@ -41,6 +41,19 @@ public static class WindowsUpdateHoldCommandBuilder
     }
 
     /// <summary>
+    /// Elevated command deleting one TrafficLens-owned value. Used when the
+    /// value did not exist before TrafficLens (it must be deleted, not
+    /// restored): reg delete "<key>" /v <name> /f — one operation per process.
+    /// </summary>
+    public static WindowsUpdateRegistryCommand BuildDelete(string name)
+    {
+        var fullKey = $@"""{RootPrefix}{PolicyKeyPath}""";
+        return new WindowsUpdateRegistryCommand(
+            "reg.exe",
+            $@"delete {fullKey} /v {name} /f");
+    }
+
+    /// <summary>
     /// Command restoring one previously-existing value. Returns null when the
     /// value did not exist before TrafficLens (it must be deleted, not written).
     /// </summary>

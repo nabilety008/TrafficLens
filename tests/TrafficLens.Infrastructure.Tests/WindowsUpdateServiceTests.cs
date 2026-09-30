@@ -84,12 +84,21 @@ public sealed class WindowsUpdateServiceTests
         }
 
         /// <summary>
-        /// Executes one real reg.exe "add \"HKLM\...\" /v NAME /t TYPE /d VALUE /f"
-        /// argument string — the exact per-value shape the command builder emits
-        /// (the builder no longer chains commands; reg.exe cannot).
+        /// Executes one real reg.exe operation argument string — the exact
+        /// per-value shapes the command builder emits (add and delete; the
+        /// builder never chains commands, reg.exe cannot).
         /// </summary>
         public void ApplyRegCommandLine(string arguments)
         {
+            var delete = System.Text.RegularExpressions.Regex.Match(
+                arguments,
+                "^delete \"[^\"]+\" /v (?<name>[^ ]+) /f$");
+            if (delete.Success)
+            {
+                Delete(delete.Groups["name"].Value);
+                return;
+            }
+
             var match = System.Text.RegularExpressions.Regex.Match(
                 arguments,
                 "^add \"[^\"]+\" /v (?<name>[^ ]+) /t (?<type>REG_DWORD|REG_SZ) /d \"?(?<data>[^\"]*)\"? /f$");
@@ -389,9 +398,11 @@ public sealed class WindowsUpdateServiceTests
     public async Task Apply_NonZeroExitOnLaterCommand_FailsAndRollsBackEarlierWrites()
     {
         var h = new Harness();
-        // First call (ProductVersion) succeeds, everything after fails.
+        // Apply call 1 (ProductVersion) succeeds, apply call 2 fails; the
+        // subsequent rollback deletes succeed (exit 0), removing cmd 1's
+        // write and proving the pre-apply state is restored.
         var call = 0;
-        h.OnElevated = _ => ++call == 1 ? 0 : 1;
+        h.OnElevated = _ => ++call == 2 ? 1 : 0;
 
         var result = await h.Service.DisableAsync();
 
@@ -399,6 +410,8 @@ public sealed class WindowsUpdateServiceTests
         Assert.Null(h.Registry.Get(Product));
         Assert.Null(h.Registry.Get(Flag));
         Assert.Null(h.Registry.Get(Info));
+        // Provably clean rollback → record dropped.
+        Assert.Null(h.Store.Record);
     }
 
     [Fact]
@@ -498,6 +511,65 @@ public sealed class WindowsUpdateServiceTests
         Assert.Equal("1", h.Registry.Get("SomeExternalPolicy")!.Text);
         Assert.DoesNotContain(h.Registry.Deleted, d => d == "SomeExternalPolicy");
         Assert.Null(h.Store.Record);
+    }
+
+    /// <summary>
+    /// WUI-014 LIVE RELEASE FAILURE regression, matching the real repro exactly:
+    /// pre: policy key exists, all three target values ABSENT; apply creates
+    /// them (all previous states snapshotted as Absent); release must DELETE
+    /// the three values through the ELEVATED runner (one `reg delete` per
+    /// value — the silent in-process applier cannot write HKLM from the
+    /// non-elevated app and previously failed invisibly), preserve the
+    /// pre-existing key, and remove the ownership record. Final: 0 values,
+    /// 0 subkeys, AU absent, record gone.
+    /// </summary>
+    [Fact]
+    public async Task Rollback_AbsentPreviousStates_DeletesViaElevatedRunner_PreservesKey()
+    {
+        var h = new Harness();
+        h.Registry.KeyExists = true;   // key pre-existed, empty; no values
+        Assert.Empty(h.Registry.Values);
+
+        var hold = await h.Service.DisableAsync();
+        Assert.Equal(WindowsUpdateOperationResult.Success, hold);
+        Assert.Equal(3, h.Registry.Values.Count);
+        Assert.NotNull(h.Store.Record);
+        // Every owned value's previous state is Absent in this baseline.
+        Assert.All(h.Store.Record!.OwnedValues, v =>
+            Assert.Equal(WindowsUpdatePreviousValueKind.Absent, v.PreviousKind));
+
+        h.ElevatedCalls.Clear();
+        var release = await h.Service.EnableAsync();
+
+        Assert.Equal(WindowsUpdateOperationResult.Success, release);
+
+        // The deletion went through the ELEVATED runner as `reg delete` —
+        // exactly one operation per call, never a silent in-process write.
+        Assert.Equal(3, h.ElevatedCalls.Count(c => c is not null));
+        Assert.All(h.ElevatedCalls, c =>
+        {
+            Assert.NotNull(c);
+            Assert.Contains("delete ", c!);
+            Assert.DoesNotContain(";", c);
+        });
+
+        // Final state: values gone, pre-existing key preserved, record gone.
+        Assert.Empty(h.Registry.Values);
+        Assert.True(h.Registry.KeyExists);
+        Assert.Null(h.Registry.Get("NoAutoUpdate"));
+        Assert.Null(h.Store.Record);
+    }
+
+    [Fact]
+    public void BuildDelete_IsSingleElevatedRegDeleteOperation()
+    {
+        var command = WindowsUpdateHoldCommandBuilder.BuildDelete("ProductVersion");
+
+        Assert.Equal("reg.exe", command.FileName);
+        Assert.DoesNotContain(";", command.Arguments);
+        Assert.Contains("delete ", command.Arguments);
+        Assert.Contains("/v ProductVersion /f", command.Arguments);
+        Assert.Contains(WindowsUpdateHoldCommandBuilder.PolicyKeyPath, command.Arguments);
     }
 
     [Fact]

@@ -258,22 +258,30 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
     {
         foreach (var owned in record.OwnedValues)
         {
-            var restore = WindowsUpdateHoldCommandBuilder.BuildRestore(owned);
-            if (restore is not null)
+            WindowsUpdateRegistryCommand command;
+            if (owned.PreviousKind == WindowsUpdatePreviousValueKind.Absent)
             {
-                var run = _runElevated(restore.Value.command);
-                if (run is 0)
-                {
-                    continue;
-                }
-
-                // The elevated restore did not run (canceled) or failed — fall
-                // back to the in-process applier, which succeeds when the app
-                // can write the key and fails silently otherwise. The caller
-                // verifies the final state, so a silent failure stays visible.
+                // The value did not exist before TrafficLens — it must be
+                // DELETED. A silent in-process delete cannot write HKLM from
+                // the non-elevated app (WUI-014 live release failure): every
+                // rollback operation goes through the elevated runner.
+                command = WindowsUpdateHoldCommandBuilder.BuildDelete(owned.Name);
+            }
+            else
+            {
+                command = WindowsUpdateHoldCommandBuilder.BuildRestore(owned)!.Value.command;
             }
 
-            _applier.DeleteValue(owned.Name);
+            DiagnosticLog($"rollback-begin file={command.FileName} args={command.Arguments}");
+            var run = _runElevated(command);
+            if (run is null)
+            {
+                DiagnosticLog($"rollback-uac-canceled name={owned.Name}");
+                continue;
+            }
+
+            var stillThere = _reader.GetValue(owned.Name);
+            DiagnosticLog($"rollback-readback name={owned.Name} exit={run} present={stillThere is not null}");
         }
     }
 
