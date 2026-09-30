@@ -2,6 +2,32 @@
 
 Recorded from actual repository and artifact state at local closeout.
 
+> **ADDENDUM (post-v0.1.4 audit, 2026-09-30) — read this first.** The v0.1.4
+> release state below is still accurate for the shipped artifacts, but the
+> branch has moved on. Four post-v0.1.4 batches are committed on
+> `feature/winui3-migration`, current HEAD **`513568a`**
+> (`fix(winui): hold feature updates without disabling security updates`):
+>
+> | Batch | Scope | Commit(s) |
+> |---|---|---|
+> | 1 | Connections UI + History CSV repair | `4703881` |
+> | 2 | Graph scale + live/history hover | `79bcb43` |
+> | 3 | Caption-button palette + Alerts polish/regroup | `65a5185`, `319722b` |
+> | 4 | Windows feature-update hold (replaces NoAutoUpdate kill switch) | `513568a` |
+>
+> Latest quality gate: full suite **832/832 PASS** (App 270 / Network 237 /
+> Infrastructure 136 / WinUI 189); Release x64 build **0 warnings / 0 errors**.
+> Tests, docs (`TASKS.md`, `CHANGELOG.md`, `docs/PROJECT_STATUS.md`,
+> `docs/DECISIONS.md` ADR-026) and the current source all live at `513568a`.
+> **Current source is NOT identical to the v0.1.4 binaries** — the next release
+> needs a new version number and a fresh human visual pass (the v0.1.4 UI lock
+> has been superseded by batch 1–4 UI changes).
+> Still pending human checks: caption glyphs light theme/hover, hover callouts,
+> the regrouped Alerts layout, Connections/CSV hands-on pass, and the real
+> elevated Windows Update hold/release registry round-trip (never performed —
+> UAC approval was not granted; the machine registry is untouched).
+> Everything below the addendum is the untouched v0.1.4 release record.
+
 **Version:** `0.1.4`
 **Status:** **FINAL LOCAL RELEASE**
 **Human UI:** **PASS**
