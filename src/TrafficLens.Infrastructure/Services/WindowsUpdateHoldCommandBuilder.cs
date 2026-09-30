@@ -12,24 +12,32 @@ public static class WindowsUpdateHoldCommandBuilder
     private const string RootPrefix = @"HKLM\";
     public const string PolicyKeyPath = @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate";
 
-    /// <summary>One reg.exe command applying every desired value atomically.</summary>
-    public static WindowsUpdateRegistryCommand? BuildApply(
+    /// <summary>
+    /// One elevated reg.exe command per desired value. reg.exe executes exactly
+    /// ONE operation per invocation — it is not a shell and cannot run chained
+    /// commands (a "; "-joined argument list makes reg.exe fail with "Invalid
+    /// syntax" and exit code 1), so each value gets its own process. The caller
+    /// must check every exit code and verify the final registry state.
+    /// </summary>
+    public static IReadOnlyList<WindowsUpdateRegistryCommand> BuildApply(
         IReadOnlyList<WindowsUpdateHoldPlanner.DesiredValue> desired)
     {
         if (desired.Count == 0)
         {
-            return null;
+            return Array.Empty<WindowsUpdateRegistryCommand>();
         }
 
-        var parts = desired.Select(value =>
+        return desired.Select(value =>
         {
             var fullKey = $@"""{RootPrefix}{PolicyKeyPath}""";
             return value.DesiredKind == WindowsUpdatePreviousValueKind.Dword
-                ? $@"add {fullKey} /v {value.Name} /t REG_DWORD /d {value.DesiredDword} /f"
-                : $@"add {fullKey} /v {value.Name} /t REG_SZ /d ""{value.DesiredString}"" /f";
-        });
-
-        return new WindowsUpdateRegistryCommand("reg.exe", string.Join(" ; ", parts));
+                ? new WindowsUpdateRegistryCommand(
+                    "reg.exe",
+                    $@"add {fullKey} /v {value.Name} /t REG_DWORD /d {value.DesiredDword} /f")
+                : new WindowsUpdateRegistryCommand(
+                    "reg.exe",
+                    $@"add {fullKey} /v {value.Name} /t REG_SZ /d ""{value.DesiredString}"" /f");
+        }).ToArray();
     }
 
     /// <summary>

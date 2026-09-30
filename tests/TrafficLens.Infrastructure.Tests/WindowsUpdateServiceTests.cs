@@ -84,26 +84,24 @@ public sealed class WindowsUpdateServiceTests
         }
 
         /// <summary>
-        /// Executes "add \"HKLM\...\" /v NAME /t TYPE /d VALUE /f" segments
-        /// separated by " ; " — the exact strings the command builder emits.
+        /// Executes one real reg.exe "add \"HKLM\...\" /v NAME /t TYPE /d VALUE /f"
+        /// argument string — the exact per-value shape the command builder emits
+        /// (the builder no longer chains commands; reg.exe cannot).
         /// </summary>
         public void ApplyRegCommandLine(string arguments)
         {
-            foreach (var segment in arguments.Split(" ; "))
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(
-                    segment,
-                    "^add \"[^\"]+\" /v (?<name>[^ ]+) /t (?<type>REG_DWORD|REG_SZ) /d \"?(?<data>[^\"]*)\"? /f$");
-                Assert.True(match.Success, $"Unexpected reg.exe segment: {segment}");
+            var match = System.Text.RegularExpressions.Regex.Match(
+                arguments,
+                "^add \"[^\"]+\" /v (?<name>[^ ]+) /t (?<type>REG_DWORD|REG_SZ) /d \"?(?<data>[^\"]*)\"? /f$");
+            Assert.True(match.Success, $"Unexpected reg.exe arguments: {arguments}");
 
-                if (match.Groups["type"].Value == "REG_DWORD")
-                {
-                    SetDword(match.Groups["name"].Value, int.Parse(match.Groups["data"].Value));
-                }
-                else
-                {
-                    SetString(match.Groups["name"].Value, match.Groups["data"].Value);
-                }
+            if (match.Groups["type"].Value == "REG_DWORD")
+            {
+                SetDword(match.Groups["name"].Value, int.Parse(match.Groups["data"].Value));
+            }
+            else
+            {
+                SetString(match.Groups["name"].Value, match.Groups["data"].Value);
             }
         }
 
@@ -125,6 +123,13 @@ public sealed class WindowsUpdateServiceTests
         public List<string?> ElevatedCalls { get; } = new();
         public int? ExitCodeToReturn { get; set; } = 0;
 
+        /// <summary>
+        /// Optional per-call override: given the command arguments, returns the
+        /// simulated exit code. When set it wins over <see cref="ExitCodeToReturn"/>;
+        /// a returned 0 still executes the command against the fake registry.
+        /// </summary>
+        public Func<string?, int?>? OnElevated { get; set; }
+
         public WindowsUpdateService Service { get; }
 
         public Harness()
@@ -140,6 +145,24 @@ public sealed class WindowsUpdateServiceTests
                 runElevated: command =>
                 {
                     ElevatedCalls.Add(command?.Arguments);
+                    if (OnElevated is not null)
+                    {
+                        var code = OnElevated(command?.Arguments);
+                        if (code == 0 && command is not null)
+                        {
+                            if (command.FileName == "reg.exe")
+                            {
+                                Registry.ApplyRegCommandLine(command.Arguments);
+                            }
+                            else if (command.FileName == "powershell.exe")
+                            {
+                                Registry.ApplyEmptyKeyCleanup();
+                            }
+                        }
+
+                        return code;
+                    }
+
                     if (command is null || ExitCodeToReturn is null)
                     {
                         return ExitCodeToReturn;
@@ -327,6 +350,52 @@ public sealed class WindowsUpdateServiceTests
 
         // The best-effort rollback removed exactly what the apply wrote — the
         // machine ends in its pre-apply state.
+        Assert.Null(h.Registry.Get(Product));
+        Assert.Null(h.Registry.Get(Flag));
+        Assert.Null(h.Registry.Get(Info));
+    }
+
+    /// <summary>
+    /// WUI-014 live-failure regression: the real failure class was ONE reg.exe
+    /// process receiving a shell-chained "; " argument list it cannot execute
+    /// ("Invalid syntax", exit code 1) while the service ignored the exit code
+    /// and reported success. The fixed builder emits one single-op command per
+    /// value; this test pins that no single elevated call ever carries more
+    /// than one reg op and that a failure mid-sequence is not reported success.
+    /// </summary>
+    [Fact]
+    public async Task Apply_EveryElevatedCallIsASingleRegOperation_NeverChained()
+    {
+        var h = new Harness();
+
+        await h.Service.DisableAsync();
+
+        Assert.Equal(3, h.ElevatedCalls.Count(c => c is not null));
+        Assert.All(h.ElevatedCalls, c =>
+        {
+            Assert.NotNull(c);
+            Assert.DoesNotContain(";", c!);
+            // Exactly one "add" op per call — reg.exe cannot run two.
+            Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(c!, "\\badd\\b").Count);
+        });
+    }
+
+    /// <summary>
+    /// WUI-014 live-failure regression: a non-zero exit from ONE of the apply
+    /// commands must stop the sequence and produce Failed (never Success) with
+    /// the pre-apply state restored — even when earlier commands succeeded.
+    /// </summary>
+    [Fact]
+    public async Task Apply_NonZeroExitOnLaterCommand_FailsAndRollsBackEarlierWrites()
+    {
+        var h = new Harness();
+        // First call (ProductVersion) succeeds, everything after fails.
+        var call = 0;
+        h.OnElevated = _ => ++call == 1 ? 0 : 1;
+
+        var result = await h.Service.DisableAsync();
+
+        Assert.Equal(WindowsUpdateOperationResult.Failed, result);
         Assert.Null(h.Registry.Get(Product));
         Assert.Null(h.Registry.Get(Flag));
         Assert.Null(h.Registry.Get(Info));

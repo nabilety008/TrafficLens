@@ -23,32 +23,45 @@ public sealed class WindowsUpdateHoldCommandBuilderTests
     [Fact]
     public void BuildApply_WritesOnlyTargetReleaseValues_NeverNoAutoUpdate()
     {
-        var command = WindowsUpdateHoldCommandBuilder.BuildApply(Desired());
+        var commands = WindowsUpdateHoldCommandBuilder.BuildApply(Desired());
 
-        Assert.NotNull(command);
-        Assert.Equal("reg.exe", command!.FileName);
-        Assert.Contains("ProductVersion", command.Arguments);
-        Assert.Contains("TargetReleaseVersion ", command.Arguments);
-        Assert.Contains("TargetReleaseVersionInfo", command.Arguments);
-        Assert.Contains("REG_DWORD", command.Arguments);
-        Assert.DoesNotContain("NoAutoUpdate", command.Arguments);
-        Assert.DoesNotContain("AU\\", command.Arguments);
-        Assert.Contains(ExpectedKey, command.Arguments);
+        Assert.Equal(3, commands.Count);
+        Assert.All(commands, c => Assert.Equal("reg.exe", c.FileName));
+        var joined = string.Join("\n", commands.Select(c => c.Arguments));
+        Assert.Contains("ProductVersion", joined);
+        Assert.Contains("TargetReleaseVersion ", joined);
+        Assert.Contains("TargetReleaseVersionInfo", joined);
+        Assert.Contains("REG_DWORD", joined);
+        Assert.DoesNotContain("NoAutoUpdate", joined);
+        Assert.DoesNotContain("AU\\", joined);
+        Assert.All(commands, c => Assert.Contains(ExpectedKey, c.Arguments));
+    }
+
+    /// <summary>
+    /// WUI-014 regression: reg.exe executes ONE operation per invocation and
+    /// cannot run shell-chained commands. Each built command must therefore be
+    /// a single reg op — no "; " chaining anywhere.
+    /// </summary>
+    [Fact]
+    public void BuildApply_NoCommandContainsShellChaining()
+    {
+        var commands = WindowsUpdateHoldCommandBuilder.BuildApply(Desired());
+
+        Assert.All(commands, c => Assert.DoesNotContain(";", c.Arguments));
     }
 
     [Fact]
-    public void BuildApply_EmptyDesired_ReturnsNull()
+    public void BuildApply_EmptyDesired_ReturnsEmptyList()
     {
-        Assert.Null(WindowsUpdateHoldCommandBuilder.BuildApply(new List<WindowsUpdateHoldPlanner.DesiredValue>()));
+        Assert.Empty(WindowsUpdateHoldCommandBuilder.BuildApply(new List<WindowsUpdateHoldPlanner.DesiredValue>()));
     }
 
     [Fact]
     public void BuildApply_QuotesStringValue()
     {
-        var command = WindowsUpdateHoldCommandBuilder.BuildApply(Desired(release: "22H2"))!;
+        var commands = WindowsUpdateHoldCommandBuilder.BuildApply(Desired(release: "22H2"));
 
-        Assert.Contains("\"24H2\"", command.Arguments.Replace("22H2", "24H2"));
-        Assert.Contains("/d \"22H2\"", command.Arguments);
+        Assert.Contains("/d \"22H2\"", commands.Single(c => c.Arguments.Contains("TargetReleaseVersionInfo")).Arguments);
     }
 
     // ---------------------------------------------------------------- restore

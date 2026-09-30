@@ -141,11 +141,27 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
             return WindowsUpdateOperationResult.Failed;
         }
 
-        var command = WindowsUpdateHoldCommandBuilder.BuildApply(desired);
-        var run = _runElevated(command);
-        if (run is null)
+        var commands = WindowsUpdateHoldCommandBuilder.BuildApply(desired);
+        if (commands.Count == 0)
         {
-            return WindowsUpdateOperationResult.Canceled;
+            return WindowsUpdateOperationResult.Failed;
+        }
+
+        foreach (var command in commands)
+        {
+            var run = _runElevated(command);
+            if (run is null)
+            {
+                // User canceled the elevation prompt — no partial writes from us.
+                return WindowsUpdateOperationResult.Canceled;
+            }
+
+            if (run != 0)
+            {
+                // The elevated operation itself failed. Verify-and-rollback below
+                // restores the exact pre-apply state; never report success.
+                break;
+            }
         }
 
         // Verify the post-write state; roll back what we can if incomplete.
@@ -192,9 +208,10 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
         RollbackOwnedValues(record);
 
         var command = WindowsUpdateHoldCommandBuilder.BuildCleanup(record);
-        if (command is not null)
+        if (command is not null && _runElevated(command) != 0)
         {
-            _runElevated(command);
+            // Cleanup is cosmetic (removing an empty TrafficLens-created key);
+            // a failure here must not mask the rollback result below.
         }
 
         var after = ReadSnapshot();
@@ -228,8 +245,16 @@ public sealed class WindowsUpdateService : IWindowsUpdateService
             var restore = WindowsUpdateHoldCommandBuilder.BuildRestore(owned);
             if (restore is not null)
             {
-                _runElevated(restore.Value.command);
-                continue;
+                var run = _runElevated(restore.Value.command);
+                if (run is 0)
+                {
+                    continue;
+                }
+
+                // The elevated restore did not run (canceled) or failed — fall
+                // back to the in-process applier, which succeeds when the app
+                // can write the key and fails silently otherwise. The caller
+                // verifies the final state, so a silent failure stays visible.
             }
 
             _applier.DeleteValue(owned.Name);
