@@ -34,6 +34,48 @@ public sealed class DataSizeFormatterTests
         Assert.Equal("1,5 KB", DataSizeFormatter.Format(1536, de));
     }
 
+    [Theory]
+    [InlineData(900, "900 B")]
+    [InlineData(1023, "1023 B")]
+    [InlineData(1024, "1 KB")]
+    [InlineData(1536, "1.5 KB")]
+    [InlineData(2047, "1.99 KB")]
+    [InlineData(2048, "2 KB")]
+    [InlineData(12 * 1024, "12 KB")]
+    [InlineData(800 * 1024, "800 KB")]
+    [InlineData(1023L * 1024, "1023 KB")]
+    [InlineData(1024L * 1024, "1 MB")]
+    [InlineData(1023L * 1024 * 1024, "1023 MB")]
+    [InlineData(1536L * 1024, "1.5 MB")]
+    [InlineData(1024L * 1024 * 1024, "1 GB")]
+    [InlineData((long)(1.5 * 1024 * 1024 * 1024), "1.5 GB")]
+    public void Format_UsesAdaptiveThreeSignificantDigits(long bytes, string expected)
+    {
+        Assert.Equal(expected, DataSizeFormatter.Format(bytes, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_UnitBoundaries_NoDisplayCollision()
+    {
+        // The reported ambiguity: 2047 B used to display as "2 KB", identical
+        // to 2048 B. Adaptive precision keeps them distinguishable while
+        // preserving the binary 1024 convention.
+        Assert.NotEqual(
+            DataSizeFormatter.Format(2047, CultureInfo.InvariantCulture),
+            DataSizeFormatter.Format(2048, CultureInfo.InvariantCulture));
+        Assert.NotEqual(
+            DataSizeFormatter.Format(1023L * 1024 * 1024, CultureInfo.InvariantCulture),
+            DataSizeFormatter.Format(1024L * 1024 * 1024, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_AdaptivePrecisionRespectsCultureDecimalSeparator()
+    {
+        var de = CultureInfo.GetCultureInfo("de-DE");
+        Assert.Equal("1,99 KB", DataSizeFormatter.Format(2047, de));
+        Assert.Equal("1,5 KB", DataSizeFormatter.Format(1536, de));
+    }
+
     [Fact]
     public void Format_LargeValueCarriesUnitSuffix()
     {
@@ -47,6 +89,8 @@ public sealed class DataSizeFormatterTests
         // Locks in the raw-byte canonical rule: display formatting must never
         // reorder relative magnitudes. For any pair, if rawBytes(a) < rawBytes(b)
         // then the formatted values must represent a smaller or equal quantity.
+        // (Since adaptive precision, 2047 B renders "1.99 KB" vs 2048 B "2 KB",
+        // so distinct magnitudes are also visually distinguishable.)
         long[] rawBytesAscending =
         {
             0, 1, 900, 1023, 1024, 1536, 2047, 2048,
@@ -94,8 +138,8 @@ public sealed class DataSizeFormatterTests
     public void Format_UnitBoundaries_DisplayMagnitudeNeverInvertsRawOrder(long smaller, long larger)
     {
         // Raw canonical rule: the larger raw byte count may only display as an
-        // equal or larger quantity. Note 2047 B and 2048 B can both render as
-        // "2 KB" (rounding) — the display may collide but must never invert.
+        // equal or larger quantity. With adaptive precision 2047 B renders as
+        // "1.99 KB" and 2048 B as "2 KB" — no collision, never an inversion.
         var smallerText = DataSizeFormatter.Format(smaller, CultureInfo.InvariantCulture);
         var largerText = DataSizeFormatter.Format(larger, CultureInfo.InvariantCulture);
 

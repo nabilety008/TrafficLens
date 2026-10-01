@@ -83,7 +83,7 @@ public sealed class HistoryViewModelTests : IDisposable
         Assert.Equal("12:00", _vm.Series[2].Label);
         Assert.Equal(3, _vm.Series.Count);
         Assert.Equal(2560, _vm.ScaleMax);
-        Assert.Equal("2.15 KB", _vm.SummaryDownloadText);
+        Assert.Equal("2.14 KB", _vm.SummaryDownloadText); // 2200 B truncated to 3 significant digits
         Assert.True(_vm.HasData);
     }
 
