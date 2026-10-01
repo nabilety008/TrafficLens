@@ -213,3 +213,47 @@ are unchanged.
 
 See `CHANGELOG.md` ([0.1.5]) for the full change list and
 `docs/PROJECT_STATUS.md` for the current milestone.
+
+---
+
+# ADDENDUM 3 — Applications display precision fix + HUMAN PASS (2026-10-01)
+
+Post-RC production fix before tagging, from the user-reported cross-unit
+ordering report (reported as "Connections"; the traffic-usage surface is
+Applications).
+
+## Investigation result
+
+- Raw byte accounting: **correct, unchanged** (canonical raw `long` counters
+  end to end).
+- Raw-byte sorting/ranking: **correct, unchanged** — `ProcessSampleSort` and
+  `ProcessSampleSelection` compare raw numeric values only; no string-based
+  comparison exists anywhere in the pipeline.
+- Root cause of the visual ambiguity: the shared `DataSizeFormatter` rounded
+  `2047 B` to `"2 KB"`, colliding with `2048 B` = `"2 KB"`, so an in-Bytes row
+  could look equal to (or bigger than) a genuinely larger KB row.
+- Connections page has **no** traffic/usage display at all (verified in code
+  and at runtime); no changes were made to Connections.
+
+## Fix (0fe6775)
+
+- Shared `DataSizeFormatter` now uses **adaptive truncated 3-significant-digit
+  precision**: <10 → 2 decimals, <100 → 1 decimal, ≥100 → integer; truncation
+  (never round-up) so a display can never imply ≥ the next boundary. Binary
+  1024 convention and culture decimal separators unchanged. CSV exports raw
+  byte values (verified untouched).
+- Verified conversions: 900 B → `900 B`, 1023 B → `1023 B`, 1024 B → `1 KB`,
+  1536 B → `1.5 KB`, **2047 B → `1.99 KB`**, 2048 B → `2 KB`,
+  1023 KB → `1023 KB`, 1 MB → `1 MB` (KB→MB and MB→GB boundaries tested).
+- Test gate at 0fe6775: focused 54/54, full **866/866 PASS**, Release x64
+  build 0 warnings / 0 errors. 16 new regression tests lock in raw-byte
+  ordering + formatter precision boundaries.
+
+## Human verification recorded (2026-10-01)
+
+- Applications traffic display precision: **HUMAN PASS** — visually verified
+  the boundary set above on the fresh Release build; sorting/accounting
+  confirmed raw-byte based.
+
+Source fix commit: `5a60d30` (raw-byte ordering regression tests) +
+`0fe6775` (adaptive formatter precision).
