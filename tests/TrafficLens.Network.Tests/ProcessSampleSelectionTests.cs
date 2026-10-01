@@ -127,6 +127,64 @@ public sealed class ProcessSampleSelectionTests
     }
 
     [Fact]
+    public void TotalTransferredSort_CrossUnitBoundaries_RankByRawBytes()
+    {
+        // Raw-byte ordering must hold across display-unit boundaries:
+        // 900 B < 1.5 KB < 12 KB < 800 KB < 1.2 MB even though the formatted
+        // numeric components (900, 1.5, 12, 800, 1.2) would sort differently.
+        const long kb = 1024;
+        const long mb = 1024 * 1024;
+        var samples = new List<ProcessTrafficSample>
+        {
+            Sample(1, "bytes", 100, downBytes: 900),               // 900 B
+            Sample(2, "kb-small", 200, downBytes: (long)(1.5 * kb)),  // 1.5 KB
+            Sample(3, "kb-mid", 300, downBytes: 12 * kb),             // 12 KB
+            Sample(4, "kb-big", 400, downBytes: 800 * kb),            // 800 KB
+            Sample(5, "mb", 500, downBytes: (long)(1.2 * mb))         // 1.2 MB
+        };
+
+        samples.Sort(ProcessSampleSort.Create(ProcessSortKey.TotalTransferred));
+
+        Assert.Equal(new[] { "mb", "kb-big", "kb-mid", "kb-small", "bytes" },
+            samples.Select(s => s.ProcessName).ToArray());
+    }
+
+    [Theory]
+    [InlineData(1023, 1024)]          // 1023 B must rank below 1 KB
+    [InlineData(2047, 2048)]          // 2047 B must rank below 2 KB
+    [InlineData(1023L * 1024, 1024L * 1024)]   // 1023 KB must rank below 1 MB
+    [InlineData(999L * 1024, 1024L * 1024)]    // 999 KB must rank below 1 MB
+    public void TotalTransferredSort_UnitBoundary_LowerRawBytesRanksLower(long smaller, long larger)
+    {
+        var samples = new List<ProcessTrafficSample>
+        {
+            Sample(1, "larger", 100, downBytes: larger),
+            Sample(2, "smaller", 200, downBytes: smaller)
+        };
+
+        samples.Sort(ProcessSampleSort.Create(ProcessSortKey.TotalTransferred));
+
+        Assert.Equal("larger", samples[0].ProcessName);
+        Assert.Equal("smaller", samples[1].ProcessName);
+    }
+
+    [Fact]
+    public void TotalTransferredSort_EqualRawBytesAcrossUnits_TieBreaksStable()
+    {
+        // 1024 B == 1 KB exactly: same raw value must be treated as equal.
+        var samples = new List<ProcessTrafficSample>
+        {
+            Sample(2, "as-kb", 200, downBytes: 1024),
+            Sample(1, "as-bytes", 100, downBytes: 1024)
+        };
+
+        samples.Sort(ProcessSampleSort.Create(ProcessSortKey.TotalTransferred));
+
+        Assert.Equal(1, samples[0].ProcessId);
+        Assert.Equal(2, samples[1].ProcessId);
+    }
+
+    [Fact]
     public void NameSort_OrdersAscendingCaseInsensitive()
     {
         var samples = new List<ProcessTrafficSample>
@@ -184,6 +242,22 @@ public sealed class ProcessSampleSelectionTests
 
         Assert.Equal("down", ProcessSampleSelection.TopDownload(samples)!.ProcessName);
         Assert.Equal("up", ProcessSampleSelection.TopUpload(samples)!.ProcessName);
+    }
+
+    [Fact]
+    public void TopConsumer_UnitBoundary_NeverPrefersLargerFormattedNumber()
+    {
+        // 900 B/s must never beat 2 KB/s regardless of formatted display text.
+        var samples = new List<ProcessTrafficSample>
+        {
+            Sample(1, "small-bytes", 100, downRate: 900),
+            Sample(2, "large-kb", 200, downRate: 2048)
+        };
+
+        var top = ProcessSampleSelection.TopConsumer(samples);
+
+        Assert.NotNull(top);
+        Assert.Equal("large-kb", top.ProcessName);
     }
 
     [Fact]
