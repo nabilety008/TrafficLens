@@ -257,3 +257,73 @@ Applications).
 
 Source fix commit: `5a60d30` (raw-byte ordering regression tests) +
 `0fe6775` (adaptive formatter precision).
+
+---
+
+# ADDENDUM 4 — FINAL v0.1.5 release (2026-10-01)
+
+Supersedes the RC artifact metadata in Addendum 2 (those artifacts are
+STALE — built before `5a60d30`/`0fe6775`; do not reuse their hashes).
+
+**Final source/release HEAD:** `605d798` — final tag target.
+Production source identical to `0fe6775`; `605d798` adds documentation only.
+
+## Test gate (source at 0fe6775)
+
+- Focused (formatter + selection): **54/54 PASS**
+- Full suite: **866/866 PASS** (Network 266 / Infrastructure 141 / App 270 /
+  WinUI 189)
+- Release x64 build (`-p:Platform=x64`): **0 warnings / 0 errors**
+- Packaging inputs (`packaging/TrafficLens.iss`, `scripts/build-release.ps1`)
+  unchanged since the verified RC prep; tests not rerun for the docs-only
+  commit `605d798`.
+
+## FINAL artifacts (regenerated at `605d798`, unsigned)
+
+- Installer: `artifacts/installer/TrafficLens-Setup-0.1.5-win-x64.exe`
+  — 89,964,207 bytes
+  — SHA-256 `545468B7547FD13C5A1CA181057BAFFF67715F90F5B4EBA3D241D86403D1D4BC`
+  — VersionInfo ProductVersion/FileVersion `0.1.5`; AppId
+    `8F0E8A8F-7B1D-4A5E-9C2D-3E5F6A7B8C9D` and icon carried from the
+    unchanged, previously validated `TrafficLens.iss`
+- Portable: `artifacts/portable/TrafficLens-Portable-0.1.5-win-x64.zip`
+  — 129,633,006 bytes
+  — SHA-256 `01836AF597F12C38C3E48DD3CD6B2A88CE89BF3B00CAA71E2640C630B962CC9B`
+  — 815 entries, forward-slash paths, `TrafficLens.WinUI.exe` + 1
+    `TrafficLens.Core.dll` + 5 `.pri` + fa-IR resources + Windows App SDK
+    self-contained layout + ico; no PDB/tests/.cs/.xaml-source/legacy WPF
+    exe/MSIX junk
+  — Fresh `TrafficLens.Core.dll` proven: hash inside extracted ZIP
+    `77e45d8dddf07eb9ea7353892d074cdfda25f604e60a5d5b1a78942cba63659d`
+    == freshly rebuilt `TrafficLens.Core` Release x64 output (stale
+    `win-x64/` publish copy from the RC not used)
+- Sidecar `.sha256` files written next to both artifacts.
+- Signing: **UNSIGNED / DEFERRED**.
+
+## FINAL portable smoke — from shipped ZIP (2026-10-01): PASS
+
+Extracted to a clean temp dir; launched ONLY the extracted
+`TrafficLens.WinUI.exe` (process path verified = extraction dir).
+Dashboard rendered, Applications/Alerts/Settings opened via UIA, fa-IR
+switch applied with RTL layout, About page reached, no startup error
+logs in the extraction dir, fresh formatter fix present (DLL hash
+above). Instance closed cleanly; temp extraction removed.
+
+## Human QA recorded for FINAL v0.1.5
+
+- Windows Update LIVE Hold → Release round-trip: **HUMAN PASS** (2026-09-30)
+- Alerts regrouped layout: **HUMAN PASS** (2026-09-30)
+- Live graph hover callouts: **HUMAN PASS** (2026-09-30)
+- History hover callouts: **HUMAN PASS** (2026-09-30)
+- Applications display precision (adaptive formatter, 2047 B → `1.99 KB`):
+  **HUMAN PASS** (2026-10-01)
+
+## Still deferred (accurate)
+
+- Caption-button glyphs LIGHT theme hover/pressed: not independently
+  human-tested (dark verified).
+- Connections page hands-on QA: page carries no traffic usage display
+  (verified); independent human pass still pending.
+- CSV export hands-on QA: agent-verified only; raw byte values confirmed
+  by code audit + tests.
+- Code signing, GitHub publication, updater: deferred (no remote).
