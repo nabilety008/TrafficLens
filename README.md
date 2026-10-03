@@ -246,3 +246,25 @@ Issues and pull requests are welcome.
 
 Please open an issue before starting a larger change, so effort is not duplicated and the
 approach can be discussed first.
+
+## ❤️ Support TrafficLens
+
+If TrafficLens is useful to you and you'd like to support its continued development, you
+can help fund future improvements, maintenance, and releases.
+
+### 🇮🇷 Support from Iran
+
+[Support TrafficLens on HamiBash](https://hamibash.com/nabilety008)
+
+### 🌍 International Support
+
+**USDT — TRON (TRC20)**
+
+`TEmsoP2M9gZBymrc73z8NXdcy4LK2Qzkig`
+
+**USDT — BNB Smart Chain (BEP20)**
+
+`0x3A09DAc6A09A3760F063EBfBF6D523737BD498A5`
+
+> ⚠️ Please verify both the wallet address and the selected network before sending.
+> Cryptocurrency transactions may be irreversible.
