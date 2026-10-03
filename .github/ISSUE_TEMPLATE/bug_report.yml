@@ -1,0 +1,152 @@
+name: Bug report
+description: Report a problem with TrafficLens
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in the sections below.
+
+        **Do not report security vulnerabilities here.** Use the private reporting
+        process described in `SECURITY.md` instead.
+
+  - type: input
+    id: version
+    attributes:
+      label: TrafficLens version
+      description: Which version are you running? (Shown on the About page)
+      placeholder: v0.1.6
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation type
+      options:
+        - Installer
+        - Portable
+    validations:
+      required: true
+
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version
+      description: For example: Windows 11 24H2, or Windows 10 22H2
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Windows architecture
+      options:
+        - x64
+        - ARM64
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: administrator
+    attributes:
+      label: Was TrafficLens running with Administrator privileges?
+      description: Detailed per-application monitoring can behave differently without elevation.
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Dashboard
+        - Applications
+        - Connections
+        - History
+        - Alerts
+        - Settings
+        - Floating Widget
+        - System Tray
+        - Installation / Startup
+        - Windows Update controls
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear summary of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reliably show the problem.
+      placeholder: |
+        1. Open TrafficLens
+        2. Go to the Applications page
+        3. Change the Sort By selection
+        4. Observe the result
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include any error message shown.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        Optional. Logs live under `%LOCALAPPDATA%\TrafficLens\logs`.
+
+        **Before posting, remove anything sensitive.** In particular, do not include:
+        - passwords or credentials
+        - tokens or API keys
+        - private or sensitive IP address information
+        - personal data
+
+        Please do not attach packet captures. TrafficLens does not capture packet
+        payload contents, and they are not needed to diagnose UI or reporting bugs.
+      render: text
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that may help, such as language settings or recent changes.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have checked existing issues for duplicates.
+          required: true
+        - label: I have removed sensitive information from any log output I attached.
+          required: false
