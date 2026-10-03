@@ -106,9 +106,13 @@ public sealed partial class HistoryPage : Page
 
     private async void ExportCsv_Click(object sender, RoutedEventArgs e)
     {
+        StorageFile? file;
+        string csv;
+
         try
         {
-            var csv = _viewModel.BuildCsv();
+            csv = _viewModel.BuildCsv();
+
             var picker = new FileSavePicker
             {
                 SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
@@ -120,41 +124,76 @@ public sealed partial class HistoryPage : Page
             var hwnd = WindowNative.GetWindowHandle(main.MainWindow);
             InitializeWithWindow.Initialize(picker, hwnd);
 
-            var file = await picker.PickSaveFileAsync();
-            if (file is null)
-            {
-                // Cancel is a normal outcome, not an export failure: no status, no log.
-                return;
-            }
-
-            try
-            {
-                var bytes = new UTF8Encoding(true).GetBytes(csv);
-                await FileIO.WriteBytesAsync(file, bytes);
-            }
-            catch (Exception writeEx)
-            {
-                _logger.LogError(
-                    writeEx,
-                    "History CSV write failed. Type={ExceptionType} HResult=0x{HResult:X8} Path={FilePath}",
-                    writeEx.GetType().FullName,
-                    writeEx.HResult,
-                    file.Path);
-                throw;
-            }
-
-            _viewModel.MarkExportSuccess();
+            file = await picker.PickSaveFileAsync();
         }
         catch (Exception ex)
         {
+            // The export never started, so this is a genuine export failure.
             _logger.LogError(
                 ex,
-                "History CSV export failed. Type={ExceptionType} HResult=0x{HResult:X8}",
+                "History CSV export could not start. Type={ExceptionType} HResult=0x{HResult:X8}",
                 ex.GetType().FullName,
                 ex.HResult);
             _viewModel.MarkExportFailure();
+            Bindings.Update();
+            return;
+        }
+
+        if (file is null)
+        {
+            // Cancel is a normal outcome, not an export failure: no status, no log.
+            return;
+        }
+
+        try
+        {
+            // WriteBytesAsync creates, writes, flushes and closes the file, so a
+            // return from here means the bytes are on disk.
+            var bytes = new UTF8Encoding(true).GetBytes(csv);
+            await FileIO.WriteBytesAsync(file, bytes);
+        }
+        catch (Exception writeEx)
+        {
+            _logger.LogError(
+                writeEx,
+                "History CSV write failed. Type={ExceptionType} HResult=0x{HResult:X8} Path={FilePath}",
+                writeEx.GetType().FullName,
+                writeEx.HResult,
+                SafePath(file));
+            _viewModel.MarkExportFailure();
+            Bindings.Update();
+            return;
+        }
+
+        // The file is written and closed from here on. No failure past this point
+        // may be reported as an export failure: doing so showed a false error for
+        // an export that had already succeeded.
+        try
+        {
+            _viewModel.MarkExportSuccess();
+        }
+        catch (Exception statusEx)
+        {
+            // The export succeeded; only the status banner failed to update.
+            _logger.LogWarning(
+                statusEx,
+                "History CSV exported but the status could not be shown. Type={ExceptionType} HResult=0x{HResult:X8}",
+                statusEx.GetType().FullName,
+                statusEx.HResult);
         }
 
         Bindings.Update();
+    }
+
+    private static string SafePath(StorageFile file)
+    {
+        try
+        {
+            return file.Path;
+        }
+        catch (Exception)
+        {
+            return "(unavailable)";
+        }
     }
 }

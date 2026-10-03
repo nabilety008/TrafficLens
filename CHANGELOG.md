@@ -68,6 +68,55 @@ quality updates.
   light theme, Connections and CSV-export hands-on pass (agent-verified
   previously).
 
+## [Unreleased] — Post-v0.1.5: Applications sort selection durability + History CSV false-error fix
+
+Two defects reported against v0.1.5, fixed at the root. No version, artifact or
+tag change; the v0.1.5 release remains untouched.
+
+### Fixed
+
+- **Applications "Sort By" rendered blank.** The page was the last ComboBox still
+  binding `SelectedValue`/`SelectedValuePath` against a `SortOptions` collection
+  that is cleared and refilled whenever the localized strings are rebuilt. The
+  bound value survived but the control lost its visual selection, so the default
+  showed empty. Applications now uses the same `SelectedIndex`-over-a-fixed-order
+  -key-list pattern Connections adopted in v0.1.5: a canonical `SortOptionKeys`
+  array defines the order, `SortIndex` translates it to and from
+  `ProcessSortKey`, and both are re-announced after the localized rebuild so the
+  binding re-resolves. The setter rejects `-1` and out-of-range values, which the
+  ComboBox pushes while the collection is empty mid-rebuild (Connections
+  deliberately does not need this). Sort order, the `TotalRate` default, raw
+  numeric comparison and the absence of sort persistence are all unchanged, and
+  no user-facing string was hard-coded.
+- **History CSV export reported a false error after a successful write.** The
+  success-state update ran inside the same `try` whose `catch` reported an export
+  failure, and the three export-status methods kept raising `PropertyChanged`
+  after `Dispose` — which is exactly the state a page is in once the modal file
+  picker has closed it. An export that had already written and closed its file
+  could therefore be reported as failed. The handler is now split into
+  picker/start, write, and post-write phases; only the first two can report an
+  export failure, a post-write status failure is logged as a warning and never
+  downgrades a completed export, and the status methods are inert once disposed.
+  Genuine start and write failures are still logged with exception type and
+  HRESULT and still shown, `file.Path` is read through a safe accessor, and
+  cancelling the picker stays silent (no status, no log, no file).
+
+### Verification
+
+- Full suite: **895 passed, 0 failed** (270 App / 266 Network / 141
+  Infrastructure / 218 WinUI); Release x64 build **0 warnings, 0 errors**.
+- New regression tests: 20 (`ApplicationsSortSelectionTests`) and 10
+  (`HistoryCsvExportOutcomeTests`). Both key tests were confirmed to **fail with
+  the fix reverted** and pass with it in place.
+- Runtime on a fresh Release x64 build (not the v0.1.5 artifact): Sort By shows
+  `نرخ کل` in fa-IR and `Total rate` in en-US, surviving a culture switch and
+  navigate-away/back in both. A real export wrote
+  `TrafficLens-History-2026-10-03.csv` (171 bytes) with the exact header
+  `Period,DownloadBytes,UploadBytes,TotalBytes`, hourly rows and raw integer
+  byte counts (32132902 + 9212672 = 41345574), and showed **CSV exported
+  successfully**. Cancelling the picker wrote nothing, logged nothing and showed
+  no message. Whole-session log: **0 Error**.
+
 ## [Unreleased] — Post-v0.1.4 batch 4: Windows feature update hold without disabling security updates
 
 The Windows Update control is redefined. The old behavior could broadly disable

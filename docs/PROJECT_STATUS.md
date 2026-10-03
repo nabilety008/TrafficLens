@@ -1,8 +1,27 @@
 # TrafficLens — Project Status
 
-Updated: 2026-09-29
+Updated: 2026-10-03
 
 ## Current Milestone
+
+**Post-v0.1.5 fix batch (WUI-015)** on `feature/winui3-migration`: two defects
+reported against v0.1.5, both fixed at the root with no version, artifact or tag
+change. (1) The Applications "Sort By" ComboBox rendered blank because it was the
+last one still binding `SelectedValue` into a collection that is cleared and
+refilled on every localized-string rebuild; it now uses the same
+`SelectedIndex`-over-a-fixed-order-key-list pattern as Connections, re-announcing
+the selection after the rebuild and rejecting the `-1`/out-of-range indices the
+ComboBox pushes while the collection is empty. (2) History CSV export could report
+a false error after the file was already written, because the success-state update
+shared a `try` with the failure-reporting `catch` and the status methods raised
+`PropertyChanged` after `Dispose`; the handler is now split into picker/start,
+write and post-write phases so only the first two can report failure, and real
+write errors are still logged and shown while cancelling stays silent. Verified:
+full suite 895/895, Release x64 build 0 warnings / 0 errors, and a fresh-build
+runtime pass in fa-IR and en-US (sort selection survives culture switches and
+navigation; a real export wrote a correct raw-integer CSV and reported success;
+cancelling wrote nothing and logged nothing; 0 Error in the session log). Awaiting
+a hands-on human visual pass, as the v0.1.5 UI lock requires.
 
 **v0.1.5 release candidate** on `feature/winui3-migration`: ships the four
 post-v0.1.4 batches (Connections polish, graph scale + hover callouts, caption

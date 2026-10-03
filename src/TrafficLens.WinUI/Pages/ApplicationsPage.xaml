@@ -293,8 +293,7 @@
                     HorizontalAlignment="Stretch"
                     DisplayMemberPath="Label"
                     ItemsSource="{x:Bind ViewModel.SortOptions, Mode=OneWay}"
-                    SelectedValue="{x:Bind ViewModel.SortKey, Mode=TwoWay}"
-                    SelectedValuePath="Key" />
+                    SelectedIndex="{x:Bind ViewModel.SortIndex, Mode=TwoWay}" />
 
                 <TextBox
                     x:Name="SearchBox"

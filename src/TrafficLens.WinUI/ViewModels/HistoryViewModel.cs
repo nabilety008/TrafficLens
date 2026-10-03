@@ -389,6 +389,11 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public void MarkExportSuccess()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         ExportFailed = false;
         ExportStatusText = ExportSuccessfulLabel;
         HasExportStatus = true;
@@ -396,6 +401,11 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public void MarkExportFailure()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         ExportFailed = true;
         ExportStatusText = ExportFailedLabel;
         HasExportStatus = true;
@@ -403,6 +413,11 @@ public sealed class HistoryViewModel : INotifyPropertyChanged, IDisposable
 
     public void ClearExportStatus()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         HasExportStatus = false;
         ExportStatusText = string.Empty;
         ExportFailed = false;

@@ -157,10 +157,61 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         {
             if (SetProperty(ref _sortKey, value))
             {
+                OnPropertyChanged(nameof(SortIndex));
                 RebuildDisplayList(force: true);
             }
         }
     }
+
+    /// <summary>
+    /// ComboBox selection as a position in the fixed Sort by list. SelectedValue
+    /// against a rebuilt item collection drops the visual selection, because the
+    /// enum value cannot resolve while the list is being replaced; an index
+    /// survives the same rebuild because the list order is fixed.
+    /// </summary>
+    public int SortIndex
+    {
+        get => IndexOf(SortOptionKeys, _sortKey);
+        set
+        {
+            // A ComboBox pushes SelectedIndex = -1 while its item collection is
+            // empty, which is exactly the window the localized rebuild opens.
+            if (value < 0 || value >= SortOptionKeys.Count)
+            {
+                return;
+            }
+
+            SortKey = SortOptionKeys[value];
+        }
+    }
+
+    private static int IndexOf<T>(IReadOnlyList<T> list, T value)
+    {
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (EqualityComparer<T>.Default.Equals(list[i], value))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Canonical Sort by order, mirroring the option list built in
+    /// <see cref="RefreshLocalizedStrings"/>. Index 0 is the default, Total rate.
+    /// </summary>
+    private static readonly IReadOnlyList<ProcessSortKey> SortOptionKeys = new[]
+    {
+        ProcessSortKey.TotalRate,
+        ProcessSortKey.DownloadRate,
+        ProcessSortKey.UploadRate,
+        ProcessSortKey.TotalTransferred,
+        ProcessSortKey.Downloaded,
+        ProcessSortKey.Uploaded,
+        ProcessSortKey.Name
+    };
 
     public bool HasActiveTraffic
     {
@@ -532,6 +583,11 @@ public sealed class ApplicationsViewModel : INotifyPropertyChanged, IDisposable
         SortOptions.Add(new ApplicationSortOption(ProcessSortKey.Downloaded, _localization["SortDownloadedLabel"]));
         SortOptions.Add(new ApplicationSortOption(ProcessSortKey.Uploaded, _localization["SortUploadedLabel"]));
         SortOptions.Add(new ApplicationSortOption(ProcessSortKey.Name, _localization["SortNameLabel"]));
+
+        // The list was emptied and refilled, so the ComboBox has to be told the
+        // selection again or the control renders blank until the next change.
+        OnPropertyChanged(nameof(SortKey));
+        OnPropertyChanged(nameof(SortIndex));
     }
 
     private void RefreshSamples(IReadOnlyList<ProcessTrafficSample> samples)
