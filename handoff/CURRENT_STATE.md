@@ -1,7 +1,95 @@
-# CURRENT_STATE — TrafficLens v0.1.4
+# CURRENT_STATE — TrafficLens v0.1.6
 
-Recorded from actual repository and artifact state at local closeout.
+**Version:** `0.1.6` (**Product/Informational 0.1.6**, **File/Assembly 0.1.6.0**)
+**Scope:** post-v0.1.5 fix release, no new features
+**Human UI:** **PASS** — Applications "Sort By" default visibly selected; selection
+survives the fa-IR ↔ en-US culture switch; selection survives navigate-away/back
+**Tests:** **895/895 PASS** (App 270 / Network 266 / Infrastructure 141 / WinUI 218)
+**Release build:** **0 warnings / 0 errors**
+**Portable smoke:** **PASS** — clean extraction of the final ZIP, all 7 pages rendered, About = `0.1.6`, 0 log errors
+**History CSV export:** automated + runtime verified — real file created, exact
+raw-byte schema preserved, success message shown, false error absent, Cancel silent
+**Signing:** **UNSIGNED** (no certificate created; reported honestly)
+**GitHub:** **DEFERRED / NOT CONFIGURED** (no git remote exists)
+**Code signing / GitHub publication / updater:** **DEFERRED**
 
+### v0.1.6 contents
+
+Two defects reported against v0.1.5, both fixed at the root in `3a2bdce`:
+
+- **Applications "Sort By" blank default** — the last ComboBox still binding
+  `SelectedValue` into a collection cleared/refilled on every localized rebuild.
+  Now `SelectedIndex` over a canonical fixed-order key list, re-announced after the
+  rebuild, rejecting `-1`/out-of-range indices. Sort order, the `TotalRate`
+  default and raw numeric comparison are unchanged.
+- **History CSV false error after success** — the success-state update shared a
+  `try` with the failure-reporting `catch`, and the status methods raised
+  `PropertyChanged` after `Dispose`. Split into picker/start, write and post-write
+  phases; real write failures still log + surface; Cancel still silent.
+
+Also carried from earlier post-v0.1.5 work already in HEAD: the Applications
+data-size display precision improvement (adaptive 3-significant-digit sizing).
+
+### Known non-blocking note (pre-existing)
+
+The History CSV export writes **no UTF-8 BOM** although the writer requests one.
+This predates the false-error fix, the CSV content is valid and parses correctly,
+and it is deliberately **not** changed in v0.1.6.
+
+### Release artifact metadata (FINAL v0.1.6)
+
+| | |
+|---|---|
+| Installer | `artifacts/installer/TrafficLens-Setup-0.1.6-win-x64.exe` |
+| Installer size | 89,963,560 bytes |
+| Installer SHA-256 | `3332235ABB7B7ADA857EA3D0D41273F5E51D74A1B6DAE96B98ED83F4740CAB8E` |
+| Portable ZIP | `artifacts/portable/TrafficLens-Portable-0.1.6-win-x64.zip` |
+| Portable size | 129,632,776 bytes |
+| Portable SHA-256 | `9F9375B505961CA85778F09187C3D5EB2674AAE6204B49A5E198628590555795` |
+| Entry point | `TrafficLens.WinUI.exe` (WinUI 3, unpackaged, self-contained) |
+| Shipped FileVersion | `0.1.6.0` |
+| Shipped ProductVersion | `0.1.6` |
+| About page (verified live) | `0.1.6` |
+| ZIP entries | 815 — no PDB, no `.cs`/`.xaml`, no test assemblies, no MSIX, forward-slash paths only |
+| fa-IR payload | present (3 satellite/resource entries) |
+| WPF shell in payload | absent (correct — WinUI is the only entry point) |
+| Signature | **UNSIGNED** (`NotSigned`) for both installer and app |
+
+These hashes describe the **unsigned** release candidate.
+
+### Clean portable smoke (FINAL v0.1.6) — PASS
+
+Performed against a fresh extraction of the final ZIP in a new temp directory,
+launching **only** the extracted `TrafficLens.WinUI.exe`:
+
+- App started clean; window `TrafficLens - Network Monitor`; ~199 MB working set.
+- All seven pages rendered via UI Automation: Dashboard, Applications,
+  Connections, History, Alerts, Settings, About.
+- **About reports version `0.1.6`.**
+- Applications **Sort By shows `Total rate`** (not blank) in the packaged build,
+  and the selection survives navigating away to Dashboard and back.
+- **0 Error-level log entries** for the whole session. The single Warning is the
+  expected ETW-requires-Administrator notice (the smoke ran non-elevated).
+- Temp extraction removed afterwards; no `TrafficLens` processes left running.
+- Note (not a defect): closing the window does **not** terminate the process —
+  `CloseToTray` defaults to true, so `MainWindow` hides to the tray and the real
+  exit is the tray **Exit** command. The tray-exit path was not exercised in this
+  smoke.
+
+### v0.1.5 remains immutable
+
+Re-verified after v0.1.6 packaging — both unchanged:
+
+| | |
+|---|---|
+| `TrafficLens-Setup-0.1.5-win-x64.exe` | 89,964,207 bytes, SHA-256 `545468B7547FD13C5A1CA181057BAFFF67715F90F5B4EBA3D241D86403D1D4BC` |
+| `TrafficLens-Portable-0.1.5-win-x64.zip` | 129,633,006 bytes, SHA-256 `01836AF597F12C38C3E48DD3CD6B2A88CE89BF3B00CAA71E2640C630B962CC9B` |
+
+---
+
+> **HISTORICAL RECORD — v0.1.4 and the post-v0.1.4 batches.** Everything below
+> this line is the earlier record, kept for provenance.
+>
 > **ADDENDUM (post-v0.1.4 audit, 2026-09-30) — read this first.** The v0.1.4
 > release state below is still accurate for the shipped artifacts, but the
 > branch has moved on. Four post-v0.1.4 batches are committed on

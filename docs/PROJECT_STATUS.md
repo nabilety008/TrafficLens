@@ -4,6 +4,28 @@ Updated: 2026-10-03
 
 ## Current Milestone
 
+**v0.1.6 — FINAL LOCAL RELEASE** on `feature/winui3-migration`: a post-v0.1.5
+fix release with no new features. Two defects reported against v0.1.5 are fixed
+at the root. (1) The Applications "Sort By" ComboBox rendered blank because it was
+the last one still binding `SelectedValue` into a collection that is cleared and
+refilled on every localized-string rebuild; it now uses the same
+`SelectedIndex`-over-a-fixed-order-key-list pattern as Connections, re-announcing
+the selection after the rebuild and rejecting the `-1`/out-of-range indices the
+ComboBox pushes while the collection is empty. (2) History CSV export could report
+a false error after the file was already written, because the success-state update
+shared a `try` with the failure-reporting `catch` and the status methods raised
+`PropertyChanged` after `Dispose`; the handler is now split into picker/start,
+write and post-write phases so only the first two can report failure, and real
+write errors are still logged and shown while cancelling stays silent.
+**Human verification PASS** for the three Applications behaviors (default
+selection visible, fa-IR ↔ en-US culture switch, navigate-away/back). Quality
+gate: full suite **895/895**, Release x64 build **0 warnings / 0 errors**. History
+CSV automated + runtime verified (real file, exact raw-byte schema, success
+message, no false error, silent Cancel). Non-blocking pre-existing note retained:
+the CSV export writes no UTF-8 BOM, which predates this fix, leaves valid content,
+and is intentionally unchanged. v0.1.5 remains immutable — its tag and artifact
+hashes are untouched by this release.
+
 **Post-v0.1.5 fix batch (WUI-015)** on `feature/winui3-migration`: two defects
 reported against v0.1.5, both fixed at the root with no version, artifact or tag
 change. (1) The Applications "Sort By" ComboBox rendered blank because it was the

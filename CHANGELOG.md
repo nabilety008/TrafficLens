@@ -68,10 +68,12 @@ quality updates.
   light theme, Connections and CSV-export hands-on pass (agent-verified
   previously).
 
-## [Unreleased] — Post-v0.1.5: Applications sort selection durability + History CSV false-error fix
+## [0.1.6] — 2026-10-03
 
-Two defects reported against v0.1.5, fixed at the root. No version, artifact or
-tag change; the v0.1.5 release remains untouched.
+Post-v0.1.5 fix release. Two defects reported against v0.1.5 are fixed at the
+root: the Applications "Sort By" default rendered blank, and History CSV export
+could report a false error after the file had already been written. No new
+features. v0.1.5 itself is untouched and remains immutable.
 
 ### Fixed
 
@@ -101,13 +103,34 @@ tag change; the v0.1.5 release remains untouched.
   HRESULT and still shown, `file.Path` is read through a safe accessor, and
   cancelling the picker stays silent (no status, no log, no file).
 
+### Human verification
+
+Confirmed by the human reviewer for this release:
+
+- **Applications "Sort By" shows its default selection visibly** (not blank).
+- **Culture switch behavior correct** — the selection survives the fa-IR ↔ en-US
+  localized rebuild and stays visible, relabeled, in both languages.
+- **Navigate-away/back behavior correct** — leaving the page and returning keeps
+  the selection visible.
+
 ### Verification
 
-- Full suite: **895 passed, 0 failed** (270 App / 266 Network / 141
+- Quality gate: full suite **895 passed, 0 failed** (270 App / 266 Network / 141
   Infrastructure / 218 WinUI); Release x64 build **0 warnings, 0 errors**.
 - New regression tests: 20 (`ApplicationsSortSelectionTests`) and 10
   (`HistoryCsvExportOutcomeTests`). Both key tests were confirmed to **fail with
   the fix reverted** and pass with it in place.
+- History CSV export, automated + runtime verified on a fresh Release x64 build:
+  a **real file was created**; the **exact raw-byte CSV schema was preserved**
+  (header `Period,DownloadBytes,UploadBytes,TotalBytes`, hourly `HH:00` rows,
+  raw integer byte counts, download + upload = total); the **success message was
+  shown** ("CSV exported successfully"); the **false error is absent** (no
+  error banner and zero Error-level log entries across the whole session); and
+  **Cancel is silent** (no file written, no status message, no log entry).
+- **Known non-blocking note (pre-existing, not introduced by this release):** the
+  exported CSV is written without a UTF-8 BOM even though the writer requests
+  one. This behavior predates the false-error fix, the CSV content itself is
+  valid and parses correctly, and it is deliberately **not changed** here.
 - Runtime on a fresh Release x64 build (not the v0.1.5 artifact): Sort By shows
   `نرخ کل` in fa-IR and `Total rate` in en-US, surviving a culture switch and
   navigate-away/back in both. A real export wrote

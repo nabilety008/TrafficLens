@@ -48,10 +48,9 @@ deliberately short; the detail lives in `handoff/`, and it is not duplicated her
 | WinUI project | `src/TrafficLens.WinUI/` |
 | Tray project | `src/TrafficLens.WinUI.Tray/` |
 | Branch | `feature/winui3-migration` |
-| Local release | **v0.1.4** — FINAL LOCAL RELEASE, human UI verification PASS |
-| Application source commit | `fd7c1762361d93c8dff5adb44d091c9dd07c3ec9` |
-| Handoff commit | `e5edd7691324c150e9b8c05f90d5dee352722ded` |
-| Tests | 731/731 pass (App 270 / Network 212 / Infrastructure 84 / WinUI 165) |
+| Local release | **v0.1.6** — FINAL LOCAL RELEASE, human UI verification PASS |
+| Application source commit | `3a2bdce477f1b688a53d08b5897b7b00572d6978` (v0.1.6 fixes) |
+| Tests | 895/895 pass (App 270 / Network 266 / Infrastructure 141 / WinUI 218) |
 | Release build | 0 warnings, 0 errors |
 | GitHub publication | **DEFERRED** — no remote exists |
 | Code signing | **DEFERRED** — build is unsigned |
@@ -133,11 +132,11 @@ dotnet build "C:\Users\ali\Documents\New folder\TrafficLens\TrafficLens.sln" -c 
 & $dn test "C:\Users\ali\Documents\New folder\TrafficLens\TrafficLens.sln" -c Release -p:Platform=x64 --no-build
 
 # Release pipeline (also needs Inno Setup 6; rebuilds and overwrites artifacts)
-& "C:\Users\ali\Documents\New folder\TrafficLens\scripts\build-release.ps1" -Version 0.1.4
+& "C:\Users\ali\Documents\New folder\TrafficLens\scripts\build-release.ps1" -Version 0.1.6
 ```
 
 Do not run the release pipeline just to test a change: it overwrites the recorded
-v0.1.4 artifact hashes. See `handoff/BUILD_AND_TEST.md` for restore, focused test
+v0.1.6 artifact hashes. See `handoff/BUILD_AND_TEST.md` for restore, focused test
 filters, launch paths, and PowerShell 5.1 caveats (no heredocs, no `&&`, never
 `Set-Content` on repo files).
 
@@ -191,7 +190,7 @@ Per-process (Applications) data needs an **Administrator** process.
   work exists, understand it first.
 - Do not remove working code unless required.
 - Do not start a new task ID until the current one is verified.
-- **The UI is locked** — it passed human visual verification for v0.1.4. Any UI
+- **The UI is locked** — it passed human visual verification for v0.1.6. Any UI
   change requires new human visual verification before it can be called done.
 - **Never expose secrets.** No key material, certificates, or credentials in the repo.
 - Leave the working tree clean when you finish.

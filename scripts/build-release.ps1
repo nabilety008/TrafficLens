@@ -252,9 +252,22 @@ if ($ResumeFromPublish) {
     Write-Step "Resuming from existing publish output (clean, restore, build and tests skipped)"
     New-Item -ItemType Directory -Force -Path $installerDir, $portableDirRoot | Out-Null
 } else {
-    if (Test-Path -LiteralPath (Join-Path $repoRoot "artifacts")) {
-        Write-Step "Cleaning artifacts/"
-        Remove-Item -LiteralPath (Join-Path $repoRoot "artifacts") -Recurse -Force
+    # Clean only what THIS release owns. A blanket artifacts/ wipe destroys the
+    # finalized artifacts of earlier releases (e.g. the immutable v0.1.5
+    # installer/portable), which must survive a later release build untouched.
+    # Removed: the stale publish tree, plus this version's own artifact names so
+    # a re-run cannot silently keep a previous build of the same version.
+    # Preserved: every other version's installer/portable files and checksums.
+    if (Test-Path -LiteralPath $publishDir) {
+        Write-Step "Cleaning stale publish output"
+        Remove-Item -LiteralPath $publishDir -Recurse -Force
+    }
+    $thisVersionArtifacts = @($installerPath, "$installerPath.sha256", $portablePath, "$portablePath.sha256")
+    foreach ($stale in $thisVersionArtifacts) {
+        if (Test-Path -LiteralPath $stale) {
+            Write-Step "Removing previous build of $Version artifact $(Split-Path -Leaf $stale)"
+            Remove-Item -LiteralPath $stale -Force
+        }
     }
     New-Item -ItemType Directory -Force -Path $publishDir, $installerDir, $portableDirRoot | Out-Null
 
