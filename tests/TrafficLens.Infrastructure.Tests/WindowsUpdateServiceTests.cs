@@ -385,7 +385,7 @@ public sealed class WindowsUpdateServiceTests
             Assert.NotNull(c);
             Assert.DoesNotContain(";", c!);
             // Exactly one "add" op per call — reg.exe cannot run two.
-            Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(c!, "\\badd\\b").Count);
+            Assert.Single(System.Text.RegularExpressions.Regex.Matches(c!, "\\badd\\b"));
         });
     }
 
