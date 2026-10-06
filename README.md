@@ -254,7 +254,8 @@ can help fund future improvements, maintenance, and releases.
 
 ### 🇮🇷 Support from Iran
 
-[Support TrafficLens on HamiBash](https://hamibash.com/nabilety008)
+- [Support TrafficLens on Daramet](https://daramet.com/nabilety)
+- [Support TrafficLens on HamiBash](https://hamibash.com/nabilety008)
 
 ### 🌍 International Support
 
